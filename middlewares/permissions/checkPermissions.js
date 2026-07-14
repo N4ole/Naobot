@@ -9,6 +9,7 @@
  */
 const permissionsConfig = require('../../config/permissions');
 const permissionLabels = require('../../utils/constants/permissionLabels');
+const { checkOwner } = require('./ownerCheck');
 const { t } = require('../../utils/helpers/i18n');
 
 function labelize(permissionNames) {
@@ -21,6 +22,13 @@ function labelize(permissionNames) {
  * @returns {{ ok: true } | { ok: false, error: string }}
  */
 function checkCommandPermissions(ctx, command) {
+  // Les commandes ownerOnly relèvent du système d'owners global du bot,
+  // totalement indépendant des permissions Discord.
+  if (command.ownerOnly) {
+    const owner = checkOwner(ctx.user.id);
+    if (!owner.ok) return owner;
+  }
+
   const rules = permissionsConfig[command.name];
   if (!rules) return { ok: true };
 

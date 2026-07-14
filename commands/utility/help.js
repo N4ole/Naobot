@@ -6,6 +6,7 @@
  */
 const config = require('../../config/config');
 const permissionsConfig = require('../../config/permissions');
+const ownerService = require('../../services/owners/ownerService');
 const categories = require('../../utils/constants/categories');
 const permissionLabels = require('../../utils/constants/permissionLabels');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
@@ -17,6 +18,7 @@ function commandDetailEmbed(command) {
   const permNames = new PermissionsBitField(userPerms)
     .toArray()
     .map((name) => permissionLabels[name] ?? name);
+  if (command.ownerOnly) permNames.unshift(t('help.ownerOnly'));
 
   const embed = infoEmbed(`${config.prefix}${command.name}`, command.description).addFields(
     { name: t('help.usage'), value: `\`${config.prefix}${command.usage}\` ou \`/${command.name}\`` },
@@ -48,6 +50,8 @@ function commandListEmbed(ctx) {
 
   const grouped = new Map();
   for (const command of ctx.client.commands.values()) {
+    // Les commandes réservées aux owners du bot ne sont listées qu'aux owners.
+    if (command.ownerOnly && !ownerService.isOwner(ctx.user.id)) continue;
     if (!grouped.has(command.category)) grouped.set(command.category, []);
     grouped.get(command.category).push(command.name);
   }

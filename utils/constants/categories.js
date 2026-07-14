@@ -4,4 +4,5 @@ module.exports = {
   administration: { label: 'Administration', emoji: '⚙️' },
   utility: { label: 'Utilitaire', emoji: '🧰' },
   fun: { label: 'Fun', emoji: '🎉' },
+  owner: { label: 'Owner', emoji: '👑' },
 };

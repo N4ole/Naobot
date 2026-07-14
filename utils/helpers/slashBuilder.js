@@ -17,7 +17,11 @@ function buildSlashCommand(command) {
     .setDMPermission(false);
 
   const userPerms = permissionsConfig[command.name]?.user;
-  if (userPerms?.length) {
+  if (command.ownerOnly) {
+    // Masque la commande à tous les membres non administrateurs ; le
+    // middleware owner (indépendant de Discord) reste la seule autorité.
+    builder.setDefaultMemberPermissions(0n);
+  } else if (userPerms?.length) {
     builder.setDefaultMemberPermissions(new PermissionsBitField(userPerms).bitfield);
   }
 

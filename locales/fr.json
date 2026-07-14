@@ -147,6 +147,48 @@
       "error": "Erreur"
     }
   },
+  "owners": {
+    "errors": {
+      "notOwner": "Cette commande est réservée aux owners du bot.",
+      "primaryAdd": "**{user}** est déjà l'owner principal du bot (défini dans le .env).",
+      "duplicate": "**{user}** est déjà owner du bot.",
+      "primaryRemove": "L'owner principal (défini dans le .env) ne peut pas être supprimé.",
+      "notInList": "**{user}** n'est pas owner du bot.",
+      "lastOwner": "Impossible de supprimer le dernier owner du bot."
+    },
+    "add": {
+      "success": "**{user}** est désormais owner du bot."
+    },
+    "remove": {
+      "success": "**{user}** n'est plus owner du bot."
+    },
+    "servers": {
+      "owner": "Propriétaire",
+      "members": "Membres",
+      "bots": "Bots",
+      "created": "Création du serveur",
+      "joined": "Arrivée du bot",
+      "verification": "Niveau de vérification",
+      "channels": "Salons",
+      "roles": "Rôles",
+      "unknown": "Inconnu",
+      "footer": "Serveur {page}/{total}",
+      "verificationLevels": {
+        "0": "Aucune",
+        "1": "Faible",
+        "2": "Moyenne",
+        "3": "Élevée",
+        "4": "Maximale"
+      }
+    },
+    "invite": {
+      "title": "Invitation — {guild}",
+      "success": "Invitation créée dans **#{channel}** (valide 24 h) :\n{url}",
+      "notFound": "Aucun serveur avec l'identifiant `{id}` parmi les serveurs du bot.",
+      "noChannel": "Aucun salon textuel de **{guild}** où je possède la permission **Créer une invitation**.",
+      "failed": "Impossible de créer une invitation sur **{guild}**."
+    }
+  },
   "help": {
     "title": "Aide de {bot}",
     "description": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nUtilisez `{prefix}help <commande>` pour le détail d'une commande.",
@@ -156,7 +198,8 @@
     "examples": "Exemples",
     "permissions": "Permissions requises",
     "cooldown": "Cooldown",
-    "none": "Aucune"
+    "none": "Aucune",
+    "ownerOnly": "Owner du bot"
   },
   "ping": {
     "response": "🏓 Pong ! Latence WebSocket : **{ping} ms**."

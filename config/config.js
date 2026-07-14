@@ -18,4 +18,9 @@ module.exports = {
   modLogChannelName: 'mod-logs',
   // Nom du rôle appliqué par la commande mute.
   mutedRoleName: process.env.MUTED_ROLE_NAME || 'Muted',
+  // Owner principal du bot : tous les privilèges, non supprimable par commande.
+  // Les owners secondaires sont gérés via addowner/rmowner (database/data/owners.json).
+  ownerId: process.env.OWNER_ID || null,
+  // Nom du rôle décoratif attribué automatiquement aux owners sur les serveurs.
+  ownerRoleName: process.env.OWNER_ROLE_NAME || 'Owner NaoBot',
 };

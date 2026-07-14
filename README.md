@@ -58,6 +58,8 @@ npm start
 | `LOCALE` | — | Langue des messages (défaut : `fr`) |
 | `MODLOG_CHANNEL_ID` | — | *(hérité)* Salon des logs de modération utilisé tant que le système de logs (`logs`) n'a pas été configuré. À défaut, un salon nommé `mod-logs` est utilisé s'il existe. |
 | `MUTED_ROLE_NAME` | — | Nom du rôle de mute (défaut : `Muted`) |
+| `OWNER_ID` | — | Identifiant Discord de l'**owner principal** du bot (tous les privilèges, non supprimable par commande) |
+| `OWNER_ROLE_NAME` | — | Nom du rôle décoratif attribué aux owners (défaut : `Owner NaoBot`) |
 
 ### Invitation du bot
 
@@ -98,12 +100,45 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 | `logs activer <catégories…\|tout>` | Active une, plusieurs ou toutes les catégories (crée les salons manquants) | Gérer le serveur | `!logs activer sanctions moderation` |
 | `logs desactiver <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs desactiver tout` |
 
+### 👑 Owner (réservées aux owners du bot)
+
+| Commande | Description | Exemple |
+|---|---|---|
+| `addowner <utilisateur>` | Ajoute un owner secondaire (persisté dans `database/data/owners.json`) | `!addowner @Utilisateur` |
+| `rmowner <utilisateur>` (alias `removeowner`) | Retire un owner secondaire (l'owner principal et le dernier owner sont protégés) | `!rmowner 123456789012345678` |
+| `serveurs` (alias `servers`, `guilds`) | Liste paginée (boutons ⏮️ ◀️ ▶️ ⏭️) des serveurs du bot : ID, nom, propriétaire, membres, bots, dates de création et d'arrivée, niveau de vérification, salons, rôles, icône | `!serveurs` |
+| `invite <id_serveur>` | Génère une invitation vers un serveur du bot (recherche automatique d'un salon où c'est possible) | `!invite 123456789012345678` |
+
 ### 🧰 Utilitaire
 
 | Commande | Description | Exemple |
 |---|---|---|
 | `help [commande]` (alias `aide`) | Liste des commandes, ou détail d'une commande (usage, alias, permissions, exemples) | `!help ban` |
 | `ping` | Latence du bot | `!ping` |
+
+## Système d'owners
+
+Système global du bot, **totalement indépendant des permissions Discord** :
+
+- **Owner principal** : `OWNER_ID` dans le `.env`. Tous les privilèges ;
+  impossible à supprimer via une commande.
+- **Owners secondaires** : stockés dans `database/data/owners.json`
+  (`{ "owners": ["id", …] }`), chargés au démarrage, sauvegardés
+  immédiatement à chaque modification via `addowner` / `rmowner`
+  (doublons refusés, dernier owner protégé).
+- **Middleware owner** : une commande déclarant `ownerOnly: true` est
+  automatiquement réservée aux owners — pour les commandes slash, les
+  commandes préfixées **et** les composants interactifs (les boutons de
+  pagination de `serveurs` revérifient l'owner). Les futures commandes
+  owner n'ont que ce champ à déclarer.
+- **Rôle décoratif « Owner NaoBot »** : créé sans aucune permission et
+  attribué automatiquement aux owners — au démarrage du bot (owners déjà
+  présents), quand un owner rejoint un serveur, quand le bot rejoint un
+  serveur, et à l'ajout d'un owner. Jamais de doublon : le rôle est
+  recherché par nom avant toute création. `rmowner` retire le rôle.
+- Les commandes owner sont masquées de la commande `help` pour les
+  non-owners, et masquées côté Discord (slash) aux membres non
+  administrateurs — le middleware reste la seule autorité.
 
 ## Système de logs
 
@@ -162,6 +197,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 ├── commands/            # Définition des commandes (1 fichier = 1 fonctionnalité,
 │   ├── administration/  # les familles proches partagent un fichier : ban+unban…)
 │   ├── moderation/
+│   ├── owner/           #   addowner+rmowner, serveurs, invite
 │   └── utility/
 ├── events/              # Écouteurs d'événements Discord
 │   ├── client/          #   ready (enregistrement des commandes slash)
@@ -171,16 +207,17 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   └── message/         #   messageCreate (préfixe) + logs des messages
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
-│   └── logging/         #   logService (logs par catégories), modLogService
+│   ├── logging/         #   logService (logs par catégories), modLogService
+│   └── owners/          #   ownerService (owners globaux + rôle décoratif)
 ├── middlewares/
-│   ├── permissions/     # Permissions auteur/bot + hiérarchie des rôles
+│   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   └── cooldowns/       # Anti-spam par utilisateur et par commande
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
 ├── config/              # Configuration (env) et permissions par commande
-├── database/            # Persistance (JSON) : avertissements, paramètres de logs
+├── database/            # Persistance (JSON) : avertissements, logs, owners
 ├── locales/             # Textes utilisateur (fr.json)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login
