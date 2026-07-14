@@ -131,7 +131,7 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 
 | Commande | Description | Exemple |
 |---|---|---|
-| `help [commande]` (alias `aide`) | Aide dynamique : catégories navigables par **menu déroulant**, permissions affichées, mise à jour automatique à chaque nouvelle commande | `!help ban` |
+| `help [commande]` (alias `aide`) | Aide dynamique paginée : une page par catégorie, navigation par **boutons** (🏠 ◀️ ▶️, désactivés aux extrémités, réservés au demandeur, retirés après 5 min), permissions affichées, total de commandes et version en pied de page — mise à jour automatique à chaque nouvelle commande | `!help ban` |
 | `ping` | Latence du bot | `!ping` |
 | `botinfo` (alias `stats`) | Serveurs, utilisateurs, commandes, uptime, mémoire, versions | `!botinfo` |
 | `uptime` | Durée de fonctionnement du bot | `!uptime` |
@@ -298,6 +298,10 @@ Chaque refus produit un message d'erreur explicite. Chaque sanction inscrit
 le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 
 ## Architecture
+
+> 📘 Le fichier [`CLAUDE.md`](CLAUDE.md) est la référence permanente des
+> règles d'architecture et de développement du projet : à lire avant toute
+> modification (humain ou agent IA).
 
 ```
 /

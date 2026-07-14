@@ -1,15 +1,21 @@
 /**
- * Commande help, entièrement dynamique :
- * - construite depuis les commandes réellement chargées (client.commands) —
- *   toute nouvelle commande apparaît automatiquement ;
- * - navigation par menu déroulant entre les catégories ;
+ * Commande help, entièrement dynamique et paginée :
+ * - une page d'accueil + une page par catégorie de commandes ;
+ * - navigation uniquement par boutons (⏪ accueil, ◀️ précédent, ▶️ suivant),
+ *   désactivés automatiquement aux extrémités ;
+ * - seule la personne ayant demandé l'aide peut naviguer (l'identifiant est
+ *   porté par le customId) ; les boutons sont retirés après expiration ;
+ * - contenu généré depuis les commandes réellement chargées : toute
+ *   nouvelle commande apparaît automatiquement (aucune liste manuelle) ;
  * - `help <commande>` : détail (usage, alias, permissions, exemples) ;
  * - les commandes réservées aux owners du bot ne sont montrées qu'aux owners.
  */
 const {
   ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  MessageFlags,
   PermissionsBitField,
-  StringSelectMenuBuilder,
 } = require('discord.js');
 const config = require('../../config/config');
 const permissionsConfig = require('../../config/permissions');
@@ -18,9 +24,30 @@ const categories = require('../../utils/constants/categories');
 const permissionLabels = require('../../utils/constants/permissionLabels');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
 const { t } = require('../../utils/helpers/i18n');
+const { version: botVersion } = require('../../package.json');
 
-/** Commandes visibles pour un utilisateur, groupées par catégorie. */
-function groupedCommands(client, userId) {
+/** Durée de vie des boutons de navigation avant retrait automatique. */
+const COMPONENTS_LIFETIME_MS = 5 * 60 * 1000;
+
+function categoryMeta(key) {
+  return categories[key] ?? { label: key, emoji: '📁' };
+}
+
+/** Libellés des permissions requises par une commande (vide si aucune). */
+function commandPermissionNames(command) {
+  const names = new PermissionsBitField(permissionsConfig[command.name]?.user ?? [])
+    .toArray()
+    .map((name) => permissionLabels[name] ?? name);
+  if (command.ownerOnly) names.unshift(t('help.ownerOnly'));
+  return names;
+}
+
+/**
+ * Pages visibles pour un utilisateur : accueil + une page par catégorie
+ * (dans l'ordre du fichier de constantes), owners filtrés.
+ * @returns {{ key: string, commands?: object[] }[]}
+ */
+function buildPages(client, userId) {
   const grouped = new Map();
   const isOwner = ownerService.isOwner(userId);
   for (const command of client.commands.values()) {
@@ -28,72 +55,108 @@ function groupedCommands(client, userId) {
     if (!grouped.has(command.category)) grouped.set(command.category, []);
     grouped.get(command.category).push(command);
   }
-  return grouped;
+
+  const orderedKeys = [
+    ...Object.keys(categories).filter((key) => grouped.has(key)),
+    ...[...grouped.keys()].filter((key) => !(key in categories)),
+  ];
+  return [
+    { key: 'home' },
+    ...orderedKeys.map((key) => ({
+      key,
+      commands: grouped.get(key).sort((a, b) => a.name.localeCompare(b.name)),
+    })),
+  ];
 }
 
-function categoryMeta(key) {
-  return categories[key] ?? { label: key, emoji: '📁' };
+function totalCommandCount(pages) {
+  return pages.reduce((sum, page) => sum + (page.commands?.length ?? 0), 0);
 }
 
-/** Menu déroulant de navigation entre les catégories visibles. */
-function categoryMenuRow(client, userId, selectedKey = null) {
-  const options = [...groupedCommands(client, userId).keys()].map((key) => {
-    const meta = categoryMeta(key);
-    return {
-      label: meta.label,
-      value: key,
-      emoji: meta.emoji,
-      default: key === selectedKey,
-    };
-  });
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId('help:category')
-    .setPlaceholder(t('help.menuPlaceholder'))
-    .addOptions(options);
-  return new ActionRowBuilder().addComponents(menu);
+function pageFooter(pageIndex, pages) {
+  return {
+    text: t('help.footer', {
+      page: pageIndex + 1,
+      pages: pages.length,
+      commands: totalCommandCount(pages),
+      version: botVersion,
+    }),
+  };
 }
 
-/** Page d'accueil : catégories et nombre de commandes. */
-function overviewEmbed(client, userId) {
-  const embed = infoEmbed(
-    t('help.title', { bot: client.user.username }),
-    t('help.description', { prefix: config.prefix }),
-  );
-  for (const [key, commands] of groupedCommands(client, userId)) {
-    const meta = categoryMeta(key);
-    embed.addFields({
-      name: `${meta.emoji} ${meta.label} (${commands.length})`,
-      value: commands
-        .map((command) => command.name)
-        .sort()
-        .map((name) => `\`${name}\``)
-        .join(' • '),
-    });
-  }
-  return embed;
-}
-
-/** Page d'une catégorie : chaque commande avec sa description. */
-function categoryEmbed(client, userId, categoryKey) {
-  const commands = groupedCommands(client, userId).get(categoryKey) ?? [];
-  const meta = categoryMeta(categoryKey);
-  const lines = commands
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((command) => `\`${config.prefix}${command.usage}\`\n${command.description}`);
+function homeEmbed(client, pages) {
+  const lines = pages
+    .slice(1)
+    .map((page, index) => {
+      const meta = categoryMeta(page.key);
+      return t('help.homeCategory', {
+        emoji: meta.emoji,
+        label: meta.label,
+        count: page.commands.length,
+        page: index + 2,
+      });
+    })
+    .join('\n');
   return infoEmbed(
-    `${meta.emoji} ${meta.label}`,
-    lines.join('\n\n') || t('help.none'),
-  ).setFooter({ text: t('help.categoryFooter', { prefix: config.prefix }) });
+    t('help.title', { bot: client.user.username }),
+    `${t('help.homeDescription', { prefix: config.prefix })}\n\n${lines}`,
+  ).setFooter(pageFooter(0, pages));
 }
 
-/** Détail d'une commande : usage, alias, permissions, exemples. */
-function commandDetailEmbed(command) {
-  const userPerms = permissionsConfig[command.name]?.user ?? [];
-  const permNames = new PermissionsBitField(userPerms)
-    .toArray()
-    .map((name) => permissionLabels[name] ?? name);
-  if (command.ownerOnly) permNames.unshift(t('help.ownerOnly'));
+function categoryPageEmbed(pages, pageIndex) {
+  const page = pages[pageIndex];
+  const meta = categoryMeta(page.key);
+  const lines = page.commands.map((command) => {
+    const perms = commandPermissionNames(command);
+    const permsSuffix = perms.length > 0 ? ` · 🔒 ${perms.join(', ')}` : '';
+    return `\`${config.prefix}${command.usage}\`\n${command.description}${permsSuffix}`;
+  });
+  return infoEmbed(`${meta.emoji} ${meta.label}`, lines.join('\n\n')).setFooter(
+    pageFooter(pageIndex, pages),
+  );
+}
 
+/** Boutons de navigation ; l'identifiant du demandeur et la page courante
+ *  sont portés par le customId (navigation sans état côté bot). */
+function navigationRow(userId, pageIndex, pageCount) {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`help:home:${userId}:${pageIndex}`)
+      .setLabel(t('help.home'))
+      .setEmoji('🏠')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(pageIndex === 0),
+    new ButtonBuilder()
+      .setCustomId(`help:prev:${userId}:${pageIndex}`)
+      .setEmoji('◀️')
+      .setStyle(ButtonStyle.Primary)
+      .setDisabled(pageIndex === 0),
+    new ButtonBuilder()
+      .setCustomId(`help:next:${userId}:${pageIndex}`)
+      .setEmoji('▶️')
+      .setStyle(ButtonStyle.Primary)
+      .setDisabled(pageIndex >= pageCount - 1),
+  );
+}
+
+/** Payload complet (embed + boutons) d'une page d'aide. */
+function buildHelpPayload(client, userId, pageIndex) {
+  const pages = buildPages(client, userId);
+  const page = Math.min(Math.max(pageIndex, 0), pages.length - 1);
+  const embed = page === 0 ? homeEmbed(client, pages) : categoryPageEmbed(pages, page);
+  return { embeds: [embed], components: [navigationRow(userId, page, pages.length)] };
+}
+
+/** Retire les boutons après expiration (gestion propre de la péremption). */
+function scheduleComponentsExpiry(message) {
+  if (!message) return;
+  setTimeout(() => {
+    message.edit({ components: [] }).catch(() => null);
+  }, COMPONENTS_LIFETIME_MS).unref?.();
+}
+
+function commandDetailEmbed(command) {
+  const permNames = commandPermissionNames(command);
   const embed = infoEmbed(`${config.prefix}${command.name}`, command.description).addFields(
     { name: t('help.usage'), value: `\`${config.prefix}${command.usage}\` ou \`/${command.name}\`` },
     {
@@ -129,10 +192,12 @@ module.exports = {
   async execute(ctx) {
     const name = ctx.options.commande?.toLowerCase();
     if (!name) {
-      return ctx.reply({
-        embeds: [overviewEmbed(ctx.client, ctx.user.id)],
-        components: [categoryMenuRow(ctx.client, ctx.user.id)],
-      });
+      // En préfixe, ctx.reply retourne le message envoyé ; en slash, il faut
+      // le récupérer pour programmer le retrait des boutons.
+      const sent = await ctx.reply(buildHelpPayload(ctx.client, ctx.user.id, 0));
+      const message = ctx.isSlash ? await ctx.interaction.fetchReply().catch(() => null) : sent;
+      scheduleComponentsExpiry(message);
+      return;
     }
 
     const command =
@@ -147,19 +212,23 @@ module.exports = {
   },
 
   /**
-   * Menu de navigation (customId "help:category") : affiche la catégorie
-   * choisie. Le filtrage owner s'applique à l'utilisateur qui clique.
+   * Boutons de navigation (customId "help:<action>:<userId>:<page>").
+   * Seul le demandeur initial peut naviguer dans sa session d'aide.
    */
   async handleComponent(interaction) {
-    if (!interaction.isStringSelectMenu() || interaction.customId !== 'help:category') return;
+    if (!interaction.isButton()) return;
+    const [, action, ownerId, rawPage] = interaction.customId.split(':');
+    if (!['home', 'prev', 'next'].includes(action)) return;
 
-    const categoryKey = interaction.values[0];
-    const { client, user } = interaction;
-    if (!groupedCommands(client, user.id).has(categoryKey)) return interaction.deferUpdate();
+    if (interaction.user.id !== ownerId) {
+      return interaction.reply({
+        embeds: [errorEmbed(t('help.notYourSession', { prefix: config.prefix }))],
+        flags: MessageFlags.Ephemeral,
+      });
+    }
 
-    return interaction.update({
-      embeds: [categoryEmbed(client, user.id, categoryKey)],
-      components: [categoryMenuRow(client, user.id, categoryKey)],
-    });
+    const current = Number.parseInt(rawPage, 10) || 0;
+    const target = action === 'home' ? 0 : action === 'prev' ? current - 1 : current + 1;
+    return interaction.update(buildHelpPayload(interaction.client, ownerId, target));
   },
 };
