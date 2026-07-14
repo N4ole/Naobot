@@ -12,6 +12,8 @@
  */
 const config = require('../../config/config');
 const logService = require('./logService');
+const statsService = require('../tracking/guildStatsService');
+const reputationService = require('../reputation/reputationService');
 
 /**
  * @param {import('discord.js').Guild} guild
@@ -19,6 +21,12 @@ const logService = require('./logService');
  * @param {string} [category] - Clé de utils/constants/logCategories
  */
 async function logModAction(guild, embed, category = 'sanctions') {
+  // Les sanctions alimentent les statistiques et la réputation du serveur.
+  if (category === 'sanctions') {
+    statsService.recordSanction(guild.id);
+    reputationService.recalculate(guild, { reason: 'auto' });
+  }
+
   if (logService.isControlled(guild.id, category)) {
     return logService.log(guild, category, embed);
   }

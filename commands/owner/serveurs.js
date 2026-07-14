@@ -9,6 +9,7 @@
  */
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { checkOwner } = require('../../middlewares/permissions/ownerCheck');
+const reputationService = require('../../services/reputation/reputationService');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
 const { t } = require('../../utils/helpers/i18n');
 
@@ -54,6 +55,11 @@ async function buildServerPage(client, targetPage) {
       },
       { name: t('owners.servers.channels'), value: String(guild.channels.cache.size), inline: true },
       { name: t('owners.servers.roles'), value: String(guild.roles.cache.size), inline: true },
+      {
+        name: t('tracking.reputation'),
+        value: reputationService.formatReputation(reputationService.getOrCompute(guild)),
+        inline: true,
+      },
     )
     .setFooter({ text: t('owners.servers.footer', { page: page + 1, total }) });
   const icon = guild.iconURL();

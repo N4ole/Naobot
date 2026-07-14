@@ -43,6 +43,12 @@ class JsonStore {
     this.save();
   }
 
+  /** @returns {Record<string, *>} copie de toutes les paires clé/valeur */
+  all() {
+    this.load();
+    return { ...this.data };
+  }
+
   save() {
     // Écriture atomique : fichier temporaire puis renommage, pour ne jamais
     // corrompre les données en cas d'arrêt brutal.

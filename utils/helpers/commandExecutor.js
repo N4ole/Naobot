@@ -8,6 +8,7 @@
 const { checkCommandPermissions } = require('../../middlewares/permissions/checkPermissions');
 const { checkCooldown } = require('../../middlewares/cooldowns/cooldowns');
 const logService = require('../../services/logging/logService');
+const statsService = require('../../services/tracking/guildStatsService');
 const { errorEmbed, logEventEmbed } = require('../embeds/embeds');
 const COLORS = require('../constants/colors');
 const { t } = require('./i18n');
@@ -44,6 +45,8 @@ async function executeCommand(ctx, command) {
 
   try {
     await command.execute(ctx);
+    // Suivi d'activité du serveur (statistiques + réputation).
+    statsService.recordCommand(ctx.guild.id);
     await logService.log(
       ctx.guild,
       'commandes',

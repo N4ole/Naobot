@@ -106,8 +106,12 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 |---|---|---|
 | `addowner <utilisateur>` | Ajoute un owner secondaire (persisté dans `database/data/owners.json`) | `!addowner @Utilisateur` |
 | `rmowner <utilisateur>` (alias `removeowner`) | Retire un owner secondaire (l'owner principal et le dernier owner sont protégés) | `!rmowner 123456789012345678` |
-| `serveurs` (alias `servers`, `guilds`) | Liste paginée (boutons ⏮️ ◀️ ▶️ ⏭️) des serveurs du bot : ID, nom, propriétaire, membres, bots, dates de création et d'arrivée, niveau de vérification, salons, rôles, icône | `!serveurs` |
+| `serveurs` (alias `servers`, `guilds`) | Liste paginée (boutons ⏮️ ◀️ ▶️ ⏭️) des serveurs du bot : ID, nom, propriétaire, membres, bots, dates de création et d'arrivée, niveau de vérification, salons, rôles, réputation, icône | `!serveurs` |
 | `invite <id_serveur>` | Génère une invitation vers un serveur du bot (recherche automatique d'un salon où c'est possible) | `!invite 123456789012345678` |
+| `rep <id_serveur>` (alias `reputation`) | Réputation détaillée d'un serveur : score, niveau, détail des critères, statistiques, historique | `!rep 123456789012345678` |
+| `rep recalc <id_serveur>` | Recalcule la réputation (lève un éventuel score manuel) | `!rep recalc 123456789012345678` |
+| `rep set <id_serveur> <score>` | Fixe manuellement le score (0-100) | `!rep set 123456789012345678 25` |
+| `rep top` / `rep flop` | Les 10 serveurs les mieux / moins bien notés | `!rep top` |
 
 ### 🧰 Utilitaire
 
@@ -139,6 +143,45 @@ Système global du bot, **totalement indépendant des permissions Discord** :
 - Les commandes owner sont masquées de la commande `help` pour les
   non-owners, et masquées côté Discord (slash) aux membres non
   administrateurs — le middleware reste la seule autorité.
+
+## Suivi des serveurs et réputation
+
+### Notifications aux owners
+
+Quand le bot **rejoint** ou **quitte** un serveur, tous les owners reçoivent
+un MP détaillé (embed conforme à la charte) : nom, ID, icône, bannière,
+propriétaire, membres/utilisateurs/bots, salons textuels/vocaux/catégories,
+rôles, niveau de vérification, dates de création et d'arrivée, totaux
+globaux (serveurs et utilisateurs touchés). Le départ ajoute : temps passé
+sur le serveur, réputation, dernière activité connue et nombre de commandes
+exécutées.
+
+### Historique persistant
+
+`database/data/guildStats.json` conserve pour chaque serveur : premier
+ajout, dernier départ, nombre d'arrivées/départs du bot, séjours courts,
+commandes exécutées, sanctions, dernière activité, événements récents
+(suppressions de salons, bans) et la réputation.
+
+### Réputation
+
+Chaque serveur possède un **score (0-100)**, un **niveau**
+(🟢 Excellent ≥ 80, 🟩 Bon ≥ 60, 🟡 Moyen ≥ 40, 🟠 Suspect ≥ 20,
+🔴 Dangereux) et un **historique des changements**. Le score part d'une
+base de 50 points, ajustée par des critères modulaires
+(`services/reputation/reputationService.js`, tableau `CRITERIA`) :
+ancienneté, nombre de membres, ratio humains/bots, niveau de vérification,
+volume de sanctions, fréquence d'utilisation du bot, suppressions massives
+de salons (24 h), bannissements massifs (24 h), départs/retours répétés du
+bot, invitations suivies de départs rapides. **Ajouter un critère = une
+entrée dans `CRITERIA`**, rien d'autre à modifier.
+
+La réputation est recalculée automatiquement lors des événements
+importants (arrivée/départ du bot, sanction, suppression de salon,
+bannissement), affichée dans `serveurs` et dans les notifications de
+départ, et administrable via `rep` (détail, recalcul, score manuel,
+classements). Un score fixé via `rep set` prime jusqu'au prochain
+`rep recalc`.
 
 ## Système de logs
 
@@ -208,7 +251,9 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
 │   ├── logging/         #   logService (logs par catégories), modLogService
-│   └── owners/          #   ownerService (owners globaux + rôle décoratif)
+│   ├── owners/          #   ownerService (owners globaux + rôle décoratif)
+│   ├── reputation/      #   reputationService (score, niveaux, critères)
+│   └── tracking/        #   guildStatsService, ownerNotifier (arrivées/départs)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   └── cooldowns/       # Anti-spam par utilisateur et par commande
@@ -217,7 +262,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
 ├── config/              # Configuration (env) et permissions par commande
-├── database/            # Persistance (JSON) : avertissements, logs, owners
+├── database/            # Persistance (JSON) : warns, logs, owners, stats serveurs
 ├── locales/             # Textes utilisateur (fr.json)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login

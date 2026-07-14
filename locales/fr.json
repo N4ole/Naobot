@@ -189,6 +189,54 @@
       "failed": "Impossible de créer une invitation sur **{guild}**."
     }
   },
+  "tracking": {
+    "joinTitle": "📥 Nouveau serveur",
+    "leaveTitle": "📤 Départ d'un serveur",
+    "humans": "Utilisateurs",
+    "textChannels": "Salons textuels",
+    "voiceChannels": "Salons vocaux",
+    "categories": "Catégories",
+    "totalGuilds": "Serveurs du bot",
+    "totalUsers": "Utilisateurs touchés",
+    "timeSpent": "Temps passé",
+    "reputation": "Réputation",
+    "lastActivity": "Dernière activité",
+    "commandsExecuted": "Commandes exécutées",
+    "none": "Aucune"
+  },
+  "reputation": {
+    "levels": {
+      "excellent": "Excellent",
+      "bon": "Bon",
+      "moyen": "Moyen",
+      "suspect": "Suspect",
+      "dangereux": "Dangereux"
+    },
+    "reasons": {
+      "auto": "recalcul automatique",
+      "manuel": "modification manuelle",
+      "recalcul": "recalcul manuel",
+      "initial": "évaluation initiale"
+    },
+    "command": {
+      "detailTitle": "Réputation — {name}",
+      "score": "Score",
+      "manual": "Override manuel",
+      "manualNote": "Score fixé manuellement par <@{by}> le <t:{at}:d> (levé par `rep recalc`).",
+      "breakdown": "Détail des critères",
+      "noBreakdown": "Bot absent du serveur : dernières valeurs enregistrées uniquement.",
+      "statsTitle": "Statistiques",
+      "statsValue": "Sanctions : **{sanctions}** · Commandes : **{commands}** · Arrivées du bot : **{joins}** · Départs : **{leaves}**",
+      "history": "Historique",
+      "recalcDone": "Réputation de **{name}** recalculée : {reputation}.",
+      "setDone": "Réputation de **{name}** fixée manuellement : {reputation}.",
+      "notTracked": "Aucune donnée pour le serveur `{id}`.",
+      "notOnServer": "Le bot n'est pas présent sur le serveur `{id}` : impossible de recalculer.",
+      "topTitle": "🏆 Serveurs les mieux notés",
+      "flopTitle": "⚠️ Serveurs les moins bien notés",
+      "empty": "Aucun serveur évalué pour le moment."
+    }
+  },
   "help": {
     "title": "Aide de {bot}",
     "description": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nUtilisez `{prefix}help <commande>` pour le détail d'une commande.",
