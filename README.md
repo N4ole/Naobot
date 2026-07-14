@@ -49,16 +49,21 @@ npm start
 
 ### Variables d'environnement (`.env`)
 
+Le `.env` ne contient **que des données statiques et globales**. Les
+configurations par serveur (salons, rôles, options activables) ne vont
+**jamais** dans le `.env` : elles sont persistées par serveur dans
+`database/data/` via les commandes du bot — le bot est conçu comme un bot
+public multi-serveurs.
+
 | Variable | Obligatoire | Description |
 |---|---|---|
-| `DISCORD_TOKEN` | ✅ | Jeton du bot |
-| `CLIENT_ID` | — | Identifiant de l'application |
+| `BOT_TOKEN` | ✅ | Jeton du bot (`DISCORD_TOKEN` reste accepté) |
+| `OWNER_ID` | ✅ | Identifiant Discord de l'**owner principal** du bot (tous les privilèges, non supprimable par commande) |
+| `CLIENT_ID` | — | Identifiant de l'application (lien d'invitation) |
 | `GUILD_ID` | — | Si défini, les commandes slash sont enregistrées sur ce serveur uniquement (instantané, idéal en développement). Sinon, enregistrement global (~1 h de propagation). |
 | `PREFIX` | — | Préfixe des commandes textuelles (défaut : `!`) |
 | `LOCALE` | — | Langue des messages (défaut : `fr`) |
-| `MODLOG_CHANNEL_ID` | — | *(hérité)* Salon des logs de modération utilisé tant que le système de logs (`logs`) n'a pas été configuré. À défaut, un salon nommé `mod-logs` est utilisé s'il existe. |
 | `MUTED_ROLE_NAME` | — | Nom du rôle de mute (défaut : `Muted`) |
-| `OWNER_ID` | — | Identifiant Discord de l'**owner principal** du bot (tous les privilèges, non supprimable par commande) |
 | `OWNER_ROLE_NAME` | — | Nom du rôle décoratif attribué aux owners (défaut : `Owner NaoBot`) |
 
 ### Invitation du bot
@@ -107,7 +112,7 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 | `addowner <utilisateur>` | Ajoute un owner secondaire (persisté dans `database/data/owners.json`) | `!addowner @Utilisateur` |
 | `rmowner <utilisateur>` (alias `removeowner`) | Retire un owner secondaire (l'owner principal et le dernier owner sont protégés) | `!rmowner 123456789012345678` |
 | `serveurs` (alias `servers`, `guilds`) | Liste paginée (boutons ⏮️ ◀️ ▶️ ⏭️) des serveurs du bot : ID, nom, propriétaire, membres, bots, dates de création et d'arrivée, niveau de vérification, salons, rôles, réputation, icône | `!serveurs` |
-| `invite <id_serveur>` | Génère une invitation vers un serveur du bot (recherche automatique d'un salon où c'est possible) | `!invite 123456789012345678` |
+| `invite <id_serveur>` | Invitation vers un serveur du bot (voir la commande `invite` de la catégorie Utilitaire : sans argument, elle donne le lien d'invitation du bot à tout le monde) | `!invite 123456789012345678` |
 | `rep <id_serveur>` (alias `reputation`) | Réputation détaillée d'un serveur : score, niveau, détail des critères, statistiques, historique | `!rep 123456789012345678` |
 | `rep recalc <id_serveur>` | Recalcule la réputation (lève un éventuel score manuel) | `!rep recalc 123456789012345678` |
 | `rep set <id_serveur> <score>` | Fixe manuellement le score (0-100) | `!rep set 123456789012345678 25` |
@@ -126,8 +131,26 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 
 | Commande | Description | Exemple |
 |---|---|---|
-| `help [commande]` (alias `aide`) | Liste des commandes, ou détail d'une commande (usage, alias, permissions, exemples) | `!help ban` |
+| `help [commande]` (alias `aide`) | Aide dynamique : catégories navigables par **menu déroulant**, permissions affichées, mise à jour automatique à chaque nouvelle commande | `!help ban` |
 | `ping` | Latence du bot | `!ping` |
+| `botinfo` (alias `stats`) | Serveurs, utilisateurs, commandes, uptime, mémoire, versions | `!botinfo` |
+| `uptime` | Durée de fonctionnement du bot | `!uptime` |
+| `serverinfo` (alias `si`) | Informations du serveur : membres, salons, rôles, émojis, boosts, vérification, réputation… | `!serverinfo` |
+| `userinfo [membre]` (alias `ui`, `whois`) | Informations d'un membre : dates, rôles, rôle le plus haut… | `!userinfo @Utilisateur` |
+| `avatar [utilisateur]` (alias `pdp`) | Avatar en grand avec lien vers l'original | `!avatar @Utilisateur` |
+| `roleinfo <rôle>` (alias `ri`) | Informations d'un rôle : couleur, position, membres, permissions clés | `!roleinfo @Modérateur` |
+| `channelinfo [salon]` (alias `ci`) | Informations d'un salon : type, sujet, mode lent, bitrate… | `!channelinfo #général` |
+| `invite [id_serveur]` | Lien d'invitation du bot (bouton, permissions pré-cochées) ; avec un ID de serveur (owners) : invitation vers ce serveur | `!invite` |
+
+### 🎉 Fun
+
+| Commande | Description | Permission | Exemple |
+|---|---|---|---|
+| `8ball <question>` (alias `boule`) | La boule magique répond | — | `!8ball Vais-je gagner ?` |
+| `coinflip` (alias `pileouface`, `pf`) | Pile ou face | — | `!coinflip` |
+| `dice [faces] [nombre]` (alias `de`, `roll`) | Lance des dés (2-1000 faces, 1-20 dés) | — | `!dice 20 3` |
+| `say <message>` | Le bot répète un message (embed, mentions neutralisées) | Gérer les messages | `!say Bienvenue !` |
+| `rps` (alias `pfc`, `chifoumi`) | Pierre-feuille-ciseaux contre le bot, avec boutons | — | `!rps` |
 
 ## Système de bump inter-serveurs
 
@@ -280,9 +303,11 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 /
 ├── commands/            # Définition des commandes (1 fichier = 1 fonctionnalité,
 │   ├── administration/  # les familles proches partagent un fichier : ban+unban…)
+│   ├── bump/            #   bumpenable, bump, bumpcount+bumpunicount
+│   ├── fun/             #   8ball, coinflip, dice, say, rps
 │   ├── moderation/
-│   ├── owner/           #   addowner+rmowner, serveurs, invite
-│   └── utility/
+│   ├── owner/           #   addowner+rmowner, serveurs, rep
+│   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
 │   ├── client/          #   ready (enregistrement des commandes slash)
 │   ├── guild/           #   logs des salons et du serveur

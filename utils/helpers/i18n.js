@@ -34,4 +34,15 @@ function t(key, vars = {}) {
   return value.replace(/\{(\w+)\}/g, (match, name) => (name in vars ? String(vars[name]) : match));
 }
 
-module.exports = { t };
+/**
+ * Variante de t() pour les clés contenant un tableau de chaînes
+ * (ex. : les réponses de la commande 8ball). Retourne [] si absent.
+ * @param {string} key
+ * @returns {string[]}
+ */
+function tList(key) {
+  const value = key.split('.').reduce((node, part) => (node && typeof node === 'object' ? node[part] : undefined), messages);
+  return Array.isArray(value) ? value : [];
+}
+
+module.exports = { t, tList };

@@ -3,8 +3,8 @@
  * quel que soit le point d'entrée (slash ou préfixe).
  *
  * Chaque commande déclare un schéma `args` :
- *   { name, type: 'member'|'user'|'string'|'integer'|'duration',
- *     required, rest?, min?, max?, description }
+ *   { name, type: 'member'|'user'|'role'|'channel'|'string'|'integer'|'duration',
+ *     required, rest?, min?, max?, choices?, description }
  *
  * - Pour les commandes slash, les options portent le même nom et sont lues
  *   depuis l'interaction.
@@ -47,6 +47,16 @@ function resolveSlashOptions(interaction, command) {
       case 'user': {
         const user = interaction.options.getUser(arg.name);
         if (user) values[arg.name] = user;
+        break;
+      }
+      case 'role': {
+        const role = interaction.options.getRole(arg.name);
+        if (role) values[arg.name] = role;
+        break;
+      }
+      case 'channel': {
+        const channel = interaction.options.getChannel(arg.name);
+        if (channel) values[arg.name] = channel;
         break;
       }
       case 'duration': {
@@ -112,6 +122,28 @@ async function resolvePrefixArgs({ guild, client }, command, tokens) {
         const user = await client.users.fetch(id).catch(() => null);
         if (!user) return { error: t('errors.userNotFound') };
         values[arg.name] = user;
+        break;
+      }
+      case 'role': {
+        // Mention <@&id>, identifiant brut, ou nom exact (sans espaces).
+        const id = token.match(/^<@&(\d{17,20})>$/)?.[1] ?? token.match(/^(\d{17,20})$/)?.[1];
+        const role =
+          (id && guild.roles.cache.get(id)) ??
+          guild.roles.cache.find((r) => r.name.toLowerCase() === token.toLowerCase()) ??
+          null;
+        if (!role) return { error: t('errors.roleNotFound') };
+        values[arg.name] = role;
+        break;
+      }
+      case 'channel': {
+        // Mention <#id>, identifiant brut, ou nom exact.
+        const id = token.match(/^<#(\d{17,20})>$/)?.[1] ?? token.match(/^(\d{17,20})$/)?.[1];
+        const channel =
+          (id && guild.channels.cache.get(id)) ??
+          guild.channels.cache.find((c) => c.name === token.replace(/^#/, '').toLowerCase()) ??
+          null;
+        if (!channel) return { error: t('errors.channelNotFound') };
+        values[arg.name] = channel;
         break;
       }
       case 'duration': {

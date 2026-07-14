@@ -11,7 +11,7 @@ const { loadEvents } = require('./utils/helpers/eventLoader');
 
 if (!config.token) {
   console.error(
-    'DISCORD_TOKEN manquant. Copiez .env.example vers .env et renseignez le jeton du bot.',
+    'BOT_TOKEN manquant. Copiez .env.example vers .env et renseignez le jeton du bot.',
   );
   process.exit(1);
 }

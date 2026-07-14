@@ -16,6 +16,8 @@
     "invalidArgs": "Arguments invalides. Utilisation : `{usage}`",
     "memberNotFound": "Ce membre est introuvable sur ce serveur.",
     "userNotFound": "Utilisateur introuvable.",
+    "roleNotFound": "Rôle introuvable (mention, identifiant ou nom exact).",
+    "channelNotFound": "Salon introuvable (mention, identifiant ou nom exact).",
     "invalidDuration": "Durée invalide. Exemples : `30s`, `10m`, `1h30m`, `2d`.",
     "unexpected": "Une erreur inattendue est survenue. Merci de réessayer.",
     "hierarchySelf": "Vous ne pouvez pas appliquer cette action à vous-même.",
@@ -294,7 +296,9 @@
   },
   "help": {
     "title": "Aide de {bot}",
-    "description": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nUtilisez `{prefix}help <commande>` pour le détail d'une commande.",
+    "description": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nNaviguez entre les catégories avec le menu ci-dessous, ou utilisez `{prefix}help <commande>` pour le détail d'une commande.",
+    "menuPlaceholder": "Choisissez une catégorie…",
+    "categoryFooter": "{prefix}help <commande> pour le détail d'une commande",
     "unknownCommand": "Commande inconnue : `{command}`.",
     "usage": "Utilisation",
     "aliases": "Alias",
@@ -306,5 +310,92 @@
   },
   "ping": {
     "response": "🏓 Pong ! Latence WebSocket : **{ping} ms**."
+  },
+  "info": {
+    "botTitle": "À propos de {bot}",
+    "servers": "Serveurs",
+    "users": "Utilisateurs",
+    "commands": "Commandes",
+    "uptime": "Uptime",
+    "memory": "Mémoire",
+    "library": "Bibliothèque",
+    "node": "Node.js",
+    "ping": "Latence",
+    "uptimeSince": "En ligne depuis **{duration}**.",
+    "id": "Identifiant",
+    "created": "Créé le",
+    "joined": "A rejoint le",
+    "roles": "Rôles",
+    "highestRole": "Rôle le plus haut",
+    "bot": "Bot",
+    "yes": "Oui",
+    "no": "Non",
+    "color": "Couleur",
+    "position": "Position",
+    "membersWithRole": "Membres",
+    "mentionable": "Mentionnable",
+    "hoisted": "Affiché séparément",
+    "keyPermissions": "Permissions clés",
+    "type": "Type",
+    "topic": "Sujet",
+    "category": "Catégorie",
+    "slowmode": "Mode lent",
+    "nsfw": "NSFW",
+    "bitrate": "Bitrate",
+    "userLimit": "Limite d'utilisateurs",
+    "boosts": "Boosts",
+    "boostTier": "niveau",
+    "emojis": "Émojis",
+    "avatarOf": "Avatar de {user}",
+    "openOriginal": "Ouvrir l'original",
+    "inviteTitle": "Inviter {bot}",
+    "inviteDescription": "Utilisez le bouton ci-dessous pour ajouter **{bot}** à votre serveur, avec les permissions nécessaires pré-cochées.",
+    "inviteButton": "Inviter le bot"
+  },
+  "fun": {
+    "eightball": {
+      "question": "Question",
+      "answer": "Réponse",
+      "answers": [
+        "Oui, sans aucun doute !",
+        "C'est certain.",
+        "Très probablement.",
+        "Les signes disent oui.",
+        "Essaie encore.",
+        "Difficile à dire…",
+        "Concentre-toi et redemande.",
+        "Mieux vaut ne pas te le dire maintenant.",
+        "N'y compte pas trop.",
+        "Ma réponse est non.",
+        "Très peu probable.",
+        "Mes sources disent non."
+      ]
+    },
+    "coinflip": {
+      "heads": "Pile",
+      "tails": "Face",
+      "result": "🪙 **{result}** !"
+    },
+    "dice": {
+      "result": "**{user}** lance {count}d{faces} : **{rolls}**\nTotal : **{total}**"
+    },
+    "say": {
+      "footer": "Demandé par {user}",
+      "sent": "Message envoyé."
+    },
+    "rps": {
+      "prompt": "Choisissez votre coup avec les boutons ci-dessous !",
+      "choices": {
+        "pierre": "Pierre",
+        "feuille": "Feuille",
+        "ciseaux": "Ciseaux"
+      },
+      "outcomes": {
+        "win": "Vous gagnez ! 🎉",
+        "lose": "Vous perdez… 😅",
+        "tie": "Égalité !"
+      },
+      "result": "Vous : {player}\nMoi : {bot}\n\n**{outcome}**"
+    }
   }
 }

@@ -34,6 +34,12 @@ function buildSlashCommand(command) {
       case 'user':
         builder.addUserOption(base);
         break;
+      case 'role':
+        builder.addRoleOption(base);
+        break;
+      case 'channel':
+        builder.addChannelOption(base);
+        break;
       case 'integer':
         builder.addIntegerOption((option) => {
           base(option);

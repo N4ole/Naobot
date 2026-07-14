@@ -65,4 +65,8 @@ module.exports = {
     user: [],
     bot: [PermissionFlagsBits.CreateInstantInvite],
   },
+  say: {
+    user: [PermissionFlagsBits.ManageMessages],
+    bot: [],
+  },
 };

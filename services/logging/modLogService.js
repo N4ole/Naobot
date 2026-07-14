@@ -31,15 +31,11 @@ async function logModAction(guild, embed, category = 'sanctions') {
     return logService.log(guild, category, embed);
   }
 
-  let channel = null;
-  if (config.modLogChannelId) {
-    channel = guild.channels.cache.get(config.modLogChannelId) ?? null;
-  }
-  if (!channel) {
-    channel = guild.channels.cache.find(
-      (c) => c.name === config.modLogChannelName && c.isTextBased(),
-    );
-  }
+  // Repli historique par nom de salon uniquement (aucun identifiant de
+  // salon dans le .env : le bot est multi-serveurs).
+  const channel = guild.channels.cache.find(
+    (c) => c.name === config.modLogChannelName && c.isTextBased(),
+  );
   if (!channel?.isTextBased()) return;
 
   await channel.send({ embeds: [embed] }).catch(() => null);
