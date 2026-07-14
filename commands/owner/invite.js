@@ -3,8 +3,8 @@
  * présent — réservée aux owners. Cherche automatiquement un salon textuel
  * où le bot possède la permission « Créer une invitation ».
  */
-const { PermissionFlagsBits } = require('discord.js');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
+const { findInvitableChannel } = require('../../utils/helpers/discordUtils');
 const { t } = require('../../utils/helpers/i18n');
 
 module.exports = {
@@ -28,16 +28,7 @@ module.exports = {
       });
     }
 
-    const me = guild.members.me;
-    const channel = guild.channels.cache
-      .filter(
-        (c) =>
-          c.isTextBased() &&
-          !c.isThread() &&
-          me.permissionsIn(c).has(PermissionFlagsBits.CreateInstantInvite),
-      )
-      .sort((a, b) => a.rawPosition - b.rawPosition)
-      .first();
+    const channel = findInvitableChannel(guild);
     if (!channel) {
       return ctx.reply({
         embeds: [errorEmbed(t('owners.invite.noChannel', { guild: guild.name }))],
