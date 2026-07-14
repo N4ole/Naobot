@@ -1,0 +1,110 @@
+{
+  "common": {
+    "noReason": "Aucune raison fournie",
+    "member": "Membre",
+    "moderator": "Modérateur",
+    "reason": "Raison",
+    "duration": "Durée",
+    "channel": "Salon",
+    "warnCount": "Avertissements"
+  },
+  "errors": {
+    "guildOnly": "Cette commande ne peut être utilisée que sur un serveur.",
+    "missingUserPerms": "Vous n'avez pas les permissions requises : **{perms}**.",
+    "missingBotPerms": "Il me manque les permissions suivantes : **{perms}**.",
+    "cooldown": "Veuillez patienter **{seconds}s** avant de réutiliser cette commande.",
+    "invalidArgs": "Arguments invalides. Utilisation : `{usage}`",
+    "memberNotFound": "Ce membre est introuvable sur ce serveur.",
+    "userNotFound": "Utilisateur introuvable.",
+    "invalidDuration": "Durée invalide. Exemples : `30s`, `10m`, `1h30m`, `2d`.",
+    "unexpected": "Une erreur inattendue est survenue. Merci de réessayer.",
+    "hierarchySelf": "Vous ne pouvez pas appliquer cette action à vous-même.",
+    "hierarchyBot": "Je ne peux pas m'appliquer cette action à moi-même.",
+    "hierarchyOwner": "Impossible de sanctionner le propriétaire du serveur.",
+    "hierarchyUserAbove": "Vous ne pouvez pas sanctionner ce membre : son rôle est supérieur ou égal au vôtre.",
+    "hierarchyBotAbove": "Je ne peux pas sanctionner ce membre : son rôle est supérieur ou égal au mien."
+  },
+  "moderation": {
+    "dm": {
+      "ban": "Vous avez été **banni** du serveur **{guild}**.\nRaison : {reason}",
+      "kick": "Vous avez été **expulsé** du serveur **{guild}**.\nRaison : {reason}",
+      "mute": "Vous avez été **rendu muet** sur le serveur **{guild}**.\nRaison : {reason}",
+      "unmute": "Vous n'êtes **plus muet** sur le serveur **{guild}**.",
+      "timeout": "Vous avez été **exclu temporairement** ({duration}) du serveur **{guild}**.\nRaison : {reason}",
+      "untimeout": "Votre exclusion temporaire sur le serveur **{guild}** a été levée.",
+      "warn": "Vous avez reçu un **avertissement** sur le serveur **{guild}**.\nRaison : {reason}"
+    },
+    "ban": {
+      "success": "**{user}** a été banni. Raison : {reason}",
+      "failed": "Impossible de bannir cet utilisateur.",
+      "notBannable": "Je ne peux pas bannir ce membre (permissions ou hiérarchie insuffisantes).",
+      "logAction": "Bannissement"
+    },
+    "unban": {
+      "success": "**{user}** a été débanni.",
+      "notBanned": "Cet utilisateur n'est pas banni de ce serveur.",
+      "failed": "Impossible de débannir cet utilisateur.",
+      "logAction": "Débannissement"
+    },
+    "kick": {
+      "success": "**{user}** a été expulsé. Raison : {reason}",
+      "failed": "Impossible d'expulser ce membre.",
+      "notKickable": "Je ne peux pas expulser ce membre (permissions ou hiérarchie insuffisantes).",
+      "logAction": "Expulsion"
+    },
+    "mute": {
+      "success": "**{user}** est désormais muet. Raison : {reason}",
+      "alreadyMuted": "Ce membre est déjà muet.",
+      "roleFailed": "Impossible de créer ou d'attribuer le rôle de mute.",
+      "logAction": "Mute"
+    },
+    "unmute": {
+      "success": "**{user}** n'est plus muet.",
+      "notMuted": "Ce membre n'est pas muet.",
+      "failed": "Impossible de retirer le rôle de mute.",
+      "logAction": "Unmute"
+    },
+    "timeout": {
+      "success": "**{user}** est exclu temporairement pendant **{duration}**. Raison : {reason}",
+      "tooLong": "La durée maximale d'une exclusion temporaire est de **28 jours**.",
+      "notModeratable": "Je ne peux pas exclure temporairement ce membre (permissions ou hiérarchie insuffisantes).",
+      "failed": "Impossible d'appliquer l'exclusion temporaire.",
+      "logAction": "Exclusion temporaire"
+    },
+    "untimeout": {
+      "success": "L'exclusion temporaire de **{user}** a été levée.",
+      "notTimedOut": "Ce membre n'est pas exclu temporairement.",
+      "failed": "Impossible de lever l'exclusion temporaire.",
+      "logAction": "Levée d'exclusion temporaire"
+    },
+    "warn": {
+      "success": "**{user}** a reçu un avertissement (total : **{count}**). Raison : {reason}",
+      "logAction": "Avertissement"
+    },
+    "warnings": {
+      "none": "**{user}** n'a aucun avertissement.",
+      "title": "Avertissements de {user} ({count})",
+      "entry": "`{id}` • <t:{timestamp}:d> • par <@{moderatorId}>\n{reason}"
+    },
+    "purge": {
+      "success": "**{count}** message(s) supprimé(s).",
+      "partial": "**{count}** message(s) supprimé(s). Les messages de plus de 14 jours ne peuvent pas être supprimés en masse (limite Discord).",
+      "failed": "Impossible de supprimer les messages.",
+      "logAction": "Purge de messages"
+    }
+  },
+  "help": {
+    "title": "Aide de {bot}",
+    "description": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nUtilisez `{prefix}help <commande>` pour le détail d'une commande.",
+    "unknownCommand": "Commande inconnue : `{command}`.",
+    "usage": "Utilisation",
+    "aliases": "Alias",
+    "examples": "Exemples",
+    "permissions": "Permissions requises",
+    "cooldown": "Cooldown",
+    "none": "Aucune"
+  },
+  "ping": {
+    "response": "🏓 Pong ! Latence WebSocket : **{ping} ms**."
+  }
+}

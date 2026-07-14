@@ -1,0 +1,12 @@
+# Dépendances
+node_modules/
+
+# Secrets
+.env
+
+# Données locales (base JSON)
+database/data/*.json
+
+# Divers
+*.log
+.DS_Store
