@@ -1,7 +1,8 @@
 /**
  * Chargeur d'événements : parcourt récursivement events/<famille>/ et
  * enregistre chaque écouteur sur le client. Chaque fichier exporte
- * { name, once?, execute }.
+ * { name, once?, execute } ou un tableau d'écouteurs de la même famille
+ * (ex. : channelCreate + channelUpdate + channelDelete).
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -17,13 +18,17 @@ function loadEvents(client) {
     if (!fs.statSync(familyDir).isDirectory()) continue;
 
     for (const file of fs.readdirSync(familyDir).filter((f) => f.endsWith('.js'))) {
-      const event = require(path.join(familyDir, file));
-      if (!event?.name || typeof event.execute !== 'function') {
-        console.warn(`[events] Fichier ignoré (name/execute manquant) : ${family}/${file}`);
-        continue;
+      const exported = require(path.join(familyDir, file));
+      const definitions = Array.isArray(exported) ? exported : [exported];
+
+      for (const event of definitions) {
+        if (!event?.name || typeof event.execute !== 'function') {
+          console.warn(`[events] Fichier ignoré (name/execute manquant) : ${family}/${file}`);
+          continue;
+        }
+        client[event.once ? 'once' : 'on'](event.name, (...args) => event.execute(...args));
+        count += 1;
       }
-      client[event.once ? 'once' : 'on'](event.name, (...args) => event.execute(...args));
-      count += 1;
     }
   }
 

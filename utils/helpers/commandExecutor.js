@@ -1,12 +1,28 @@
 /**
  * Pipeline d'exécution commun aux deux points d'entrée (slash et préfixe) :
- * middlewares (permissions puis cooldown), puis logique métier de la commande.
- * Toute nouvelle vérification transverse s'ajoute ici, une seule fois.
+ * middlewares (permissions puis cooldown), puis logique métier de la
+ * commande, puis consignation dans le système de logs (catégories
+ * « commandes » et « erreurs »). Toute nouvelle vérification transverse
+ * s'ajoute ici, une seule fois.
  */
 const { checkCommandPermissions } = require('../../middlewares/permissions/checkPermissions');
 const { checkCooldown } = require('../../middlewares/cooldowns/cooldowns');
-const { errorEmbed } = require('../embeds/embeds');
+const logService = require('../../services/logging/logService');
+const { errorEmbed, logEventEmbed } = require('../embeds/embeds');
+const COLORS = require('../constants/colors');
 const { t } = require('./i18n');
+
+function commandLogFields(ctx, command) {
+  return [
+    { name: t('logs.events.command'), value: `\`${command.name}\``, inline: true },
+    { name: t('common.channel'), value: `${ctx.channel}`, inline: true },
+    {
+      name: t('logs.events.source'),
+      value: ctx.isSlash ? t('logs.events.sourceSlash') : t('logs.events.sourcePrefix'),
+      inline: true,
+    },
+  ];
+}
 
 /**
  * @param {import('./commandContext').CommandContext} ctx
@@ -28,8 +44,33 @@ async function executeCommand(ctx, command) {
 
   try {
     await command.execute(ctx);
+    await logService.log(
+      ctx.guild,
+      'commandes',
+      logEventEmbed({
+        title: t('logs.events.commandExecuted'),
+        color: COLORS.LOG_NEUTRAL,
+        user: ctx.user,
+        fields: commandLogFields(ctx, command),
+      }),
+    );
   } catch (error) {
     console.error(`[commands] Erreur dans "${command.name}" :`, error);
+    await logService
+      .log(
+        ctx.guild,
+        'erreurs',
+        logEventEmbed({
+          title: t('logs.events.commandError'),
+          color: COLORS.ERROR,
+          user: ctx.user,
+          fields: [
+            ...commandLogFields(ctx, command),
+            { name: t('logs.events.error'), value: `\`\`\`${String(error).slice(0, 1000)}\`\`\`` },
+          ],
+        }),
+      )
+      .catch(() => null);
     await ctx
       .reply({ embeds: [errorEmbed(t('errors.unexpected'))], ephemeral: true })
       .catch(() => null);

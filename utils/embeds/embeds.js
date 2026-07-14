@@ -45,4 +45,23 @@ function modLogEmbed({ action, target, moderator, reason, extraFields = [] }) {
   return embed;
 }
 
-module.exports = { successEmbed, errorEmbed, infoEmbed, modLogEmbed };
+/**
+ * Embed standardisé pour les salons du système de logs par catégories :
+ * même charte pour tous les événements (couleur selon la nature de
+ * l'événement, horodatage, auteur éventuel).
+ * @param {object} params
+ * @param {string} params.title
+ * @param {number} [params.color]
+ * @param {string} [params.description]
+ * @param {{name: string, value: string, inline?: boolean}[]} [params.fields]
+ * @param {import('discord.js').User} [params.user] - Utilisateur concerné (affiché en auteur)
+ */
+function logEventEmbed({ title, color = COLORS.LOG_NEUTRAL, description = null, fields = [], user = null }) {
+  const embed = new EmbedBuilder().setColor(color).setTitle(title).setTimestamp();
+  if (description) embed.setDescription(description);
+  if (fields.length > 0) embed.addFields(fields);
+  if (user) embed.setAuthor({ name: user.tag, iconURL: user.displayAvatarURL() });
+  return embed;
+}
+
+module.exports = { successEmbed, errorEmbed, infoEmbed, modLogEmbed, logEventEmbed };

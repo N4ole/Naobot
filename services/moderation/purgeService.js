@@ -31,6 +31,7 @@ async function purgeMessages(ctx, count) {
         { name: 'Messages', value: String(deleted.size), inline: true },
       ],
     }),
+    'moderation',
   );
 
   const key = deleted.size < count ? 'moderation.purge.partial' : 'moderation.purge.success';

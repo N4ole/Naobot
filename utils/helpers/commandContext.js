@@ -39,19 +39,38 @@ class CommandContext {
   /**
    * Répond à l'utilisateur, quel que soit le point d'entrée.
    * `ephemeral` n'a d'effet que pour les commandes slash (concept inexistant
-   * pour les messages classiques).
-   * @param {{ content?: string, embeds?: import('discord.js').EmbedBuilder[], ephemeral?: boolean }} payload
+   * pour les messages classiques). `components` accepte les lignes de
+   * composants interactifs (boutons, menus…).
+   * @param {{ content?: string, embeds?: import('discord.js').EmbedBuilder[], components?: import('discord.js').ActionRowBuilder[], ephemeral?: boolean }} payload
    */
-  async reply({ content, embeds, ephemeral = false } = {}) {
+  async reply({ content, embeds, components, ephemeral = false } = {}) {
     if (this.interaction) {
-      const payload = { content, embeds };
+      const payload = { content, embeds, components };
       if (ephemeral) payload.flags = MessageFlags.Ephemeral;
-      if (this.interaction.deferred || this.interaction.replied) {
+      if (this.interaction.deferred && !this.interaction.replied) {
+        return this.interaction.editReply(payload);
+      }
+      if (this.interaction.replied) {
         return this.interaction.followUp(payload);
       }
       return this.interaction.reply(payload);
     }
-    return this.message.reply({ content, embeds, allowedMentions: { repliedUser: false } });
+    return this.message.reply({ content, embeds, components, allowedMentions: { repliedUser: false } });
+  }
+
+  /**
+   * Signale que la réponse va prendre du temps (ex. : création de plusieurs
+   * salons). En slash : diffère la réponse (évite l'expiration des 3 s) ;
+   * en préfixe : affiche l'indicateur de saisie.
+   */
+  async defer() {
+    if (this.interaction) {
+      if (!this.interaction.deferred && !this.interaction.replied) {
+        await this.interaction.deferReply();
+      }
+      return;
+    }
+    await this.channel.sendTyping().catch(() => null);
   }
 }
 

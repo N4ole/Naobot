@@ -42,7 +42,13 @@ function buildSlashCommand(command) {
       // par le parseur d'arguments.
       case 'duration':
       default:
-        builder.addStringOption(base);
+        builder.addStringOption((option) => {
+          base(option);
+          if (arg.choices?.length) {
+            option.addChoices(...arg.choices.map((choice) => ({ name: choice, value: choice })));
+          }
+          return option;
+        });
     }
   }
   return builder.toJSON();

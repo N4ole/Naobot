@@ -15,6 +15,22 @@ const { t } = require('../../utils/helpers/i18n');
 module.exports = {
   name: Events.InteractionCreate,
   async execute(interaction) {
+    // Composants interactifs (boutons, menus…) : le préfixe du customId
+    // ("logs:...") désigne la commande propriétaire, qui expose
+    // handleComponent(interaction). Aucun registre central à maintenir.
+    if (interaction.isButton() || interaction.isAnySelectMenu()) {
+      const [ownerName] = interaction.customId.split(':');
+      const owner = interaction.client.commands.get(ownerName);
+      if (owner?.handleComponent) {
+        try {
+          await owner.handleComponent(interaction);
+        } catch (error) {
+          console.error(`[components] Erreur dans "${interaction.customId}" :`, error);
+        }
+      }
+      return;
+    }
+
     if (!interaction.isChatInputCommand()) return;
 
     const command = interaction.client.commands.get(interaction.commandName);

@@ -53,4 +53,8 @@ module.exports = {
     user: [PermissionFlagsBits.ManageMessages],
     bot: [PermissionFlagsBits.ManageMessages],
   },
+  logs: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [PermissionFlagsBits.ManageChannels],
+  },
 };

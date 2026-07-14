@@ -16,10 +16,16 @@ modulaire stricte pensée pour être maintenue et étendue facilement.
 - **Intégration Discord native** : timeouts natifs, bans natifs, suppression
   en masse native, raisons inscrites dans les logs d'audit Discord,
   `default_member_permissions` sur les commandes slash.
-- **Logs de modération** : chaque sanction est consignée dans un salon dédié.
+- **Système de logs modulaire** : 10 catégories activables indépendamment
+  (sanctions, messages supprimés/modifiés, arrivées/départs, rôles, salons,
+  serveur, commandes, erreurs…), salons créés automatiquement, paramètres
+  persistants, panneau d'administration interactif (menu + boutons).
 - **Notification par MP** : le membre sanctionné est prévenu en message privé
   (silencieusement ignoré si ses MP sont fermés).
 - **Cooldowns** anti-spam par commande et par utilisateur.
+- **Charte graphique unifiée** : toutes les réponses passent par les
+  constructeurs d'embeds centralisés (`utils/embeds/`), avec composants
+  interactifs (boutons, menus) lorsque c'est pertinent.
 - **Textes centralisés** dans `locales/fr.json` (traduction facile).
 
 ## Installation
@@ -50,7 +56,7 @@ npm start
 | `GUILD_ID` | — | Si défini, les commandes slash sont enregistrées sur ce serveur uniquement (instantané, idéal en développement). Sinon, enregistrement global (~1 h de propagation). |
 | `PREFIX` | — | Préfixe des commandes textuelles (défaut : `!`) |
 | `LOCALE` | — | Langue des messages (défaut : `fr`) |
-| `MODLOG_CHANNEL_ID` | — | Salon des logs de modération. À défaut, un salon nommé `mod-logs` est utilisé s'il existe. |
+| `MODLOG_CHANNEL_ID` | — | *(hérité)* Salon des logs de modération utilisé tant que le système de logs (`logs`) n'a pas été configuré. À défaut, un salon nommé `mod-logs` est utilisé s'il existe. |
 | `MUTED_ROLE_NAME` | — | Nom du rôle de mute (défaut : `Muted`) |
 
 ### Invitation du bot
@@ -83,12 +89,56 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 > `timeout` utilise l'exclusion temporaire **native** de Discord (plafonnée à
 > 28 jours par l'API). Pour une sanction temporaire, préférer `timeout`.
 
+### ⚙️ Administration
+
+| Commande | Description | Permission requise (auteur) | Exemple |
+|---|---|---|---|
+| `logs` | Panneau interactif de configuration des logs (menu de catégories + boutons « Tout activer » / « Tout désactiver ») | Gérer le serveur | `!logs` |
+| `logs statut` | État des catégories de logs | Gérer le serveur | `!logs statut` |
+| `logs activer <catégories…\|tout>` | Active une, plusieurs ou toutes les catégories (crée les salons manquants) | Gérer le serveur | `!logs activer sanctions moderation` |
+| `logs desactiver <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs desactiver tout` |
+
 ### 🧰 Utilitaire
 
 | Commande | Description | Exemple |
 |---|---|---|
 | `help [commande]` (alias `aide`) | Liste des commandes, ou détail d'une commande (usage, alias, permissions, exemples) | `!help ban` |
 | `ping` | Latence du bot | `!ping` |
+
+## Système de logs
+
+Le système de logs est organisé en **catégories indépendantes**, persistées
+par serveur (`database/data/logSettings.json`) :
+
+| Clé | Contenu | Salon |
+|---|---|---|
+| `moderation` | Actions de modération générales (purge…) | `#logs-moderation` |
+| `sanctions` | Sanctions via le bot (ban, kick, mute, timeout, warn…) | `#logs-sanctions` |
+| `messages-supprimes` | Messages supprimés (unitaires et en masse) | `#logs-messages` |
+| `messages-modifies` | Messages modifiés (avant / après) | `#logs-messages` |
+| `arrivees-departs` | Arrivées et départs de membres | `#logs-arrivees-departs` |
+| `roles` | Rôles ajoutés / retirés aux membres | `#logs-roles` |
+| `salons` | Salons créés, modifiés, supprimés | `#logs-salons` |
+| `serveur` | Événements du serveur (nom, icône, émojis…) | `#logs-serveur` |
+| `commandes` | Commandes du bot exécutées | `#logs-commandes` |
+| `erreurs` | Erreurs du bot pendant les commandes | `#logs-erreurs` |
+
+À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
+Discord `📁 Logs` et les salons manquants (privés : invisibles pour
+`@everyone`) ; les salons existants sont **réutilisés** — jamais de doublon.
+La désactivation conserve les salons.
+
+### Ajouter une catégorie de logs
+
+1. Ajouter une entrée dans `utils/constants/logCategories.js` (label,
+   description, nom de salon, émoji).
+2. Appeler `logService.log(guild, '<clé>', embed)` depuis l'événement ou le
+   service concerné (embed construit avec `logEventEmbed` pour respecter la
+   charte graphique).
+
+Rien d'autre à modifier : la commande `logs`, le panneau interactif, la
+persistance et la création de salons prennent la nouvelle catégorie en
+compte automatiquement.
 
 ## Permissions et sécurité
 
@@ -110,24 +160,27 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 ```
 /
 ├── commands/            # Définition des commandes (1 fichier = 1 fonctionnalité,
-│   ├── moderation/      # les familles proches partagent un fichier : ban+unban…)
+│   ├── administration/  # les familles proches partagent un fichier : ban+unban…)
+│   ├── moderation/
 │   └── utility/
 ├── events/              # Écouteurs d'événements Discord
 │   ├── client/          #   ready (enregistrement des commandes slash)
-│   ├── interaction/     #   interactionCreate (entrée des commandes slash)
-│   └── message/         #   messageCreate (entrée des commandes préfixées)
+│   ├── guild/           #   logs des salons et du serveur
+│   ├── interaction/     #   interactionCreate (slash + composants interactifs)
+│   ├── member/          #   logs des arrivées/départs et des rôles
+│   └── message/         #   messageCreate (préfixe) + logs des messages
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
-│   └── logging/         #   modLogService (salon de logs)
+│   └── logging/         #   logService (logs par catégories), modLogService
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot + hiérarchie des rôles
 │   └── cooldowns/       # Anti-spam par utilisateur et par commande
 ├── utils/
-│   ├── constants/       # Couleurs, limites, catégories, libellés de permissions
+│   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
-│   └── embeds/          # Constructeurs d'embeds homogènes
+│   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
 ├── config/              # Configuration (env) et permissions par commande
-├── database/            # Persistance (JSON) : avertissements
+├── database/            # Persistance (JSON) : avertissements, paramètres de logs
 ├── locales/             # Textes utilisateur (fr.json)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login

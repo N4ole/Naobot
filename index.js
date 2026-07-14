@@ -4,7 +4,7 @@
  * événements, puis se connecte. Toute la logique vit dans les modules
  * dédiés (commands/, events/, services/, middlewares/, utils/).
  */
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const config = require('./config/config');
 const { loadCommands } = require('./utils/helpers/commandLoader');
 const { loadEvents } = require('./utils/helpers/eventLoader');
@@ -22,10 +22,15 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildModeration,
+    // Événements liés aux émojis (catégorie de logs « serveur »).
+    GatewayIntentBits.GuildExpressions,
     // Nécessaire aux commandes préfixées (lecture du contenu des messages).
     // Doit aussi être activé dans le Discord Developer Portal (onglet Bot).
     GatewayIntentBits.MessageContent,
   ],
+  // Permet de recevoir les suppressions/modifications de messages qui ne
+  // sont pas en cache (le contenu reste alors indisponible dans les logs).
+  partials: [Partials.Message],
 });
 
 loadCommands(client);
