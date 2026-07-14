@@ -237,6 +237,61 @@
       "empty": "Aucun serveur évalué pour le moment."
     }
   },
+  "bump": {
+    "enable": {
+      "enabledTitle": "📣 Système de bump activé",
+      "enabledDescription": "Sélectionnez ci-dessous le salon qui recevra les publicités des autres serveurs participants.",
+      "channelPlaceholder": "Salon de réception des bumps…",
+      "channelSet": "Salon de réception des bumps configuré : {channel}.",
+      "channelMissingPerms": "Il me manque des permissions dans {channel} : **{perms}**.",
+      "disabled": "Système de bump désactivé : le serveur n'envoie ni ne reçoit plus de publicités. Les statistiques sont conservées.",
+      "noPermission": "Vous devez posséder la permission **Gérer le serveur** pour configurer les bumps."
+    },
+    "command": {
+      "notEnabled": "Le système de bump est désactivé sur ce serveur. Un administrateur peut l'activer avec `{prefix}bumpenable on`.",
+      "noChannel": "Aucun salon de réception valide n'est configuré (ou il me manque des permissions dessus). Reconfigurez avec `{prefix}bumpenable on`.",
+      "cooldown": "Le serveur doit encore attendre **{remaining}** avant le prochain bump (cooldown global de 6 h par serveur).",
+      "inviteFailed": "Impossible de créer une invitation valide pour ce serveur (permission « Créer une invitation » requise).",
+      "success": "📣 Publicité envoyée vers **{sent}** serveur(s) !",
+      "successFailures": "⚠️ {failures} envoi(s) ont échoué (salons invalides ou permissions manquantes).",
+      "totalBumps": "Bumps du serveur : **{count}**. Prochain bump possible {next}."
+    },
+    "advert": {
+      "defaultDescription": "Découvrez ce serveur et rejoignez sa communauté !",
+      "invitation": "Invitation",
+      "totalBumps": "Bumps",
+      "join": "Rejoindre {name}",
+      "footer": "Bump n°{count} • par {user}"
+    },
+    "count": {
+      "title": "Bumps de {user}",
+      "total": "Total",
+      "globalRank": "Classement global",
+      "serverRank": "Classement serveur",
+      "lastBump": "Dernier bump",
+      "never": "Jamais",
+      "unranked": "—"
+    },
+    "unicount": {
+      "title": "Bumps du serveur {guild}",
+      "total": "Total",
+      "rank": "Classement",
+      "lastBump": "Dernier bump",
+      "bumpers": "Membres ayant bumpé"
+    },
+    "logs": {
+      "enabled": "Système de bump activé",
+      "disabled": "Système de bump désactivé",
+      "channelChanged": "Salon de bump modifié",
+      "bumped": "Bump effectué",
+      "bumpError": "Erreur de bump",
+      "inviteExpiry": "Invitation avec expiration",
+      "sentTo": "Serveurs atteints",
+      "failures": "Échecs",
+      "invitation": "Invitation",
+      "expiresAt": "Expire"
+    }
+  },
   "help": {
     "title": "Aide de {bot}",
     "description": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nUtilisez `{prefix}help <commande>` pour le détail d'une commande.",

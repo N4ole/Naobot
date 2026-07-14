@@ -57,4 +57,12 @@ module.exports = {
     user: [PermissionFlagsBits.ManageGuild],
     bot: [PermissionFlagsBits.ManageChannels],
   },
+  bumpenable: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
+  },
+  bump: {
+    user: [],
+    bot: [PermissionFlagsBits.CreateInstantInvite],
+  },
 };

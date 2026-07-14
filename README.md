@@ -113,12 +113,52 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 | `rep set <id_serveur> <score>` | Fixe manuellement le score (0-100) | `!rep set 123456789012345678 25` |
 | `rep top` / `rep flop` | Les 10 serveurs les mieux / moins bien notés | `!rep top` |
 
+### 📣 Bump
+
+| Commande | Description | Permission requise (auteur) | Exemple |
+|---|---|---|---|
+| `bumpenable <on\|off>` | Active le système (choix du salon de réception via un sélecteur Discord) ou le désactive (statistiques conservées) | Gérer le serveur | `!bumpenable on` |
+| `bump` | Publie la publicité du serveur vers tous les serveurs participants (cooldown global de 6 h **par serveur**) | — | `!bump` |
+| `bumpcount [utilisateur]` | Bumps d'un utilisateur : total, classement global, classement serveur, dernier bump | — | `!bumpcount @Utilisateur` |
+| `bumpunicount` | Bumps du serveur : total, classement inter-serveurs, dernier bump, réputation, membres ayant bumpé | — | `!bumpunicount` |
+
 ### 🧰 Utilitaire
 
 | Commande | Description | Exemple |
 |---|---|---|
 | `help [commande]` (alias `aide`) | Liste des commandes, ou détail d'une commande (usage, alias, permissions, exemples) | `!help ban` |
 | `ping` | Latence du bot | `!ping` |
+
+## Système de bump inter-serveurs
+
+Par défaut **désactivé** sur chaque serveur. Seuls les serveurs activés
+envoient **et** reçoivent les publicités ; les autres sont ignorés
+silencieusement.
+
+- **Activation** : `bumpenable on` active le système puis propose un
+  **sélecteur de salons Discord natif** pour choisir le salon de réception
+  (permissions du bot vérifiées : voir/écrire/intégrer des liens/créer une
+  invitation). `bumpenable off` coupe l'envoi et la réception mais conserve
+  toutes les statistiques.
+- **Bump** : n'importe quel membre peut lancer `bump`. Le bot crée une
+  invitation valide (permanente si possible, sinon 7 jours — les
+  expirations sont tracées dans les logs), puis publie dans les salons de
+  tous les serveurs participants (jamais deux fois le même salon) un
+  message contenant : l'URL d'invitation (l'embed d'invitation **natif**
+  de Discord), la publicité en embed (nom, icône, bannière, membres,
+  utilisateurs, bots, date de création, réputation, description,
+  invitation, total de bumps) et un bouton **Rejoindre**.
+- **Cooldown** : 6 h **par serveur** (pas par utilisateur), persistant.
+- **Persistance** (`database/data/bumps.json`) : activation, salon,
+  compteurs serveur et par utilisateur, dates, historique des bumps.
+- **Logs** : catégorie dédiée `bumps` (activation, désactivation,
+  changement de salon, bump effectué avec succès/échecs, erreurs,
+  invitations avec expiration).
+- **Extensible** : la sélection des destinataires (`collectTargets`) et le
+  contenu de la publicité (`buildAdvert`) sont isolés dans
+  `services/bump/bumpService.js` — points d'entrée prévus pour de futurs
+  classements mondiaux, récompenses, badges, boosts de visibilité ou
+  filtres par langue/catégorie.
 
 ## Système d'owners
 
@@ -200,6 +240,7 @@ par serveur (`database/data/logSettings.json`) :
 | `serveur` | Événements du serveur (nom, icône, émojis…) | `#logs-serveur` |
 | `commandes` | Commandes du bot exécutées | `#logs-commandes` |
 | `erreurs` | Erreurs du bot pendant les commandes | `#logs-erreurs` |
+| `bumps` | Système de bump (activation, salon, bumps, erreurs, invitations) | `#logs-bumps` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -253,7 +294,8 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── logging/         #   logService (logs par catégories), modLogService
 │   ├── owners/          #   ownerService (owners globaux + rôle décoratif)
 │   ├── reputation/      #   reputationService (score, niveaux, critères)
-│   └── tracking/        #   guildStatsService, ownerNotifier (arrivées/départs)
+│   ├── tracking/        #   guildStatsService, ownerNotifier (arrivées/départs)
+│   └── bump/            #   bumpService (bump inter-serveurs)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   └── cooldowns/       # Anti-spam par utilisateur et par commande
@@ -262,7 +304,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
 ├── config/              # Configuration (env) et permissions par commande
-├── database/            # Persistance (JSON) : warns, logs, owners, stats serveurs
+├── database/            # Persistance (JSON) : warns, logs, owners, stats, bumps
 ├── locales/             # Textes utilisateur (fr.json)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login

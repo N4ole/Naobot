@@ -74,4 +74,10 @@ module.exports = {
     channelName: 'logs-erreurs',
     emoji: '🐞',
   },
+  bumps: {
+    label: 'Bumps',
+    description: 'Système de bump : activation, salon, bumps envoyés, erreurs, invitations',
+    channelName: 'logs-bumps',
+    emoji: '📣',
+  },
 };

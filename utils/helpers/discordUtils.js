@@ -1,4 +1,5 @@
 /** Petits utilitaires Discord partagés par les services et les commandes. */
+const { PermissionFlagsBits } = require('discord.js');
 const { MAX_AUDIT_REASON_LENGTH } = require('../constants/limits');
 const { successEmbed, errorEmbed } = require('../embeds/embeds');
 
@@ -36,4 +37,24 @@ function replyResult(ctx, result) {
   });
 }
 
-module.exports = { auditReason, dmUser, replyResult };
+/**
+ * Premier salon textuel (par position) où le bot possède la permission
+ * « Créer une invitation », ou null.
+ * @param {import('discord.js').Guild} guild
+ */
+function findInvitableChannel(guild) {
+  const me = guild.members.me;
+  return (
+    guild.channels.cache
+      .filter(
+        (channel) =>
+          channel.isTextBased() &&
+          !channel.isThread() &&
+          me.permissionsIn(channel).has(PermissionFlagsBits.CreateInstantInvite),
+      )
+      .sort((a, b) => a.rawPosition - b.rawPosition)
+      .first() ?? null
+  );
+}
+
+module.exports = { auditReason, dmUser, replyResult, findInvitableChannel };
