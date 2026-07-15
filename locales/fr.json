@@ -294,6 +294,79 @@
       "expiresAt": "Expire"
     }
   },
+  "tickets": {
+    "panel": {
+      "rules": "Règles",
+      "openCount": "Tickets ouverts",
+      "openButton": "Ouvrir un ticket",
+      "configured": "Panneau **{type}** publié dans {channel}."
+    },
+    "welcome": {
+      "title": "🎫 Ticket n°{number}",
+      "instructions": "Merci d'avoir ouvert un ticket ! Décrivez votre demande le plus précisément possible : l'équipe vous répondra dès que possible.\nUtilisez les boutons ci-dessous pour gérer le ticket.",
+      "creator": "Créateur",
+      "openedAt": "Ouvert le",
+      "ticketId": "Identifiant",
+      "status": "Statut",
+      "statusOpen": "🟢 Ouvert",
+      "statusClosed": "🔒 Fermé par <@{by}> le <t:{at}:f>"
+    },
+    "buttons": {
+      "close": "Fermer",
+      "reopen": "Réouvrir le ticket",
+      "delete": "Supprimer",
+      "rename": "Renommer",
+      "addUser": "Ajouter un utilisateur",
+      "removeUser": "Retirer un utilisateur"
+    },
+    "actions": {
+      "created": "Votre ticket a été créé : {channel}",
+      "closed": "🔒 Ticket fermé par {user}.",
+      "reopened": "🔓 Ticket réouvert par {user}.",
+      "deleting": "Suppression du ticket…",
+      "deleteConfirm": "Supprimer définitivement ce ticket ? Ses informations importantes sont archivées, mais le salon sera supprimé.",
+      "deleteConfirmButton": "Confirmer la suppression",
+      "deleteCancelButton": "Annuler",
+      "deleteCancelled": "Suppression annulée.",
+      "renamed": "Ticket renommé : `{old}` → `{new}`.",
+      "renameModalTitle": "Renommer le ticket",
+      "renameModalLabel": "Nouveau nom du salon",
+      "userAdded": "{user} a été ajouté au ticket.",
+      "userRemoved": "{user} a été retiré du ticket.",
+      "selectUserAdd": "Utilisateur à ajouter…",
+      "selectUserRemove": "Utilisateur à retirer…"
+    },
+    "errors": {
+      "notTicketChannel": "Ce salon n'est pas un ticket.",
+      "noPermission": "Seul le créateur du ticket ou un modérateur peut effectuer cette action.",
+      "unknownType": "Type de ticket inconnu : `{type}`. Types disponibles : {types}",
+      "invalidChannel": "Le salon du panneau doit être un salon textuel.",
+      "alreadyOpen": "Vous avez déjà un ticket **{type}** ouvert : {channel}",
+      "alreadyClosed": "Ce ticket est déjà fermé.",
+      "notClosed": "Ce ticket n'est pas fermé.",
+      "createFailed": "Impossible de créer le salon du ticket (permissions insuffisantes ?).",
+      "actionFailed": "Impossible d'effectuer cette action.",
+      "alreadyParticipant": "{user} a déjà accès à ce ticket.",
+      "notParticipant": "{user} n'a pas été ajouté à ce ticket (le créateur ne peut pas être retiré).",
+      "invalidName": "Nom de salon invalide.",
+      "botMissingPerms": "Il me manque des permissions dans {channel} : **{perms}**."
+    },
+    "info": {
+      "participants": "Utilisateurs ajoutés"
+    },
+    "logs": {
+      "created": "Ticket créé",
+      "closed": "Ticket fermé",
+      "reopened": "Ticket réouvert",
+      "deleted": "Ticket supprimé",
+      "userAdded": "Utilisateur ajouté à un ticket",
+      "userRemoved": "Utilisateur retiré d'un ticket",
+      "renamed": "Ticket renommé",
+      "panelConfigured": "Panneau de tickets configuré",
+      "ticket": "Ticket",
+      "type": "Type"
+    }
+  },
   "serverManagement": {
     "leave": {
       "confirmTitle": "🚪 Quitter le serveur ?",

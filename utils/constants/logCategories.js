@@ -86,4 +86,10 @@ module.exports = {
     channelName: 'logs-gestion-serveurs',
     emoji: '🌐',
   },
+  tickets: {
+    label: 'Tickets',
+    description: 'Système de tickets : création, fermeture, réouverture, suppression, membres, renommage',
+    channelName: 'logs-tickets',
+    emoji: '🎫',
+  },
 };

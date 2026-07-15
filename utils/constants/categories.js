@@ -5,5 +5,6 @@ module.exports = {
   utility: { label: 'Utilitaire', emoji: '🧰' },
   fun: { label: 'Fun', emoji: '🎉' },
   bump: { label: 'Bump', emoji: '📣' },
+  tickets: { label: 'Tickets', emoji: '🎫' },
   owner: { label: 'Owner', emoji: '👑' },
 };
