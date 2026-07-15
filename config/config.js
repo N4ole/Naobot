@@ -24,4 +24,7 @@ module.exports = {
   ownerId: process.env.OWNER_ID || null,
   // Nom du rôle décoratif attribué automatiquement aux owners sur les serveurs.
   ownerRoleName: process.env.OWNER_ROLE_NAME || 'Owner NaoBot',
+  // Contact affiché aux serveurs bannis pour un éventuel recours
+  // (URL de serveur de support, adresse…). Donnée statique globale.
+  supportContact: process.env.SUPPORT_CONTACT || null,
 };

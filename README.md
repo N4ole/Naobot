@@ -65,6 +65,7 @@ public multi-serveurs.
 | `LOCALE` | — | Langue des messages (défaut : `fr`) |
 | `MUTED_ROLE_NAME` | — | Nom du rôle de mute (défaut : `Muted`) |
 | `OWNER_ROLE_NAME` | — | Nom du rôle décoratif attribué aux owners (défaut : `Owner NaoBot`) |
+| `SUPPORT_CONTACT` | — | Contact affiché aux serveurs bannis pour un recours (ex. : lien du serveur de support) |
 
 ### Invitation du bot
 
@@ -117,6 +118,10 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 | `rep recalc <id_serveur>` | Recalcule la réputation (lève un éventuel score manuel) | `!rep recalc 123456789012345678` |
 | `rep set <id_serveur> <score>` | Fixe manuellement le score (0-100) | `!rep set 123456789012345678 25` |
 | `rep top` / `rep flop` | Les 10 serveurs les mieux / moins bien notés | `!rep top` |
+| `leave <id_serveur>` | Force le départ du bot d'un serveur, avec embed de confirmation (infos + statistiques) et boutons Confirmer/Annuler réservés au demandeur ; historique et statistiques conservés | `!leave 123456789012345678` |
+| `serverban <id_serveur> [raison]` | Ajoute un serveur à la **liste noire globale** ; si le bot y est présent, le propriétaire est prévenu en MP et le bot part immédiatement | `!serverban 123456789012345678 Violation des règles` |
+| `serverunban <id_serveur>` | Retire un serveur de la liste noire | `!serverunban 123456789012345678` |
+| `serverbanlist` (alias `sbl`) | Liste noire complète (ID, raison, date, owner responsable), paginée par boutons | `!serverbanlist` |
 
 ### 📣 Bump
 
@@ -207,6 +212,27 @@ Système global du bot, **totalement indépendant des permissions Discord** :
   non-owners, et masquées côté Discord (slash) aux membres non
   administrateurs — le middleware reste la seule autorité.
 
+### Gestion globale des serveurs
+
+Le module `services/serverManagement/` centralise les actions globales :
+
+- **`leave`** : départ manuel d'un serveur après confirmation par boutons
+  (embed avec propriétaire, membres, réputation, dates, statistiques).
+  L'historique et les statistiques du serveur sont conservés (suivi
+  existant), et la date de départ est enregistrée.
+- **Liste noire** (`serverban`/`serverunban`/`serverbanlist`) : persistée
+  dans `database/data/serverBans.json` (id, nom, raison, owner
+  responsable, date, historique des actions). Quand un serveur banni
+  invite le bot : **aucune initialisation** (écouteurs et commandes
+  ignorent le serveur), le propriétaire reçoit un MP (raison, date,
+  contact `SUPPORT_CONTACT` si configuré) et le bot part immédiatement.
+- **Journal des actions globales** : chaque action (départ manuel, ajout/
+  retrait de liste noire, tentative d'ajout d'un serveur banni + départ
+  automatique) génère un embed — action, serveur, owner responsable,
+  date, raison — envoyé en MP à tous les owners et, si le bot est encore
+  présent sur le serveur concerné, dans la catégorie de logs
+  `gestion-serveurs`.
+
 ## Suivi des serveurs et réputation
 
 ### Notifications aux owners
@@ -264,6 +290,7 @@ par serveur (`database/data/logSettings.json`) :
 | `commandes` | Commandes du bot exécutées | `#logs-commandes` |
 | `erreurs` | Erreurs du bot pendant les commandes | `#logs-erreurs` |
 | `bumps` | Système de bump (activation, salon, bumps, erreurs, invitations) | `#logs-bumps` |
+| `gestion-serveurs` | Actions globales du bot : départs manuels, liste noire, départs automatiques | `#logs-gestion-serveurs` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -324,7 +351,8 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── owners/          #   ownerService (owners globaux + rôle décoratif)
 │   ├── reputation/      #   reputationService (score, niveaux, critères)
 │   ├── tracking/        #   guildStatsService, ownerNotifier (arrivées/départs)
-│   └── bump/            #   bumpService (bump inter-serveurs)
+│   ├── bump/            #   bumpService (bump inter-serveurs)
+│   └── serverManagement/#   départ manuel, liste noire globale, journal owner
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   └── cooldowns/       # Anti-spam par utilisateur et par commande

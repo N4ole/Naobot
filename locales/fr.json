@@ -294,6 +294,41 @@
       "expiresAt": "Expire"
     }
   },
+  "serverManagement": {
+    "leave": {
+      "confirmTitle": "🚪 Quitter le serveur ?",
+      "confirmDescription": "Confirmez le départ du bot de **{name}** (`{id}`). Les statistiques et l'historique du serveur seront conservés.",
+      "confirm": "Confirmer le départ",
+      "cancel": "Annuler",
+      "cancelled": "Départ annulé.",
+      "done": "Le bot a quitté **{name}** (`{id}`).",
+      "failed": "Impossible de quitter ce serveur.",
+      "notFound": "Le bot n'est présent sur aucun serveur avec l'identifiant `{id}`.",
+      "notYourSession": "Seul l'owner ayant lancé la commande peut utiliser ces boutons."
+    },
+    "ban": {
+      "invalidId": "Identifiant de serveur invalide : `{id}`.",
+      "banned": "Le serveur **{name}** (`{id}`) a été ajouté à la liste noire globale.",
+      "alreadyBanned": "Le serveur `{id}` est déjà dans la liste noire.",
+      "unbanned": "Le serveur `{id}` a été retiré de la liste noire.",
+      "notBanned": "Le serveur `{id}` n'est pas dans la liste noire.",
+      "listTitle": "⛔ Serveurs bannis ({count})",
+      "listEmpty": "Aucun serveur banni.",
+      "listEntry": "**{name}** (`{id}`)\n{reason} — <t:{date}:d> — par <@{by}>",
+      "noticeTitle": "⛔ Serveur banni de {bot}",
+      "noticeDescription": "Le serveur **{name}** est banni du service : le bot ne peut pas y être utilisé et l'a quitté automatiquement.",
+      "noticeDate": "Date du bannissement",
+      "noticeContact": "Recours"
+    },
+    "logs": {
+      "manualLeave": "Serveur quitté manuellement",
+      "serverBanned": "Serveur ajouté à la liste noire",
+      "serverUnbanned": "Serveur retiré de la liste noire",
+      "bannedJoinAttempt": "Tentative d'ajout d'un serveur banni (départ automatique effectué)",
+      "server": "Serveur",
+      "responsible": "Owner responsable"
+    }
+  },
   "help": {
     "title": "Aide de {bot}",
     "homeDescription": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nNaviguez entre les pages avec les boutons ci-dessous, ou utilisez `{prefix}help <commande>` pour le détail d'une commande.",

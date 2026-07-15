@@ -7,6 +7,7 @@
  */
 const { checkCommandPermissions } = require('../../middlewares/permissions/checkPermissions');
 const { checkCooldown } = require('../../middlewares/cooldowns/cooldowns');
+const serverBanRepository = require('../../database/serverBanRepository');
 const logService = require('../../services/logging/logService');
 const statsService = require('../../services/tracking/guildStatsService');
 const { errorEmbed, logEventEmbed } = require('../embeds/embeds');
@@ -30,6 +31,9 @@ function commandLogFields(ctx, command) {
  * @param {object} command
  */
 async function executeCommand(ctx, command) {
+  // Serveur banni du service : aucune fonctionnalité disponible.
+  if (serverBanRepository.isBanned(ctx.guild.id)) return;
+
   const permissions = checkCommandPermissions(ctx, command);
   if (!permissions.ok) {
     return ctx.reply({ embeds: [errorEmbed(permissions.error)], ephemeral: true });

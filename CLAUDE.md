@@ -35,7 +35,7 @@ Respecter l'organisation :
 ```
 commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, bump/, owner/, administration/)
 events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/)
-services/      # logique métier (moderation/, logging/, owners/, reputation/, tracking/, bump/)
+services/      # logique métier (moderation/, logging/, owners/, reputation/, tracking/, bump/, serverManagement/)
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
 config/        # config.js (env), permissions.js (permissions par commande)
@@ -174,6 +174,12 @@ Ne **jamais** mélanger les données entre serveurs (toutes les structures
 persistées sont indexées par `guildId`). Attention aux opérations
 coûteuses (fetch de tous les membres) : préférer le cache, les fetchs
 bornés dans le temps, et le travail à la demande (ex. : pagination).
+
+**Liste noire globale** : un serveur présent dans
+`database/data/serverBans.json` ne doit recevoir **aucune** fonctionnalité.
+Le pipeline de commandes et les écouteurs `GuildCreate`/`GuildDelete`
+vérifient `serverBanRepository.isBanned(guildId)` — tout nouvel écouteur
+d'initialisation par serveur doit faire de même.
 
 # Documentation
 

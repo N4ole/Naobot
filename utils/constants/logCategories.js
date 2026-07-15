@@ -80,4 +80,10 @@ module.exports = {
     channelName: 'logs-bumps',
     emoji: '📣',
   },
+  'gestion-serveurs': {
+    label: 'Gestion globale des serveurs',
+    description: 'Actions globales du bot : départs manuels, liste noire, départs automatiques',
+    channelName: 'logs-gestion-serveurs',
+    emoji: '🌐',
+  },
 };
