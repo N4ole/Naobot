@@ -1,0 +1,438 @@
+{
+  "common": {
+    "noReason": "Aucune raison fournie",
+    "member": "Membre",
+    "moderator": "Modérateur",
+    "reason": "Raison",
+    "duration": "Durée",
+    "channel": "Salon",
+    "warnCount": "Avertissements"
+  },
+  "errors": {
+    "guildOnly": "Cette commande ne peut être utilisée que sur un serveur.",
+    "missingUserPerms": "Vous n'avez pas les permissions requises : **{perms}**.",
+    "missingBotPerms": "Il me manque les permissions suivantes : **{perms}**.",
+    "cooldown": "Veuillez patienter **{seconds}s** avant de réutiliser cette commande.",
+    "invalidArgs": "Arguments invalides. Utilisation : `{usage}`",
+    "memberNotFound": "Ce membre est introuvable sur ce serveur.",
+    "userNotFound": "Utilisateur introuvable.",
+    "roleNotFound": "Rôle introuvable (mention, identifiant ou nom exact).",
+    "channelNotFound": "Salon introuvable (mention, identifiant ou nom exact).",
+    "invalidDuration": "Durée invalide. Exemples : `30s`, `10m`, `1h30m`, `2d`.",
+    "unexpected": "Une erreur inattendue est survenue. Merci de réessayer.",
+    "hierarchySelf": "Vous ne pouvez pas appliquer cette action à vous-même.",
+    "hierarchyBot": "Je ne peux pas m'appliquer cette action à moi-même.",
+    "hierarchyOwner": "Impossible de sanctionner le propriétaire du serveur.",
+    "hierarchyUserAbove": "Vous ne pouvez pas sanctionner ce membre : son rôle est supérieur ou égal au vôtre.",
+    "hierarchyBotAbove": "Je ne peux pas sanctionner ce membre : son rôle est supérieur ou égal au mien."
+  },
+  "moderation": {
+    "dm": {
+      "ban": "Vous avez été **banni** du serveur **{guild}**.\nRaison : {reason}",
+      "kick": "Vous avez été **expulsé** du serveur **{guild}**.\nRaison : {reason}",
+      "mute": "Vous avez été **rendu muet** sur le serveur **{guild}**.\nRaison : {reason}",
+      "unmute": "Vous n'êtes **plus muet** sur le serveur **{guild}**.",
+      "timeout": "Vous avez été **exclu temporairement** ({duration}) du serveur **{guild}**.\nRaison : {reason}",
+      "untimeout": "Votre exclusion temporaire sur le serveur **{guild}** a été levée.",
+      "warn": "Vous avez reçu un **avertissement** sur le serveur **{guild}**.\nRaison : {reason}"
+    },
+    "ban": {
+      "success": "**{user}** a été banni. Raison : {reason}",
+      "failed": "Impossible de bannir cet utilisateur.",
+      "notBannable": "Je ne peux pas bannir ce membre (permissions ou hiérarchie insuffisantes).",
+      "logAction": "Bannissement"
+    },
+    "unban": {
+      "success": "**{user}** a été débanni.",
+      "notBanned": "Cet utilisateur n'est pas banni de ce serveur.",
+      "failed": "Impossible de débannir cet utilisateur.",
+      "logAction": "Débannissement"
+    },
+    "kick": {
+      "success": "**{user}** a été expulsé. Raison : {reason}",
+      "failed": "Impossible d'expulser ce membre.",
+      "notKickable": "Je ne peux pas expulser ce membre (permissions ou hiérarchie insuffisantes).",
+      "logAction": "Expulsion"
+    },
+    "mute": {
+      "success": "**{user}** est désormais muet. Raison : {reason}",
+      "alreadyMuted": "Ce membre est déjà muet.",
+      "roleFailed": "Impossible de créer ou d'attribuer le rôle de mute.",
+      "logAction": "Mute"
+    },
+    "unmute": {
+      "success": "**{user}** n'est plus muet.",
+      "notMuted": "Ce membre n'est pas muet.",
+      "failed": "Impossible de retirer le rôle de mute.",
+      "logAction": "Unmute"
+    },
+    "timeout": {
+      "success": "**{user}** est exclu temporairement pendant **{duration}**. Raison : {reason}",
+      "tooLong": "La durée maximale d'une exclusion temporaire est de **28 jours**.",
+      "notModeratable": "Je ne peux pas exclure temporairement ce membre (permissions ou hiérarchie insuffisantes).",
+      "failed": "Impossible d'appliquer l'exclusion temporaire.",
+      "logAction": "Exclusion temporaire"
+    },
+    "untimeout": {
+      "success": "L'exclusion temporaire de **{user}** a été levée.",
+      "notTimedOut": "Ce membre n'est pas exclu temporairement.",
+      "failed": "Impossible de lever l'exclusion temporaire.",
+      "logAction": "Levée d'exclusion temporaire"
+    },
+    "warn": {
+      "success": "**{user}** a reçu un avertissement (total : **{count}**). Raison : {reason}",
+      "logAction": "Avertissement"
+    },
+    "warnings": {
+      "none": "**{user}** n'a aucun avertissement.",
+      "title": "Avertissements de {user} ({count})",
+      "entry": "`{id}` • <t:{timestamp}:d> • par <@{moderatorId}>\n{reason}"
+    },
+    "purge": {
+      "success": "**{count}** message(s) supprimé(s).",
+      "partial": "**{count}** message(s) supprimé(s). Les messages de plus de 14 jours ne peuvent pas être supprimés en masse (limite Discord).",
+      "failed": "Impossible de supprimer les messages.",
+      "logAction": "Purge de messages"
+    }
+  },
+  "logs": {
+    "command": {
+      "panelTitle": "🧾 Configuration des logs",
+      "panelDescription": "Sélectionnez dans le menu l'ensemble des catégories à activer (les autres seront désactivées), ou utilisez les boutons. Les salons de logs manquants sont créés automatiquement dans la catégorie **Logs** ; les salons existants sont réutilisés.",
+      "statusTitle": "🧾 Catégories de logs",
+      "enabled": "activé",
+      "disabled": "désactivé",
+      "enableSuccess": "Catégories activées : **{categories}**.",
+      "disableSuccess": "Catégories désactivées : **{categories}**.",
+      "missingCategories": "Précisez une ou plusieurs catégories, ou `tout`. Catégories valides : {categories}",
+      "unknownCategory": "Catégorie inconnue : `{category}`. Catégories valides : {categories}",
+      "noPermission": "Vous devez posséder la permission **Gérer le serveur** pour utiliser ce panneau.",
+      "selectPlaceholder": "Catégories de logs à activer…",
+      "enableAll": "Tout activer",
+      "disableAll": "Tout désactiver"
+    },
+    "events": {
+      "messageDeleted": "Message supprimé",
+      "messagesBulkDeleted": "Messages supprimés en masse",
+      "messageEdited": "Message modifié",
+      "jumpToMessage": "Aller au message",
+      "unknownContent": "(contenu non disponible)",
+      "author": "Auteur",
+      "content": "Contenu",
+      "attachments": "Pièces jointes",
+      "before": "Avant",
+      "after": "Après",
+      "memberJoined": "Membre arrivé",
+      "memberLeft": "Membre parti",
+      "accountCreated": "Compte créé",
+      "roles": "Rôles",
+      "rolesUpdated": "Rôles modifiés",
+      "rolesAdded": "Rôles ajoutés",
+      "rolesRemoved": "Rôles retirés",
+      "channelCreated": "Salon créé",
+      "channelDeleted": "Salon supprimé",
+      "channelUpdated": "Salon modifié",
+      "category": "Catégorie",
+      "name": "Nom",
+      "topic": "Sujet",
+      "serverUpdated": "Serveur modifié",
+      "icon": "Icône",
+      "iconChanged": "L'icône du serveur a été modifiée.",
+      "emojiCreated": "Émoji créé",
+      "emojiDeleted": "Émoji supprimé",
+      "commandExecuted": "Commande exécutée",
+      "command": "Commande",
+      "source": "Source",
+      "sourceSlash": "Commande slash",
+      "sourcePrefix": "Commande préfixée",
+      "commandError": "Erreur de commande",
+      "error": "Erreur"
+    }
+  },
+  "owners": {
+    "errors": {
+      "notOwner": "Cette commande est réservée aux owners du bot.",
+      "primaryAdd": "**{user}** est déjà l'owner principal du bot (défini dans le .env).",
+      "duplicate": "**{user}** est déjà owner du bot.",
+      "primaryRemove": "L'owner principal (défini dans le .env) ne peut pas être supprimé.",
+      "notInList": "**{user}** n'est pas owner du bot.",
+      "lastOwner": "Impossible de supprimer le dernier owner du bot."
+    },
+    "add": {
+      "success": "**{user}** est désormais owner du bot."
+    },
+    "remove": {
+      "success": "**{user}** n'est plus owner du bot."
+    },
+    "servers": {
+      "owner": "Propriétaire",
+      "members": "Membres",
+      "bots": "Bots",
+      "created": "Création du serveur",
+      "joined": "Arrivée du bot",
+      "verification": "Niveau de vérification",
+      "channels": "Salons",
+      "roles": "Rôles",
+      "unknown": "Inconnu",
+      "footer": "Serveur {page}/{total}",
+      "verificationLevels": {
+        "0": "Aucune",
+        "1": "Faible",
+        "2": "Moyenne",
+        "3": "Élevée",
+        "4": "Maximale"
+      }
+    },
+    "invite": {
+      "title": "Invitation — {guild}",
+      "success": "Invitation créée dans **#{channel}** (valide 24 h) :\n{url}",
+      "notFound": "Aucun serveur avec l'identifiant `{id}` parmi les serveurs du bot.",
+      "noChannel": "Aucun salon textuel de **{guild}** où je possède la permission **Créer une invitation**.",
+      "failed": "Impossible de créer une invitation sur **{guild}**."
+    }
+  },
+  "tracking": {
+    "joinTitle": "📥 Nouveau serveur",
+    "leaveTitle": "📤 Départ d'un serveur",
+    "humans": "Utilisateurs",
+    "textChannels": "Salons textuels",
+    "voiceChannels": "Salons vocaux",
+    "categories": "Catégories",
+    "totalGuilds": "Serveurs du bot",
+    "totalUsers": "Utilisateurs touchés",
+    "timeSpent": "Temps passé",
+    "reputation": "Réputation",
+    "lastActivity": "Dernière activité",
+    "commandsExecuted": "Commandes exécutées",
+    "none": "Aucune"
+  },
+  "reputation": {
+    "levels": {
+      "excellent": "Excellent",
+      "bon": "Bon",
+      "moyen": "Moyen",
+      "suspect": "Suspect",
+      "dangereux": "Dangereux"
+    },
+    "reasons": {
+      "auto": "recalcul automatique",
+      "manuel": "modification manuelle",
+      "recalcul": "recalcul manuel",
+      "initial": "évaluation initiale"
+    },
+    "command": {
+      "detailTitle": "Réputation — {name}",
+      "score": "Score",
+      "manual": "Override manuel",
+      "manualNote": "Score fixé manuellement par <@{by}> le <t:{at}:d> (levé par `rep recalc`).",
+      "breakdown": "Détail des critères",
+      "noBreakdown": "Bot absent du serveur : dernières valeurs enregistrées uniquement.",
+      "statsTitle": "Statistiques",
+      "statsValue": "Sanctions : **{sanctions}** · Commandes : **{commands}** · Arrivées du bot : **{joins}** · Départs : **{leaves}**",
+      "history": "Historique",
+      "recalcDone": "Réputation de **{name}** recalculée : {reputation}.",
+      "setDone": "Réputation de **{name}** fixée manuellement : {reputation}.",
+      "notTracked": "Aucune donnée pour le serveur `{id}`.",
+      "notOnServer": "Le bot n'est pas présent sur le serveur `{id}` : impossible de recalculer.",
+      "topTitle": "🏆 Serveurs les mieux notés",
+      "flopTitle": "⚠️ Serveurs les moins bien notés",
+      "empty": "Aucun serveur évalué pour le moment."
+    }
+  },
+  "bump": {
+    "enable": {
+      "enabledTitle": "📣 Système de bump activé",
+      "enabledDescription": "Sélectionnez ci-dessous le salon qui recevra les publicités des autres serveurs participants.",
+      "channelPlaceholder": "Salon de réception des bumps…",
+      "channelSet": "Salon de réception des bumps configuré : {channel}.",
+      "channelMissingPerms": "Il me manque des permissions dans {channel} : **{perms}**.",
+      "disabled": "Système de bump désactivé : le serveur n'envoie ni ne reçoit plus de publicités. Les statistiques sont conservées.",
+      "noPermission": "Vous devez posséder la permission **Gérer le serveur** pour configurer les bumps."
+    },
+    "command": {
+      "notEnabled": "Le système de bump est désactivé sur ce serveur. Un administrateur peut l'activer avec `{prefix}bumpenable on`.",
+      "noChannel": "Aucun salon de réception valide n'est configuré (ou il me manque des permissions dessus). Reconfigurez avec `{prefix}bumpenable on`.",
+      "cooldown": "Le serveur doit encore attendre **{remaining}** avant le prochain bump (cooldown global de 6 h par serveur).",
+      "inviteFailed": "Impossible de créer une invitation valide pour ce serveur (permission « Créer une invitation » requise).",
+      "success": "📣 Publicité envoyée vers **{sent}** serveur(s) !",
+      "successFailures": "⚠️ {failures} envoi(s) ont échoué (salons invalides ou permissions manquantes).",
+      "totalBumps": "Bumps du serveur : **{count}**. Prochain bump possible {next}."
+    },
+    "advert": {
+      "defaultDescription": "Découvrez ce serveur et rejoignez sa communauté !",
+      "invitation": "Invitation",
+      "totalBumps": "Bumps",
+      "join": "Rejoindre {name}",
+      "footer": "Bump n°{count} • par {user}"
+    },
+    "count": {
+      "title": "Bumps de {user}",
+      "total": "Total",
+      "globalRank": "Classement global",
+      "serverRank": "Classement serveur",
+      "lastBump": "Dernier bump",
+      "never": "Jamais",
+      "unranked": "—"
+    },
+    "unicount": {
+      "title": "Bumps du serveur {guild}",
+      "total": "Total",
+      "rank": "Classement",
+      "lastBump": "Dernier bump",
+      "bumpers": "Membres ayant bumpé"
+    },
+    "logs": {
+      "enabled": "Système de bump activé",
+      "disabled": "Système de bump désactivé",
+      "channelChanged": "Salon de bump modifié",
+      "bumped": "Bump effectué",
+      "bumpError": "Erreur de bump",
+      "inviteExpiry": "Invitation avec expiration",
+      "sentTo": "Serveurs atteints",
+      "failures": "Échecs",
+      "invitation": "Invitation",
+      "expiresAt": "Expire"
+    }
+  },
+  "serverManagement": {
+    "leave": {
+      "confirmTitle": "🚪 Quitter le serveur ?",
+      "confirmDescription": "Confirmez le départ du bot de **{name}** (`{id}`). Les statistiques et l'historique du serveur seront conservés.",
+      "confirm": "Confirmer le départ",
+      "cancel": "Annuler",
+      "cancelled": "Départ annulé.",
+      "done": "Le bot a quitté **{name}** (`{id}`).",
+      "failed": "Impossible de quitter ce serveur.",
+      "notFound": "Le bot n'est présent sur aucun serveur avec l'identifiant `{id}`.",
+      "notYourSession": "Seul l'owner ayant lancé la commande peut utiliser ces boutons."
+    },
+    "ban": {
+      "invalidId": "Identifiant de serveur invalide : `{id}`.",
+      "banned": "Le serveur **{name}** (`{id}`) a été ajouté à la liste noire globale.",
+      "alreadyBanned": "Le serveur `{id}` est déjà dans la liste noire.",
+      "unbanned": "Le serveur `{id}` a été retiré de la liste noire.",
+      "notBanned": "Le serveur `{id}` n'est pas dans la liste noire.",
+      "listTitle": "⛔ Serveurs bannis ({count})",
+      "listEmpty": "Aucun serveur banni.",
+      "listEntry": "**{name}** (`{id}`)\n{reason} — <t:{date}:d> — par <@{by}>",
+      "noticeTitle": "⛔ Serveur banni de {bot}",
+      "noticeDescription": "Le serveur **{name}** est banni du service : le bot ne peut pas y être utilisé et l'a quitté automatiquement.",
+      "noticeDate": "Date du bannissement",
+      "noticeContact": "Recours"
+    },
+    "logs": {
+      "manualLeave": "Serveur quitté manuellement",
+      "serverBanned": "Serveur ajouté à la liste noire",
+      "serverUnbanned": "Serveur retiré de la liste noire",
+      "bannedJoinAttempt": "Tentative d'ajout d'un serveur banni (départ automatique effectué)",
+      "server": "Serveur",
+      "responsible": "Owner responsable"
+    }
+  },
+  "help": {
+    "title": "Aide de {bot}",
+    "homeDescription": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nNaviguez entre les pages avec les boutons ci-dessous, ou utilisez `{prefix}help <commande>` pour le détail d'une commande.",
+    "homeCategory": "{emoji} **{label}** — {count} commande(s) · page {page}",
+    "footer": "Page {page}/{pages} • {commands} commandes • v{version}",
+    "home": "Accueil",
+    "notYourSession": "Ces boutons appartiennent à la personne qui a demandé l'aide. Lancez `{prefix}help` vous-même.",
+    "unknownCommand": "Commande inconnue : `{command}`.",
+    "usage": "Utilisation",
+    "aliases": "Alias",
+    "examples": "Exemples",
+    "permissions": "Permissions requises",
+    "cooldown": "Cooldown",
+    "none": "Aucune",
+    "ownerOnly": "Owner du bot"
+  },
+  "ping": {
+    "response": "🏓 Pong ! Latence WebSocket : **{ping} ms**."
+  },
+  "info": {
+    "botTitle": "À propos de {bot}",
+    "servers": "Serveurs",
+    "users": "Utilisateurs",
+    "commands": "Commandes",
+    "uptime": "Uptime",
+    "memory": "Mémoire",
+    "library": "Bibliothèque",
+    "node": "Node.js",
+    "ping": "Latence",
+    "uptimeSince": "En ligne depuis **{duration}**.",
+    "id": "Identifiant",
+    "created": "Créé le",
+    "joined": "A rejoint le",
+    "roles": "Rôles",
+    "highestRole": "Rôle le plus haut",
+    "bot": "Bot",
+    "yes": "Oui",
+    "no": "Non",
+    "color": "Couleur",
+    "position": "Position",
+    "membersWithRole": "Membres",
+    "mentionable": "Mentionnable",
+    "hoisted": "Affiché séparément",
+    "keyPermissions": "Permissions clés",
+    "type": "Type",
+    "topic": "Sujet",
+    "category": "Catégorie",
+    "slowmode": "Mode lent",
+    "nsfw": "NSFW",
+    "bitrate": "Bitrate",
+    "userLimit": "Limite d'utilisateurs",
+    "boosts": "Boosts",
+    "boostTier": "niveau",
+    "emojis": "Émojis",
+    "avatarOf": "Avatar de {user}",
+    "openOriginal": "Ouvrir l'original",
+    "inviteTitle": "Inviter {bot}",
+    "inviteDescription": "Utilisez le bouton ci-dessous pour ajouter **{bot}** à votre serveur, avec les permissions nécessaires pré-cochées.",
+    "inviteButton": "Inviter le bot"
+  },
+  "fun": {
+    "eightball": {
+      "question": "Question",
+      "answer": "Réponse",
+      "answers": [
+        "Oui, sans aucun doute !",
+        "C'est certain.",
+        "Très probablement.",
+        "Les signes disent oui.",
+        "Essaie encore.",
+        "Difficile à dire…",
+        "Concentre-toi et redemande.",
+        "Mieux vaut ne pas te le dire maintenant.",
+        "N'y compte pas trop.",
+        "Ma réponse est non.",
+        "Très peu probable.",
+        "Mes sources disent non."
+      ]
+    },
+    "coinflip": {
+      "heads": "Pile",
+      "tails": "Face",
+      "result": "🪙 **{result}** !"
+    },
+    "dice": {
+      "result": "**{user}** lance {count}d{faces} : **{rolls}**\nTotal : **{total}**"
+    },
+    "say": {
+      "footer": "Demandé par {user}",
+      "sent": "Message envoyé."
+    },
+    "rps": {
+      "prompt": "Choisissez votre coup avec les boutons ci-dessous !",
+      "choices": {
+        "pierre": "Pierre",
+        "feuille": "Feuille",
+        "ciseaux": "Ciseaux"
+      },
+      "outcomes": {
+        "win": "Vous gagnez ! 🎉",
+        "lose": "Vous perdez… 😅",
+        "tie": "Égalité !"
+      },
+      "result": "Vous : {player}\nMoi : {bot}\n\n**{outcome}**"
+    }
+  }
+}
