@@ -98,4 +98,10 @@ module.exports = {
     channelName: 'logs-surveillance',
     emoji: '👁️',
   },
+  warns: {
+    label: 'Avertissements',
+    description: 'Système de warns : ajout, suppression, remise à zéro, sanction automatique, règles',
+    channelName: 'logs-warns',
+    emoji: '📛',
+  },
 };

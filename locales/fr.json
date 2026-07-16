@@ -294,6 +294,71 @@
       "expiresAt": "Expire"
     }
   },
+  "warns": {
+    "dm": "Vous avez reçu un **avertissement** sur le serveur **{guild}**.\nRaison : {reason}\nModérateur : {moderator}\nSanction appliquée : {sanction}\nTotal d'avertissements : **{total}**\nProchaine sanction : {next}",
+    "sanction": {
+      "none": "Aucune",
+      "notApplied": "{sanction} *(non appliquée)*",
+      "failed": "{sanction} — échec (permissions ou hiérarchie insuffisantes)"
+    },
+    "field": {
+      "id": "Identifiant",
+      "total": "Total d'avertissements",
+      "sanction": "Sanction",
+      "next": "Prochaine sanction",
+      "lastWarn": "Dernier avertissement",
+      "removed": "Avertissements supprimés",
+      "change": "Modification"
+    },
+    "command": {
+      "warned": "**{user}** a reçu un avertissement (total : **{total}**). Raison : {reason}",
+      "sanction": "Sanction : {sanction}",
+      "next": "Prochaine sanction : {next}",
+      "unwarned": "Avertissement `{id}` supprimé pour **{user}** (total : **{total}**). Prochaine sanction : {next}",
+      "none": "**{user}** n'a aucun avertissement.",
+      "listTitle": "📛 Avertissements de {user} ({count})",
+      "entry": "`{id}` • <t:{timestamp}:d> • par <@{moderatorId}>\nRaison : {reason}\nSanction : {sanction}",
+      "countTitle": "📛 Avertissements de {user}",
+      "never": "Jamais",
+      "clearTitle": "🧹 Effacer les avertissements",
+      "clearConfirm": "Supprimer **tous** les avertissements de **{user}** ({count}) ? Cette action est irréversible.",
+      "clearConfirmButton": "Tout supprimer",
+      "clearCancelButton": "Annuler",
+      "clearCancelled": "Suppression annulée.",
+      "cleared": "**{count}** avertissement(s) supprimé(s) pour **{user}**."
+    },
+    "config": {
+      "title": "⚖️ Sanctions progressives",
+      "description": "Échelle actuelle des sanctions automatiques (par nombre d'avertissements). Sélectionnez un palier pour le modifier. Le palier 1 est toujours un simple avertissement.",
+      "line": "**{level}** warn(s) → {sanction}",
+      "disabled": "Désactivé (aucune sanction)",
+      "selectTier": "Choisir un palier à modifier…",
+      "tierOption": "Palier {level}",
+      "tierTitle": "⚖️ Palier {level}",
+      "tierEditDescription": "Choisissez la sanction appliquée à partir de **{level}** avertissement(s).",
+      "tierLockedDescription": "Le palier {level} est verrouillé sur un simple **avertissement** (règle obligatoire).",
+      "selectType": "Choisir le type de sanction…",
+      "disable": "Désactiver ce palier",
+      "back": "Retour",
+      "durationTitle": "Durée du timeout",
+      "durationLabel": "Durée (ex. : 30s, 10m, 1h, 1d)",
+      "changeDetail": "Palier {level} → {sanction}",
+      "resetDone": "Échelle des sanctions restaurée par défaut.",
+      "noPermission": "Vous devez posséder la permission **Gérer le serveur** pour configurer les sanctions."
+    },
+    "errors": {
+      "botTarget": "Impossible d'avertir un bot.",
+      "warnNotFound": "Aucun avertissement avec l'identifiant `{id}` pour cet utilisateur.",
+      "notYourSession": "Seule la personne ayant lancé la commande peut confirmer cette action."
+    },
+    "logs": {
+      "added": "Avertissement ajouté",
+      "removed": "Avertissement supprimé",
+      "cleared": "Avertissements remis à zéro",
+      "autoSanction": "Sanction automatique appliquée",
+      "rulesChanged": "Règles de sanction modifiées"
+    }
+  },
   "watch": {
     "warning": {
       "title": "⚠️ Surveillance de modération",

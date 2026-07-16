@@ -89,13 +89,45 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 | `unmute <membre> [raison]` | Redonne la parole à un membre muet | Modérer les membres | `!unmute @Utilisateur` |
 | `timeout <membre> <durée> [raison]` (alias `to`) | Exclusion temporaire native Discord (28 j max). Durées : `30s`, `10m`, `1h30m`, `2d`… | Modérer les membres | `!timeout @Utilisateur 10m Flood` |
 | `untimeout <membre> [raison]` (alias `unto`) | Lève une exclusion temporaire | Modérer les membres | `!untimeout @Utilisateur` |
-| `warn <membre> <raison>` | Ajoute un avertissement (persisté) | Modérer les membres | `!warn @Utilisateur Langage inapproprié` |
-| `warnings <membre>` (alias `warns`) | Liste les avertissements d'un membre | Modérer les membres | `!warnings @Utilisateur` |
+| `warn <membre> <raison>` | Avertit un membre et applique **automatiquement** la sanction progressive du palier atteint | Modérer les membres | `!warn @Utilisateur Langage inapproprié` |
+| `unwarn <utilisateur> <identifiant>` | Supprime un avertissement précis (recalcule le total) | Modérer les membres | `!unwarn @Utilisateur a1b2c3` |
+| `warnings <utilisateur>` (alias `warns`) | Liste paginée des avertissements (raisons, modérateurs, dates, sanctions appliquées) | Modérer les membres | `!warnings @Utilisateur` |
+| `warncount <utilisateur>` | Aperçu rapide : total actif, prochaine sanction, date du dernier warn | Modérer les membres | `!warncount @Utilisateur` |
+| `clearwarns <utilisateur>` | Supprime tous les avertissements d'un membre (confirmation par boutons) | Modérer les membres | `!clearwarns @Utilisateur` |
 | `purge <nombre>` (alias `clear`) | Supprime les 1 à 100 derniers messages du salon (moins de 14 jours, limite Discord) | Gérer les messages | `!purge 20` |
 
 > **mute vs timeout** : `mute` applique un rôle et dure jusqu'à `unmute` ;
 > `timeout` utilise l'exclusion temporaire **native** de Discord (plafonnée à
 > 28 jours par l'API). Pour une sanction temporaire, préférer `timeout`.
+
+#### Sanctions progressives (warns)
+
+Chaque avertissement déclenche **automatiquement** la sanction du palier
+atteint, selon une échelle **configurable par serveur** (persistante). Le
+palier 1 est toujours un simple avertissement.
+
+| Warns | Sanction par défaut |
+|---|---|
+| 1 | Avertissement |
+| 2 | Timeout 1 heure |
+| 3 | Timeout 1 jour |
+| 4 | Mute (rôle) |
+| 5 | Kick |
+| 6 | Ban |
+
+- L'échelle se configure via `setwarnsanction` (panneau interactif : menu
+  des paliers, menu des types de sanction, modal de durée pour les
+  timeouts, désactivation d'un palier, `reset`). Ajouter un palier ou un
+  type de sanction est trivial (`utils/constants/warnSanctions.js`).
+- Au-delà du dernier palier, le dernier palier s'applique (plafond).
+- À chaque warn, le membre reçoit un **MP** (raison, modérateur, sanction
+  appliquée, total, prochaine sanction) — échec silencieux si MP fermés.
+- `unwarn` / `clearwarns` recalculent le total ; toutes les actions (ajout,
+  suppression, remise à zéro, sanction automatique, modification des
+  règles) sont journalisées dans la catégorie de logs `warns`.
+- La persistance (`database/data/warns.json`, `warnConfig.json`) porte tout
+  le nécessaire aux futures statistiques (modérateurs les plus actifs,
+  utilisateurs les plus sanctionnés, sanctions les plus fréquentes).
 
 ### ⚙️ Administration
 
@@ -105,6 +137,7 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 | `logs statut` | État des catégories de logs | Gérer le serveur | `!logs statut` |
 | `logs activer <catégories…\|tout>` | Active une, plusieurs ou toutes les catégories (crée les salons manquants) | Gérer le serveur | `!logs activer sanctions moderation` |
 | `logs desactiver <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs desactiver tout` |
+| `setwarnsanction [reset]` | Configure l'échelle des sanctions progressives des warns (panneau interactif : menus + boutons + modal ; `reset` restaure les valeurs par défaut) | Gérer le serveur | `!setwarnsanction` |
 
 ### 👑 Owner (réservées aux owners du bot)
 
@@ -378,6 +411,7 @@ par serveur (`database/data/logSettings.json`) :
 | `gestion-serveurs` | Actions globales du bot : départs manuels, liste noire, départs automatiques | `#logs-gestion-serveurs` |
 | `tickets` | Système de tickets : cycle de vie complet des tickets et panneaux | `#logs-tickets` |
 | `surveillance` | Système de surveillance : démarrage, arrêt, reprise, expiration, erreurs | `#logs-surveillance` |
+| `warns` | Sanctions progressives : ajout, suppression, remise à zéro, sanction automatique, règles | `#logs-warns` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -443,10 +477,12 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── bump/            #   bumpService (bump inter-serveurs)
 │   ├── serverManagement/#   départ manuel, liste noire globale, journal owner
 │   ├── tickets/         #   ticketService (panneaux, cycle de vie, logs)
-│   └── watch/           #   watchService (surveillance de modération, 7 j max)
+│   ├── watch/           #   watchService (surveillance de modération, 7 j max)
+│   └── warnings/        #   warnService + sanctionService (sanctions progressives)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   ├── cooldowns/       # Anti-spam par utilisateur et par commande
+│   ├── moderation/      # Garde des warns (cible valide + hiérarchie)
 │   ├── tickets/         # Accès aux tickets (créateur ou modérateur)
 │   └── watch/           # Accès à la surveillance (admin / modérateur / owner)
 ├── utils/
@@ -454,7 +490,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
 ├── config/              # Configuration (env) et permissions par commande
-├── database/            # Persistance (JSON) : warns, logs, owners, stats, bumps
+├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps…
 ├── locales/             # Textes utilisateur (fr.json)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login

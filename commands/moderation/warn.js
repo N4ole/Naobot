@@ -1,16 +1,17 @@
 /**
- * Commandes warn / warnings (même famille, même fichier).
- * La logique métier vit dans services/moderation/warnService ; la persistance
- * dans database/warnRepository.
+ * Commande warn : ajoute un avertissement et applique automatiquement la
+ * sanction progressive du palier atteint. La logique métier vit dans
+ * services/warnings/warnService ; la hiérarchie dans
+ * middlewares/moderation/warnGuard.
  */
-const warnService = require('../../services/moderation/warnService');
-const { replyResult } = require('../../utils/helpers/discordUtils');
-const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
+const warnService = require('../../services/warnings/warnService');
+const { checkWarnable } = require('../../middlewares/moderation/warnGuard');
+const { successEmbed, errorEmbed } = require('../../utils/embeds/embeds');
 const { t } = require('../../utils/helpers/i18n');
 
-const warn = {
+module.exports = {
   name: 'warn',
-  description: 'Ajoute un avertissement à un membre',
+  description: 'Avertit un membre et applique la sanction progressive prévue',
   usage: 'warn <membre> <raison>',
   examples: ['warn @Utilisateur Langage inapproprié'],
   aliases: [],
@@ -20,43 +21,25 @@ const warn = {
     { name: 'raison', type: 'string', required: true, rest: true, description: "Raison de l'avertissement" },
   ],
   async execute(ctx) {
-    const result = await warnService.warnMember(ctx, ctx.options.membre, ctx.options.raison);
-    return replyResult(ctx, result);
-  },
-};
-
-const warnings = {
-  name: 'warnings',
-  description: "Affiche les avertissements d'un membre",
-  usage: 'warnings <membre>',
-  examples: ['warnings @Utilisateur'],
-  aliases: ['warns'],
-  cooldown: 3,
-  args: [
-    { name: 'membre', type: 'member', required: true, description: 'Le membre dont afficher les avertissements' },
-  ],
-  async execute(ctx) {
     const member = ctx.options.membre;
-    const list = warnService.getWarnings(ctx.guild.id, member.id);
-
-    if (list.length === 0) {
-      return ctx.reply({
-        embeds: [errorEmbed(t('moderation.warnings.none', { user: member.user.tag }))],
-        ephemeral: true,
-      });
+    const guard = checkWarnable(ctx, member);
+    if (!guard.ok) {
+      return ctx.reply({ embeds: [errorEmbed(guard.error)], ephemeral: true });
     }
 
-    const lines = list.map((entry) =>
-      t('moderation.warnings.entry', {
-        id: entry.id,
-        timestamp: Math.floor(new Date(entry.createdAt).getTime() / 1000),
-        moderatorId: entry.moderatorId,
-        reason: entry.reason,
+    // L'application de la sanction (kick/ban/timeout) peut dépasser les 3 s.
+    await ctx.defer();
+    const result = await warnService.addWarn(ctx.guild, member, ctx.user, ctx.options.raison);
+
+    const lines = [
+      t('warns.command.warned', { user: member.user.tag, total: result.total, reason: ctx.options.raison }),
+      t('warns.command.sanction', {
+        sanction: result.applied
+          ? result.sanctionLabel
+          : t('warns.sanction.notApplied', { sanction: result.sanctionLabel }),
       }),
-    );
-    const title = t('moderation.warnings.title', { user: member.user.tag, count: list.length });
-    return ctx.reply({ embeds: [infoEmbed(title, lines.join('\n\n'))] });
+      t('warns.command.next', { next: result.nextLabel }),
+    ];
+    return ctx.reply({ embeds: [successEmbed(lines.join('\n'))] });
   },
 };
-
-module.exports = [warn, warnings];
