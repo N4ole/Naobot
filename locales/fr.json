@@ -359,6 +359,68 @@
       "rulesChanged": "Règles de sanction modifiées"
     }
   },
+  "contact": {
+    "command": {
+      "sent": "✉️ Votre message a été transmis aux owners du bot (**{count}** notifié(s)). Référence : **{id}**. Conservez cette référence pour le suivi.",
+      "responded": "Réponse envoyée au propriétaire du serveur pour **{id}**."
+    },
+    "owner": {
+      "newTitle": "✉️ Nouvelle demande de contact — {id}",
+      "messageTitle": "✉️ Nouveau message — {id}",
+      "replyHint": "Répondez avec `/respond {id} <message>` — votre compte Discord ne sera jamais exposé.",
+      "replyHintLabel": "Répondre"
+    },
+    "reply": {
+      "header": "Réponse de l'équipe NaoBot",
+      "by": "Répondu par : {name}",
+      "date": "Date : {date}",
+      "messageLabel": "Message :",
+      "footer": "Réf. {id}"
+    },
+    "sync": {
+      "title": "🔄 Réponse envoyée — {id}"
+    },
+    "list": {
+      "title": "✉️ Conversations de contact",
+      "empty": "Aucune conversation de contact.",
+      "entry": "`{id}` • {status}\n**{server}** — <t:{date}:R>\n> {last}"
+    },
+    "info": {
+      "title": "✉️ Conversation {id}",
+      "changeStatus": "Changer le statut…"
+    },
+    "field": {
+      "id": "Identifiant",
+      "server": "Serveur",
+      "owner": "Propriétaire",
+      "members": "Membres",
+      "status": "Statut",
+      "date": "Date",
+      "message": "Message",
+      "replyHint": "Répondre",
+      "respondedBy": "Owners ayant répondu",
+      "detail": "Détail",
+      "messages": "Messages",
+      "created": "Créée le",
+      "lastActivity": "Dernière activité"
+    },
+    "logs": {
+      "opened": "Conversation ouverte",
+      "responded": "Réponse d'un owner",
+      "status": "Changement de statut",
+      "closed": "Conversation fermée",
+      "error": "Erreur d'envoi"
+    },
+    "errors": {
+      "banned": "Ce serveur ne peut pas contacter les owners du bot.",
+      "notServerOwner": "Seul le **propriétaire du serveur** peut utiliser cette commande.",
+      "noOwners": "Aucun owner n'est configuré pour recevoir votre message.",
+      "notFound": "Aucune conversation avec l'identifiant `{id}`.",
+      "ownerUnreachable": "Le propriétaire du serveur est introuvable.",
+      "dmClosed": "Impossible d'envoyer le message : le propriétaire a fermé ses messages privés.",
+      "invalidStatus": "Statut invalide."
+    }
+  },
   "reactionRoles": {
     "panel": {
       "defaultTitle": "Rôles réactions",

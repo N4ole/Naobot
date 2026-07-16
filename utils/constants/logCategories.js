@@ -110,4 +110,10 @@ module.exports = {
     channelName: 'logs-roles-reactions',
     emoji: '📌',
   },
+  contact: {
+    label: 'Contact owners',
+    description: 'Communication propriétaires ↔ owners : ouverture, réponse, statut, fermeture, erreurs',
+    channelName: 'logs-contact',
+    emoji: '✉️',
+  },
 };

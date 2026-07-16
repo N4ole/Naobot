@@ -155,6 +155,38 @@ palier 1 est toujours un simple avertissement.
 | `serverban <id_serveur> [raison]` | Ajoute un serveur à la **liste noire globale** ; si le bot y est présent, le propriétaire est prévenu en MP et le bot part immédiatement | `!serverban 123456789012345678 Violation des règles` |
 | `serverunban <id_serveur>` | Retire un serveur de la liste noire | `!serverunban 123456789012345678` |
 | `serverbanlist` (alias `sbl`) | Liste noire complète (ID, raison, date, owner responsable), paginée par boutons | `!serverbanlist` |
+| `respond <identifiant> <message>` | Répond à une conversation de contact (message signé transmis au propriétaire via le bot ; autres owners synchronisés) | `!respond CONTACT-000001 Bonjour…` |
+| `contactlist` | Liste paginée des conversations de contact (statut, serveur, dernier message, date) | `!contactlist` |
+| `contactinfo <identifiant>` | Détail d'une conversation + menu de changement de statut | `!contactinfo CONTACT-000001` |
+
+### ✉️ Contact
+
+| Commande | Description | Accès | Exemple |
+|---|---|---|---|
+| `contactowner <message>` | Contacte les owners du bot depuis le serveur (message transmis par le bot, sans exposer les comptes des owners) | **Propriétaire du serveur** | `!contactowner Une question sur le bot…` |
+
+Système de **communication sécurisée** entre les propriétaires de serveurs
+et les owners du bot : toutes les communications transitent par le bot,
+aucun compte Discord d'owner n'est jamais exposé.
+
+- **`contactowner`** (propriétaire du serveur uniquement, serveur non
+  blacklisté) : envoie un MP à **tous les owners** sous forme d'embed (nom
+  et ID du serveur, nom et ID du propriétaire, réputation, membres, date et
+  heure, message). Chaque demande reçoit un **identifiant unique**
+  `CONTACT-000001`.
+- **`respond`** (owners) : la réponse est **signée automatiquement** et
+  transmise au propriétaire via le bot ; **tous les autres owners sont
+  synchronisés** (embed indiquant l'identifiant, l'owner ayant répondu, la
+  date et le contenu) — personne n'ignore qu'une réponse a été envoyée.
+- **Statuts** : ouverte, en attente, traitée, fermée — modifiables par les
+  owners via le menu de `contactinfo`.
+- **Historique persistant** (`database/data/contact.json`) : identifiant,
+  serveur, propriétaire, owners ayant répondu, messages échangés et dates
+  — survit aux redémarrages.
+- **Logs** : catégorie dédiée `contact` (ouverture, réponse, changement de
+  statut, fermeture, erreurs d'envoi).
+- **Extensible** (pièces jointes, catégories, priorités, notes privées,
+  assignation…) : le schéma d'une conversation accepte de nouveaux champs.
 
 ### 📣 Bump
 
@@ -446,6 +478,7 @@ par serveur (`database/data/logSettings.json`) :
 | `surveillance` | Système de surveillance : démarrage, arrêt, reprise, expiration, erreurs | `#logs-surveillance` |
 | `warns` | Sanctions progressives : ajout, suppression, remise à zéro, sanction automatique, règles | `#logs-warns` |
 | `roles-reactions` | Panneaux de rôles réactions : création, modification, suppression, rôles, mode, erreurs | `#logs-roles-reactions` |
+| `contact` | Contact owners : ouverture, réponse, changement de statut, fermeture, erreurs | `#logs-contact` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -495,6 +528,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── owner/           #   addowner+rmowner, serveurs, rep, leave, serverban…
 │   ├── tickets/         #   setticket, ticket, ticketclose+ticketopen+ticketdelete
 │   ├── reactionRoles/   #   reactionrole (assistant + composants live)
+│   ├── contact/         #   contactowner, respond, contactlist+contactinfo
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
@@ -503,7 +537,8 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── interaction/     #   interactionCreate (slash + composants interactifs)
 │   ├── member/          #   logs des arrivées/départs et des rôles
 │   ├── message/         #   messageCreate (préfixe) + logs des messages
-│   └── reactionRoles/   #   ready (panneaux persistés opérationnels)
+│   ├── reactionRoles/   #   ready (panneaux persistés opérationnels)
+│   └── contact/         #   ready (conversations de contact persistées)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
 │   ├── logging/         #   logService (logs par catégories), modLogService
@@ -515,14 +550,16 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── tickets/         #   ticketService (panneaux, cycle de vie, logs)
 │   ├── watch/           #   watchService (surveillance de modération, 7 j max)
 │   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
-│   └── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
+│   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
+│   └── contact/         #   contactService (communication owners ↔ propriétaires)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   ├── cooldowns/       # Anti-spam par utilisateur et par commande
 │   ├── moderation/      # Garde des warns (cible valide + hiérarchie)
 │   ├── tickets/         # Accès aux tickets (créateur ou modérateur)
 │   ├── watch/           # Accès à la surveillance (admin / modérateur / owner)
-│   └── reactionRoles/   # Sécurité d'attribution des rôles (hiérarchie du bot)
+│   ├── reactionRoles/   # Sécurité d'attribution des rôles (hiérarchie du bot)
+│   └── contact/         # Accès au contact (propriétaire du serveur)
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
