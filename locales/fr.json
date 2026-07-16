@@ -294,6 +294,88 @@
       "expiresAt": "Expire"
     }
   },
+  "watch": {
+    "warning": {
+      "title": "⚠️ Surveillance de modération",
+      "body": "Vous êtes sur le point d'activer la surveillance de **{user}**. Lisez attentivement les conditions ci-dessous avant de confirmer.",
+      "purposeName": "🎯 Cadre d'utilisation",
+      "purpose": "Cette fonctionnalité est un outil de **modération**. Elle doit être annoncée aux membres conformément au RGPD, aux règles de Discord et aux lois locales.",
+      "abuseName": "🚫 Usage abusif interdit",
+      "abuse": "Toute utilisation détournée (harcèlement, surveillance non justifiée…) est strictement interdite et engage votre responsabilité.",
+      "durationName": "⏳ Durée limitée",
+      "duration": "La surveillance est automatiquement limitée à **7 jours**. Une nouvelle activation manuelle est nécessaire au-delà.",
+      "responsibilityName": "👤 Responsabilité",
+      "responsibility": "Les administrateurs sont seuls responsables de l'utilisation de cette fonctionnalité.",
+      "confirmButton": "J'ai compris, activer",
+      "cancelButton": "Annuler",
+      "cancelled": "Surveillance annulée."
+    },
+    "command": {
+      "started": "👁️ Surveillance de {user} activée dans {channel}. Expiration {expires}.",
+      "resumed": "👁️ Surveillance de {user} reprise dans {channel}. Expiration {expires}.",
+      "stopped": "🛑 Surveillance de **{user}** interrompue. Le salon et l'historique sont conservés.",
+      "expired": "⏳ Surveillance de **{user}** expirée (durée maximale atteinte)."
+    },
+    "channel": {
+      "startedTitle": "👁️ Surveillance activée",
+      "resumedTitle": "👁️ Surveillance reprise",
+      "started": "Surveillance de {user} activée par {by}.\nExpiration automatique {expires}.\n\n*Rappel : outil de modération, usage non abusif, durée limitée à 7 jours.*",
+      "resumed": "🔁 **Surveillance reprise.**",
+      "stoppedTitle": "🛑 Surveillance interrompue",
+      "stopped": "La surveillance a été interrompue par {by}. Le salon et l'historique sont conservés.",
+      "system": "le système",
+      "expiredTitle": "⏳ Surveillance expirée",
+      "expired": "La durée maximale de surveillance a été atteinte. Une nouvelle activation manuelle est nécessaire."
+    },
+    "event": {
+      "message": "Message envoyé",
+      "edited": "Message modifié",
+      "deleted": "Message supprimé",
+      "channel": "Salon",
+      "voiceChannel": "Salon vocal",
+      "time": "Heure",
+      "link": "Lien",
+      "jump": "Aller au message",
+      "replyTo": "En réponse à",
+      "mentions": "Mentions",
+      "attachments": "Pièces jointes",
+      "noContent": "*(aucun contenu textuel)*",
+      "voiceJoin": "Connexion vocale",
+      "voiceLeave": "Déconnexion vocale",
+      "voiceMove": "Changement de salon vocal",
+      "joinedAt": "Arrivée",
+      "leftAt": "Départ",
+      "from": "Depuis",
+      "to": "Vers",
+      "othersPresent": "Autres membres présents"
+    },
+    "logs": {
+      "started": "Surveillance démarrée",
+      "resumed": "Surveillance reprise",
+      "stopped": "Surveillance arrêtée",
+      "expired": "Surveillance expirée automatiquement",
+      "error": "Erreur de surveillance",
+      "target": "Cible",
+      "channel": "Salon",
+      "expiresAt": "Expiration",
+      "duration": "Durée",
+      "detail": "Détail"
+    },
+    "stats": {
+      "userTitle": "👁️ Utilisateurs les plus surveillés",
+      "userLine": "**{rank}.** <@{user}> (`{user}`)\nTemps total : **{duration}** · Surveillances : **{count}** · Serveurs : **{guilds}** · Dernière : {last}",
+      "guildTitle": "👁️ Serveurs utilisant le plus la surveillance",
+      "guildLine": "**{rank}.** {guild} (`{id}`)\nSurveillances : **{count}** · Temps cumulé : **{duration}** · Dernière : {last}\nRéputation : {reputation}",
+      "empty": "Aucune donnée de surveillance pour le moment."
+    },
+    "errors": {
+      "noPermission": "Cette commande est réservée aux administrateurs, aux modérateurs (Modérer les membres) et aux owners du bot.",
+      "invalidTarget": "Cible de surveillance invalide (vous-même ou un bot).",
+      "notYourSession": "Seule la personne ayant lancé la commande peut confirmer cette action.",
+      "channelFailed": "Impossible de créer le salon de surveillance (permissions insuffisantes ?).",
+      "notWatched": "Aucune surveillance active pour ce membre."
+    }
+  },
   "tickets": {
     "panel": {
       "rules": "Règles",

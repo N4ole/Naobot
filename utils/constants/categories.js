@@ -6,5 +6,6 @@ module.exports = {
   fun: { label: 'Fun', emoji: '🎉' },
   bump: { label: 'Bump', emoji: '📣' },
   tickets: { label: 'Tickets', emoji: '🎫' },
+  watch: { label: 'Surveillance', emoji: '👁️' },
   owner: { label: 'Owner', emoji: '👑' },
 };

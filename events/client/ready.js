@@ -7,6 +7,7 @@
 const { Events } = require('discord.js');
 const config = require('../../config/config');
 const ownerService = require('../../services/owners/ownerService');
+const watchService = require('../../services/watch/watchService');
 const { buildSlashCommand } = require('../../utils/helpers/slashBuilder');
 
 module.exports = {
@@ -33,6 +34,10 @@ module.exports = {
     await ownerService.syncAllGuilds(client).catch((error) => {
       console.error('[owners] Échec de la synchronisation des rôles :', error);
     });
+
+    // Expiration automatique des surveillances (arrêt après 7 jours), y
+    // compris celles arrivées à terme pendant que le bot était hors ligne.
+    watchService.startExpirySweeper(client);
 
     console.log(`[client] Connecté en tant que ${client.user.tag}.`);
   },
