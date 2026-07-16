@@ -171,6 +171,52 @@ des futurs transcripts) survivent aux redémarrages.
   réouverture, suppression, ajout/retrait d'utilisateur, renommage,
   configuration de panneau).
 
+### 👁️ Surveillance (modération)
+
+> ⚠️ **Outil de modération encadré.** À utiliser uniquement dans un cadre de
+> modération clairement annoncé aux membres, conformément au RGPD, aux
+> règles de Discord et aux lois locales. Un avertissement explicite est
+> affiché et doit être confirmé avant toute activation ; la surveillance
+> expire automatiquement après **7 jours**. Les administrateurs sont
+> responsables de son utilisation.
+
+| Commande | Description | Accès | Exemple |
+|---|---|---|---|
+| `watch <utilisateur>` | Surveille un membre (messages, éditions, suppressions, activité vocale) dans un salon privé dédié, après avertissement et confirmation | Admin / Modérer les membres / owner | `!watch @Utilisateur` |
+| `stopwatch <utilisateur>` | Arrête la surveillance (salon et historique conservés) | Admin / Modérer les membres / owner | `!stopwatch @Utilisateur` |
+| `watchtimeuser` | *(owner)* Classement des utilisateurs les plus surveillés, paginé | Owner | `!watchtimeuser` |
+| `watchserveurs` | *(owner)* Classement des serveurs utilisant le plus la surveillance, paginé | Owner | `!watchserveurs` |
+
+## Système de surveillance
+
+Outil de modération **strictement encadré** : réservé aux administrateurs,
+aux modérateurs (*Modérer les membres*) et aux owners du bot ; multi-serveurs
+et persistant (`database/data/watch.json`).
+
+- **Avertissement obligatoire** avant activation (embed rappelant : usage
+  de modération, interdiction d'usage abusif, limite automatique de 7 jours,
+  responsabilité des administrateurs), à confirmer par bouton.
+- **Espace dédié** : catégorie privée **📁 Surveillance** créée/réutilisée,
+  un salon `surveillance-<pseudo>` par membre surveillé, **jamais visible du
+  membre surveillé** (accessible aux administrateurs, aux rôles autorisés et
+  au bot).
+- **Événements enregistrés** (en embeds) : messages (contenu, date, salon,
+  liens, pièces jointes, images, réponses, mentions), modifications
+  (avant/après), suppressions, et activité vocale (connexion, déconnexion,
+  changement de salon — avec durée et autres membres présents).
+- **Reprise** : relancer une surveillance existante réutilise le salon et
+  envoie « Surveillance reprise ».
+- **Arrêt manuel** (`stopwatch`) : collecte stoppée, salon et historique
+  conservés, message d'interruption.
+- **Arrêt automatique** après 7 jours (vérifié en continu, même après un
+  redémarrage) : embed « La durée maximale de surveillance a été atteinte.
+  Une nouvelle activation manuelle est nécessaire. »
+- **Logs** : catégorie dédiée `surveillance` (démarrage, arrêt, reprise,
+  expiration, erreurs).
+- **Statistiques owner** : `watchtimeuser` et `watchserveurs` (classements
+  paginés par boutons). Extensible (export d'historique, tableaux de bord,
+  durée paramétrable) : durée dans `WATCH_DURATION_MS`, persistance isolée.
+
 ### 🧰 Utilitaire
 
 | Commande | Description | Exemple |
@@ -331,6 +377,7 @@ par serveur (`database/data/logSettings.json`) :
 | `bumps` | Système de bump (activation, salon, bumps, erreurs, invitations) | `#logs-bumps` |
 | `gestion-serveurs` | Actions globales du bot : départs manuels, liste noire, départs automatiques | `#logs-gestion-serveurs` |
 | `tickets` | Système de tickets : cycle de vie complet des tickets et panneaux | `#logs-tickets` |
+| `surveillance` | Système de surveillance : démarrage, arrêt, reprise, expiration, erreurs | `#logs-surveillance` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -379,6 +426,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── moderation/
 │   ├── owner/           #   addowner+rmowner, serveurs, rep, leave, serverban…
 │   ├── tickets/         #   setticket, ticket, ticketclose+ticketopen+ticketdelete
+│   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
 │   ├── client/          #   ready (enregistrement des commandes slash)
@@ -394,11 +442,13 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── tracking/        #   guildStatsService, ownerNotifier (arrivées/départs)
 │   ├── bump/            #   bumpService (bump inter-serveurs)
 │   ├── serverManagement/#   départ manuel, liste noire globale, journal owner
-│   └── tickets/         #   ticketService (panneaux, cycle de vie, logs)
+│   ├── tickets/         #   ticketService (panneaux, cycle de vie, logs)
+│   └── watch/           #   watchService (surveillance de modération, 7 j max)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   ├── cooldowns/       # Anti-spam par utilisateur et par commande
-│   └── tickets/         # Accès aux tickets (créateur ou modérateur)
+│   ├── tickets/         # Accès aux tickets (créateur ou modérateur)
+│   └── watch/           # Accès à la surveillance (admin / modérateur / owner)
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…

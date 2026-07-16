@@ -73,4 +73,16 @@ module.exports = {
     user: [PermissionFlagsBits.ManageGuild],
     bot: [PermissionFlagsBits.ManageChannels],
   },
+  // Accès (admin OU modérateur OU owner) contrôlé dans la commande via
+  // middlewares/watch/watchAccess : pas de permission `user` déclarative
+  // ici, sinon le pipeline bloquerait les owners sans permission Discord.
+  // Seules les permissions du bot sont vérifiées par le pipeline.
+  watch: {
+    user: [],
+    bot: [PermissionFlagsBits.ManageChannels],
+  },
+  stopwatch: {
+    user: [],
+    bot: [],
+  },
 };

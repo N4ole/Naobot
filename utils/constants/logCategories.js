@@ -92,4 +92,10 @@ module.exports = {
     channelName: 'logs-tickets',
     emoji: '🎫',
   },
+  surveillance: {
+    label: 'Surveillance',
+    description: 'Système de surveillance : démarrage, arrêt, reprise, expiration automatique, erreurs',
+    channelName: 'logs-surveillance',
+    emoji: '👁️',
+  },
 };
