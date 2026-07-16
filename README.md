@@ -250,6 +250,39 @@ et persistant (`database/data/watch.json`).
   paginés par boutons). Extensible (export d'historique, tableaux de bord,
   durée paramétrable) : durée dans `WATCH_DURATION_MS`, persistance isolée.
 
+### 📌 Rôles réactions
+
+| Commande | Description | Permission requise (auteur) | Exemple |
+|---|---|---|---|
+| `reactionrole create` (alias `rr`) | Assistant interactif de création d'un panneau (menus + boutons + modals) | Gérer les rôles | `!reactionrole create` |
+| `reactionrole edit <id>` | Assistant d'édition d'un panneau (met à jour le message existant) | Gérer les rôles | `!reactionrole edit a1b2c3d4` |
+| `reactionrole delete <id>` | Supprime un panneau (confirmation par boutons, option « + message ») | Gérer les rôles | `!reactionrole delete a1b2c3d4` |
+| `reactionrole list` | Liste paginée des panneaux (id, salon, rôles, mode, date) | Gérer les rôles | `!reactionrole list` |
+
+Panneaux de rôles réactions **personnalisables et persistants**
+(`database/data/reactionRoles.json`) : les membres obtiennent/retirent
+leurs rôles eux-mêmes via boutons ou menu déroulant.
+
+- **Assistant interactif** (`create`/`edit`) : salon d'envoi, titre,
+  description, couleur, image, pied de page, mode, et liste des rôles avec
+  emoji / nom affiché / description — le tout via menus, boutons et modals.
+- **Composant automatique** : boutons si ≤ 5 rôles, menu déroulant au-delà.
+- **Modes** : `multiple` (autant de rôles que souhaité), `unique` (un seul
+  rôle du panneau — les autres sont retirés), `limited` (maximum N rôles).
+- **Sécurité** : permission *Gérer les rôles* pour administrer ; à chaque
+  attribution, vérification de la permission du bot et de la hiérarchie —
+  le bot **n'attribue jamais** un rôle supérieur ou égal au sien.
+- **Persistance & redémarrage** : les panneaux survivent aux redémarrages
+  et restent fonctionnels sans ré-enregistrement (routage par `customId`).
+- **Modification** : met à jour automatiquement le message existant (ou le
+  republie si le salon change). **Suppression** : confirmation + option de
+  suppression du message Discord.
+- **Logs** : catégorie dédiée `roles-reactions` (création, modification,
+  suppression, mode, erreurs d'attribution).
+- **Extensible** (rôles temporaires/conditionnels, statistiques d'usage…) :
+  le schéma d'un panneau accepte de nouveaux champs (compteurs `stats` déjà
+  présents), la persistance et la logique sont isolées.
+
 ### 🧰 Utilitaire
 
 | Commande | Description | Exemple |
@@ -412,6 +445,7 @@ par serveur (`database/data/logSettings.json`) :
 | `tickets` | Système de tickets : cycle de vie complet des tickets et panneaux | `#logs-tickets` |
 | `surveillance` | Système de surveillance : démarrage, arrêt, reprise, expiration, erreurs | `#logs-surveillance` |
 | `warns` | Sanctions progressives : ajout, suppression, remise à zéro, sanction automatique, règles | `#logs-warns` |
+| `roles-reactions` | Panneaux de rôles réactions : création, modification, suppression, rôles, mode, erreurs | `#logs-roles-reactions` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -460,6 +494,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── moderation/
 │   ├── owner/           #   addowner+rmowner, serveurs, rep, leave, serverban…
 │   ├── tickets/         #   setticket, ticket, ticketclose+ticketopen+ticketdelete
+│   ├── reactionRoles/   #   reactionrole (assistant + composants live)
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
@@ -467,7 +502,8 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── guild/           #   logs des salons et du serveur
 │   ├── interaction/     #   interactionCreate (slash + composants interactifs)
 │   ├── member/          #   logs des arrivées/départs et des rôles
-│   └── message/         #   messageCreate (préfixe) + logs des messages
+│   ├── message/         #   messageCreate (préfixe) + logs des messages
+│   └── reactionRoles/   #   ready (panneaux persistés opérationnels)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
 │   ├── logging/         #   logService (logs par catégories), modLogService
@@ -478,13 +514,15 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── serverManagement/#   départ manuel, liste noire globale, journal owner
 │   ├── tickets/         #   ticketService (panneaux, cycle de vie, logs)
 │   ├── watch/           #   watchService (surveillance de modération, 7 j max)
-│   └── warnings/        #   warnService + sanctionService (sanctions progressives)
+│   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
+│   └── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   ├── cooldowns/       # Anti-spam par utilisateur et par commande
 │   ├── moderation/      # Garde des warns (cible valide + hiérarchie)
 │   ├── tickets/         # Accès aux tickets (créateur ou modérateur)
-│   └── watch/           # Accès à la surveillance (admin / modérateur / owner)
+│   ├── watch/           # Accès à la surveillance (admin / modérateur / owner)
+│   └── reactionRoles/   # Sécurité d'attribution des rôles (hiérarchie du bot)
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…

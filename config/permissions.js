@@ -66,6 +66,10 @@ module.exports = {
     user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
+  reactionrole: {
+    user: [PermissionFlagsBits.ManageRoles],
+    bot: [PermissionFlagsBits.ManageRoles],
+  },
   purge: {
     user: [PermissionFlagsBits.ManageMessages],
     bot: [PermissionFlagsBits.ManageMessages],

@@ -104,4 +104,10 @@ module.exports = {
     channelName: 'logs-warns',
     emoji: '📛',
   },
+  'roles-reactions': {
+    label: 'Rôles réactions',
+    description: 'Panneaux de rôles réactions : création, modification, suppression, rôles, mode, erreurs',
+    channelName: 'logs-roles-reactions',
+    emoji: '📌',
+  },
 };

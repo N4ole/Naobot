@@ -359,6 +359,105 @@
       "rulesChanged": "Règles de sanction modifiées"
     }
   },
+  "reactionRoles": {
+    "panel": {
+      "defaultTitle": "Rôles réactions",
+      "rolesField": "Rôles disponibles",
+      "modeField": "Mode",
+      "modeLimited": "🔢 Limité ({limit} max)",
+      "selectPlaceholder": "Choisissez vos rôles…"
+    },
+    "list": {
+      "title": "📌 Panneaux de rôles réactions",
+      "empty": "Aucun panneau configuré. Créez-en un avec `reactionrole create`.",
+      "entry": "`{id}` • <#{channel}>\nRôles : **{roles}** · Mode : **{mode}** · Créé le <t:{date}:d>"
+    },
+    "delete": {
+      "title": "🗑️ Supprimer un panneau",
+      "confirm": "Supprimer le panneau `{id}` (<#{channel}>, {roles} rôle(s)) ? Choisissez si le message Discord associé doit aussi être supprimé.",
+      "withMessage": "Supprimer + message",
+      "configOnly": "Config seule",
+      "cancel": "Annuler",
+      "cancelled": "Suppression annulée.",
+      "done": "Panneau `{id}` supprimé."
+    },
+    "assign": {
+      "added": "Rôle {role} ajouté ✅",
+      "removed": "Rôle {role} retiré ✅",
+      "limitReached": "Vous ne pouvez pas sélectionner plus de **{limit}** rôle(s) de ce panneau.",
+      "addedList": "Rôles ajoutés : {roles}",
+      "removedList": "Rôles retirés : {roles}",
+      "skippedList": "Rôles ignorés (non attribuables) : {roles}",
+      "noChange": "Aucune modification.",
+      "notFound": "Rôle {role} introuvable.",
+      "botNoPerm": "Je n'ai pas la permission **Gérer les rôles**.",
+      "everyone": "Ce rôle ne peut pas être attribué.",
+      "managed": "Le rôle {role} est géré par une intégration et ne peut pas être attribué.",
+      "tooHigh": "Le rôle {role} est supérieur ou égal à mon rôle le plus haut : je ne peux pas l'attribuer."
+    },
+    "logs": {
+      "created": "Panneau créé",
+      "updated": "Panneau modifié",
+      "deleted": "Panneau supprimé",
+      "error": "Erreur d'attribution",
+      "panel": "Panneau",
+      "roles": "Rôles",
+      "mode": "Mode",
+      "detail": "Détail"
+    },
+    "errors": {
+      "idRequired": "Précisez l'identifiant du panneau (voir `reactionrole list`).",
+      "notFound": "Aucun panneau avec l'identifiant `{id}`.",
+      "noPermission": "Vous devez posséder la permission **Gérer les rôles** pour gérer les panneaux.",
+      "panelGone": "Ce panneau n'existe plus.",
+      "notYourSession": "Seule la personne ayant lancé la commande peut confirmer cette action."
+    },
+    "wizard": {
+      "createTitle": "📌 Création d'un panneau de rôles réactions",
+      "editTitle": "📌 Modification d'un panneau",
+      "help": "Configurez le panneau à l'aide des menus et boutons ci-dessous, puis publiez. Le composant (boutons ou menu déroulant) est choisi automatiquement selon le nombre de rôles.",
+      "statusChannel": "**Salon** : {channel}",
+      "statusMode": "**Mode** : {mode}",
+      "statusRoles": "**Rôles** : {count}",
+      "notSet": "*(non défini)*",
+      "pickChannel": "Salon d'envoi du panneau…",
+      "pickRoles": "Rôles disponibles dans le panneau…",
+      "pickMode": "Mode de fonctionnement…",
+      "editText": "Apparence",
+      "editRoles": "Éditer les rôles",
+      "save": "Enregistrer",
+      "publish": "Publier",
+      "cancel": "Annuler",
+      "roleEditorTitle": "🎭 Édition des rôles (emoji, nom, description)",
+      "noRoles": "Aucun rôle sélectionné.",
+      "pickRoleToEdit": "Choisir un rôle à personnaliser…",
+      "back": "Retour",
+      "textModalTitle": "Apparence du panneau",
+      "fieldTitle": "Titre",
+      "fieldDescription": "Description",
+      "fieldFooter": "Pied de page",
+      "fieldColor": "Couleur (hex, ex. #5865F2)",
+      "fieldImage": "Image (URL)",
+      "limitModalTitle": "Mode limité",
+      "limitLabel": "Nombre maximal de rôles",
+      "roleModalTitle": "Personnaliser le rôle",
+      "roleLabel": "Nom affiché",
+      "roleEmoji": "Emoji (Unicode ou personnalisé)",
+      "roleDescription": "Description (menu déroulant)",
+      "expired": "Cet assistant a expiré. Relancez `reactionrole create`.",
+      "needChannel": "Choisissez d'abord un salon d'envoi.",
+      "needRoles": "Ajoutez au moins un rôle au panneau.",
+      "cancelledTitle": "Assistant annulé",
+      "cancelled": "La configuration a été abandonnée.",
+      "saved": "Panneau `{id}` mis à jour dans {channel}.",
+      "published": "Panneau `{id}` publié dans {channel}.",
+      "error": {
+        "noChannel": "Salon d'envoi invalide.",
+        "sendFailed": "Impossible d'envoyer le message du panneau (permissions ?).",
+        "notFound": "Panneau introuvable."
+      }
+    }
+  },
   "watch": {
     "warning": {
       "title": "⚠️ Surveillance de modération",
