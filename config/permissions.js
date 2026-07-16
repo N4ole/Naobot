@@ -69,4 +69,8 @@ module.exports = {
     user: [PermissionFlagsBits.ManageMessages],
     bot: [],
   },
+  setticket: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [PermissionFlagsBits.ManageChannels],
+  },
 };

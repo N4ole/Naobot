@@ -15,10 +15,10 @@ const { t } = require('../../utils/helpers/i18n');
 module.exports = {
   name: Events.InteractionCreate,
   async execute(interaction) {
-    // Composants interactifs (boutons, menus…) : le préfixe du customId
-    // ("logs:...") désigne la commande propriétaire, qui expose
+    // Composants interactifs (boutons, menus, modals…) : le préfixe du
+    // customId ("logs:...") désigne la commande propriétaire, qui expose
     // handleComponent(interaction). Aucun registre central à maintenir.
-    if (interaction.isButton() || interaction.isAnySelectMenu()) {
+    if (interaction.isButton() || interaction.isAnySelectMenu() || interaction.isModalSubmit()) {
       const [ownerName] = interaction.customId.split(':');
       const owner = interaction.client.commands.get(ownerName);
       if (owner?.handleComponent) {

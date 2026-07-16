@@ -132,6 +132,45 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 | `bumpcount [utilisateur]` | Bumps d'un utilisateur : total, classement global, classement serveur, dernier bump | — | `!bumpcount @Utilisateur` |
 | `bumpunicount` | Bumps du serveur : total, classement inter-serveurs, dernier bump, réputation, membres ayant bumpé | — | `!bumpunicount` |
 
+### 🎫 Tickets
+
+| Commande | Description | Permission requise (auteur) | Exemple |
+|---|---|---|---|
+| `setticket <salon> <type>` | Publie le panneau de création de tickets d'un type dans un salon (types : `assistance`, `questions`, `report`, `signalement`) | Gérer le serveur | `!setticket #support assistance` |
+| `ticket` | Informations du ticket courant (type, créateur, statut, participants) | — | `!ticket` |
+| `ticketclose` | Ferme le ticket courant | Créateur ou modérateur | `!ticketclose` |
+| `ticketopen` (alias `ticketreopen`) | Réouvre le ticket courant | Créateur ou modérateur | `!ticketopen` |
+| `ticketdelete` | Supprime le ticket courant, avec confirmation | Créateur ou modérateur | `!ticketdelete` |
+
+## Système de tickets
+
+Multi-serveurs et persistant (`database/data/tickets.json`) : panneaux,
+compteur, tickets ouverts/fermés et archive des tickets supprimés (base
+des futurs transcripts) survivent aux redémarrages.
+
+- **Types indépendants** (`utils/constants/ticketTypes.js`) : assistance,
+  questions, report, signalement — chacun avec son panneau (embed :
+  description, règles, nombre de tickets ouverts + bouton 🎫 **Ouvrir un
+  ticket**). Ajouter un type = une entrée dans ce fichier.
+- **Création** : au clic, vérification qu'aucun ticket du même type n'est
+  déjà ouvert par l'utilisateur, création/réutilisation de la catégorie
+  **📁 Tickets**, salon privé `ticket-n001` (compteur incrémental propre
+  au serveur, persistant) visible uniquement du créateur, des rôles de
+  modération (*Modérer les membres*) et du bot.
+- **Message d'accueil** : embed (type, créateur, date, identifiant,
+  instructions) + boutons 🔒 Fermer, ✏️ Renommer (modal natif),
+  🗑️ Supprimer (avec confirmation), ➕/➖ Ajouter/Retirer un utilisateur
+  (sélecteurs d'utilisateurs natifs).
+- **Fermeture** : écriture coupée pour le créateur et les participants,
+  embed d'accueil mis à jour (fermé par X, date), bouton 🔓 **Réouvrir le
+  ticket**. Les commandes `ticketclose`/`ticketopen`/`ticketdelete`
+  fonctionnent même sans les boutons.
+- **Suppression** : confirmation obligatoire, informations archivées,
+  salon supprimé définitivement.
+- **Logs** : catégorie dédiée `tickets` (création, fermeture,
+  réouverture, suppression, ajout/retrait d'utilisateur, renommage,
+  configuration de panneau).
+
 ### 🧰 Utilitaire
 
 | Commande | Description | Exemple |
@@ -291,6 +330,7 @@ par serveur (`database/data/logSettings.json`) :
 | `erreurs` | Erreurs du bot pendant les commandes | `#logs-erreurs` |
 | `bumps` | Système de bump (activation, salon, bumps, erreurs, invitations) | `#logs-bumps` |
 | `gestion-serveurs` | Actions globales du bot : départs manuels, liste noire, départs automatiques | `#logs-gestion-serveurs` |
+| `tickets` | Système de tickets : cycle de vie complet des tickets et panneaux | `#logs-tickets` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -337,7 +377,8 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── bump/            #   bumpenable, bump, bumpcount+bumpunicount
 │   ├── fun/             #   8ball, coinflip, dice, say, rps
 │   ├── moderation/
-│   ├── owner/           #   addowner+rmowner, serveurs, rep
+│   ├── owner/           #   addowner+rmowner, serveurs, rep, leave, serverban…
+│   ├── tickets/         #   setticket, ticket, ticketclose+ticketopen+ticketdelete
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
 │   ├── client/          #   ready (enregistrement des commandes slash)
@@ -352,10 +393,12 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── reputation/      #   reputationService (score, niveaux, critères)
 │   ├── tracking/        #   guildStatsService, ownerNotifier (arrivées/départs)
 │   ├── bump/            #   bumpService (bump inter-serveurs)
-│   └── serverManagement/#   départ manuel, liste noire globale, journal owner
+│   ├── serverManagement/#   départ manuel, liste noire globale, journal owner
+│   └── tickets/         #   ticketService (panneaux, cycle de vie, logs)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
-│   └── cooldowns/       # Anti-spam par utilisateur et par commande
+│   ├── cooldowns/       # Anti-spam par utilisateur et par commande
+│   └── tickets/         # Accès aux tickets (créateur ou modérateur)
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
