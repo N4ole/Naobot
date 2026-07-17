@@ -89,13 +89,45 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 | `unmute <membre> [raison]` | Redonne la parole à un membre muet | Modérer les membres | `!unmute @Utilisateur` |
 | `timeout <membre> <durée> [raison]` (alias `to`) | Exclusion temporaire native Discord (28 j max). Durées : `30s`, `10m`, `1h30m`, `2d`… | Modérer les membres | `!timeout @Utilisateur 10m Flood` |
 | `untimeout <membre> [raison]` (alias `unto`) | Lève une exclusion temporaire | Modérer les membres | `!untimeout @Utilisateur` |
-| `warn <membre> <raison>` | Ajoute un avertissement (persisté) | Modérer les membres | `!warn @Utilisateur Langage inapproprié` |
-| `warnings <membre>` (alias `warns`) | Liste les avertissements d'un membre | Modérer les membres | `!warnings @Utilisateur` |
+| `warn <membre> <raison>` | Avertit un membre et applique **automatiquement** la sanction progressive du palier atteint | Modérer les membres | `!warn @Utilisateur Langage inapproprié` |
+| `unwarn <utilisateur> <identifiant>` | Supprime un avertissement précis (recalcule le total) | Modérer les membres | `!unwarn @Utilisateur a1b2c3` |
+| `warnings <utilisateur>` (alias `warns`) | Liste paginée des avertissements (raisons, modérateurs, dates, sanctions appliquées) | Modérer les membres | `!warnings @Utilisateur` |
+| `warncount <utilisateur>` | Aperçu rapide : total actif, prochaine sanction, date du dernier warn | Modérer les membres | `!warncount @Utilisateur` |
+| `clearwarns <utilisateur>` | Supprime tous les avertissements d'un membre (confirmation par boutons) | Modérer les membres | `!clearwarns @Utilisateur` |
 | `purge <nombre>` (alias `clear`) | Supprime les 1 à 100 derniers messages du salon (moins de 14 jours, limite Discord) | Gérer les messages | `!purge 20` |
 
 > **mute vs timeout** : `mute` applique un rôle et dure jusqu'à `unmute` ;
 > `timeout` utilise l'exclusion temporaire **native** de Discord (plafonnée à
 > 28 jours par l'API). Pour une sanction temporaire, préférer `timeout`.
+
+#### Sanctions progressives (warns)
+
+Chaque avertissement déclenche **automatiquement** la sanction du palier
+atteint, selon une échelle **configurable par serveur** (persistante). Le
+palier 1 est toujours un simple avertissement.
+
+| Warns | Sanction par défaut |
+|---|---|
+| 1 | Avertissement |
+| 2 | Timeout 1 heure |
+| 3 | Timeout 1 jour |
+| 4 | Mute (rôle) |
+| 5 | Kick |
+| 6 | Ban |
+
+- L'échelle se configure via `setwarnsanction` (panneau interactif : menu
+  des paliers, menu des types de sanction, modal de durée pour les
+  timeouts, désactivation d'un palier, `reset`). Ajouter un palier ou un
+  type de sanction est trivial (`utils/constants/warnSanctions.js`).
+- Au-delà du dernier palier, le dernier palier s'applique (plafond).
+- À chaque warn, le membre reçoit un **MP** (raison, modérateur, sanction
+  appliquée, total, prochaine sanction) — échec silencieux si MP fermés.
+- `unwarn` / `clearwarns` recalculent le total ; toutes les actions (ajout,
+  suppression, remise à zéro, sanction automatique, modification des
+  règles) sont journalisées dans la catégorie de logs `warns`.
+- La persistance (`database/data/warns.json`, `warnConfig.json`) porte tout
+  le nécessaire aux futures statistiques (modérateurs les plus actifs,
+  utilisateurs les plus sanctionnés, sanctions les plus fréquentes).
 
 ### ⚙️ Administration
 
@@ -105,6 +137,7 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 | `logs statut` | État des catégories de logs | Gérer le serveur | `!logs statut` |
 | `logs activer <catégories…\|tout>` | Active une, plusieurs ou toutes les catégories (crée les salons manquants) | Gérer le serveur | `!logs activer sanctions moderation` |
 | `logs desactiver <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs desactiver tout` |
+| `setwarnsanction [reset]` | Configure l'échelle des sanctions progressives des warns (panneau interactif : menus + boutons + modal ; `reset` restaure les valeurs par défaut) | Gérer le serveur | `!setwarnsanction` |
 
 ### 👑 Owner (réservées aux owners du bot)
 
@@ -122,6 +155,38 @@ Chaque commande est utilisable en slash (`/commande`) **ou** avec le préfixe
 | `serverban <id_serveur> [raison]` | Ajoute un serveur à la **liste noire globale** ; si le bot y est présent, le propriétaire est prévenu en MP et le bot part immédiatement | `!serverban 123456789012345678 Violation des règles` |
 | `serverunban <id_serveur>` | Retire un serveur de la liste noire | `!serverunban 123456789012345678` |
 | `serverbanlist` (alias `sbl`) | Liste noire complète (ID, raison, date, owner responsable), paginée par boutons | `!serverbanlist` |
+| `respond <identifiant> <message>` | Répond à une conversation de contact (message signé transmis au propriétaire via le bot ; autres owners synchronisés) | `!respond CONTACT-000001 Bonjour…` |
+| `contactlist` | Liste paginée des conversations de contact (statut, serveur, dernier message, date) | `!contactlist` |
+| `contactinfo <identifiant>` | Détail d'une conversation + menu de changement de statut | `!contactinfo CONTACT-000001` |
+
+### ✉️ Contact
+
+| Commande | Description | Accès | Exemple |
+|---|---|---|---|
+| `contactowner <message>` | Contacte les owners du bot depuis le serveur (message transmis par le bot, sans exposer les comptes des owners) | **Propriétaire du serveur** | `!contactowner Une question sur le bot…` |
+
+Système de **communication sécurisée** entre les propriétaires de serveurs
+et les owners du bot : toutes les communications transitent par le bot,
+aucun compte Discord d'owner n'est jamais exposé.
+
+- **`contactowner`** (propriétaire du serveur uniquement, serveur non
+  blacklisté) : envoie un MP à **tous les owners** sous forme d'embed (nom
+  et ID du serveur, nom et ID du propriétaire, réputation, membres, date et
+  heure, message). Chaque demande reçoit un **identifiant unique**
+  `CONTACT-000001`.
+- **`respond`** (owners) : la réponse est **signée automatiquement** et
+  transmise au propriétaire via le bot ; **tous les autres owners sont
+  synchronisés** (embed indiquant l'identifiant, l'owner ayant répondu, la
+  date et le contenu) — personne n'ignore qu'une réponse a été envoyée.
+- **Statuts** : ouverte, en attente, traitée, fermée — modifiables par les
+  owners via le menu de `contactinfo`.
+- **Historique persistant** (`database/data/contact.json`) : identifiant,
+  serveur, propriétaire, owners ayant répondu, messages échangés et dates
+  — survit aux redémarrages.
+- **Logs** : catégorie dédiée `contact` (ouverture, réponse, changement de
+  statut, fermeture, erreurs d'envoi).
+- **Extensible** (pièces jointes, catégories, priorités, notes privées,
+  assignation…) : le schéma d'une conversation accepte de nouveaux champs.
 
 ### 📣 Bump
 
@@ -216,6 +281,39 @@ et persistant (`database/data/watch.json`).
 - **Statistiques owner** : `watchtimeuser` et `watchserveurs` (classements
   paginés par boutons). Extensible (export d'historique, tableaux de bord,
   durée paramétrable) : durée dans `WATCH_DURATION_MS`, persistance isolée.
+
+### 📌 Rôles réactions
+
+| Commande | Description | Permission requise (auteur) | Exemple |
+|---|---|---|---|
+| `reactionrole create` (alias `rr`) | Assistant interactif de création d'un panneau (menus + boutons + modals) | Gérer les rôles | `!reactionrole create` |
+| `reactionrole edit <id>` | Assistant d'édition d'un panneau (met à jour le message existant) | Gérer les rôles | `!reactionrole edit a1b2c3d4` |
+| `reactionrole delete <id>` | Supprime un panneau (confirmation par boutons, option « + message ») | Gérer les rôles | `!reactionrole delete a1b2c3d4` |
+| `reactionrole list` | Liste paginée des panneaux (id, salon, rôles, mode, date) | Gérer les rôles | `!reactionrole list` |
+
+Panneaux de rôles réactions **personnalisables et persistants**
+(`database/data/reactionRoles.json`) : les membres obtiennent/retirent
+leurs rôles eux-mêmes via boutons ou menu déroulant.
+
+- **Assistant interactif** (`create`/`edit`) : salon d'envoi, titre,
+  description, couleur, image, pied de page, mode, et liste des rôles avec
+  emoji / nom affiché / description — le tout via menus, boutons et modals.
+- **Composant automatique** : boutons si ≤ 5 rôles, menu déroulant au-delà.
+- **Modes** : `multiple` (autant de rôles que souhaité), `unique` (un seul
+  rôle du panneau — les autres sont retirés), `limited` (maximum N rôles).
+- **Sécurité** : permission *Gérer les rôles* pour administrer ; à chaque
+  attribution, vérification de la permission du bot et de la hiérarchie —
+  le bot **n'attribue jamais** un rôle supérieur ou égal au sien.
+- **Persistance & redémarrage** : les panneaux survivent aux redémarrages
+  et restent fonctionnels sans ré-enregistrement (routage par `customId`).
+- **Modification** : met à jour automatiquement le message existant (ou le
+  republie si le salon change). **Suppression** : confirmation + option de
+  suppression du message Discord.
+- **Logs** : catégorie dédiée `roles-reactions` (création, modification,
+  suppression, mode, erreurs d'attribution).
+- **Extensible** (rôles temporaires/conditionnels, statistiques d'usage…) :
+  le schéma d'un panneau accepte de nouveaux champs (compteurs `stats` déjà
+  présents), la persistance et la logique sont isolées.
 
 ### 🧰 Utilitaire
 
@@ -378,6 +476,9 @@ par serveur (`database/data/logSettings.json`) :
 | `gestion-serveurs` | Actions globales du bot : départs manuels, liste noire, départs automatiques | `#logs-gestion-serveurs` |
 | `tickets` | Système de tickets : cycle de vie complet des tickets et panneaux | `#logs-tickets` |
 | `surveillance` | Système de surveillance : démarrage, arrêt, reprise, expiration, erreurs | `#logs-surveillance` |
+| `warns` | Sanctions progressives : ajout, suppression, remise à zéro, sanction automatique, règles | `#logs-warns` |
+| `roles-reactions` | Panneaux de rôles réactions : création, modification, suppression, rôles, mode, erreurs | `#logs-roles-reactions` |
+| `contact` | Contact owners : ouverture, réponse, changement de statut, fermeture, erreurs | `#logs-contact` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -426,6 +527,8 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── moderation/
 │   ├── owner/           #   addowner+rmowner, serveurs, rep, leave, serverban…
 │   ├── tickets/         #   setticket, ticket, ticketclose+ticketopen+ticketdelete
+│   ├── reactionRoles/   #   reactionrole (assistant + composants live)
+│   ├── contact/         #   contactowner, respond, contactlist+contactinfo
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
@@ -433,7 +536,9 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── guild/           #   logs des salons et du serveur
 │   ├── interaction/     #   interactionCreate (slash + composants interactifs)
 │   ├── member/          #   logs des arrivées/départs et des rôles
-│   └── message/         #   messageCreate (préfixe) + logs des messages
+│   ├── message/         #   messageCreate (préfixe) + logs des messages
+│   ├── reactionRoles/   #   ready (panneaux persistés opérationnels)
+│   └── contact/         #   ready (conversations de contact persistées)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
 │   ├── logging/         #   logService (logs par catégories), modLogService
@@ -443,18 +548,24 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── bump/            #   bumpService (bump inter-serveurs)
 │   ├── serverManagement/#   départ manuel, liste noire globale, journal owner
 │   ├── tickets/         #   ticketService (panneaux, cycle de vie, logs)
-│   └── watch/           #   watchService (surveillance de modération, 7 j max)
+│   ├── watch/           #   watchService (surveillance de modération, 7 j max)
+│   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
+│   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
+│   └── contact/         #   contactService (communication owners ↔ propriétaires)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   ├── cooldowns/       # Anti-spam par utilisateur et par commande
+│   ├── moderation/      # Garde des warns (cible valide + hiérarchie)
 │   ├── tickets/         # Accès aux tickets (créateur ou modérateur)
-│   └── watch/           # Accès à la surveillance (admin / modérateur / owner)
+│   ├── watch/           # Accès à la surveillance (admin / modérateur / owner)
+│   ├── reactionRoles/   # Sécurité d'attribution des rôles (hiérarchie du bot)
+│   └── contact/         # Accès au contact (propriétaire du serveur)
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
 ├── config/              # Configuration (env) et permissions par commande
-├── database/            # Persistance (JSON) : warns, logs, owners, stats, bumps
+├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps…
 ├── locales/             # Textes utilisateur (fr.json)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login

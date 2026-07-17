@@ -42,12 +42,33 @@ module.exports = {
     bot: [PermissionFlagsBits.ModerateMembers],
   },
   warn: {
+    // Le bot peut avoir à appliquer timeout/mute/kick/ban selon l'échelle.
+    user: [PermissionFlagsBits.ModerateMembers],
+    bot: [PermissionFlagsBits.ModerateMembers],
+  },
+  unwarn: {
     user: [PermissionFlagsBits.ModerateMembers],
     bot: [],
   },
   warnings: {
     user: [PermissionFlagsBits.ModerateMembers],
     bot: [],
+  },
+  warncount: {
+    user: [PermissionFlagsBits.ModerateMembers],
+    bot: [],
+  },
+  clearwarns: {
+    user: [PermissionFlagsBits.ModerateMembers],
+    bot: [],
+  },
+  setwarnsanction: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
+  },
+  reactionrole: {
+    user: [PermissionFlagsBits.ManageRoles],
+    bot: [PermissionFlagsBits.ManageRoles],
   },
   purge: {
     user: [PermissionFlagsBits.ManageMessages],

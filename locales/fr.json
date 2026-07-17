@@ -294,6 +294,232 @@
       "expiresAt": "Expire"
     }
   },
+  "warns": {
+    "dm": "Vous avez reçu un **avertissement** sur le serveur **{guild}**.\nRaison : {reason}\nModérateur : {moderator}\nSanction appliquée : {sanction}\nTotal d'avertissements : **{total}**\nProchaine sanction : {next}",
+    "sanction": {
+      "none": "Aucune",
+      "notApplied": "{sanction} *(non appliquée)*",
+      "failed": "{sanction} — échec (permissions ou hiérarchie insuffisantes)"
+    },
+    "field": {
+      "id": "Identifiant",
+      "total": "Total d'avertissements",
+      "sanction": "Sanction",
+      "next": "Prochaine sanction",
+      "lastWarn": "Dernier avertissement",
+      "removed": "Avertissements supprimés",
+      "change": "Modification"
+    },
+    "command": {
+      "warned": "**{user}** a reçu un avertissement (total : **{total}**). Raison : {reason}",
+      "sanction": "Sanction : {sanction}",
+      "next": "Prochaine sanction : {next}",
+      "unwarned": "Avertissement `{id}` supprimé pour **{user}** (total : **{total}**). Prochaine sanction : {next}",
+      "none": "**{user}** n'a aucun avertissement.",
+      "listTitle": "📛 Avertissements de {user} ({count})",
+      "entry": "`{id}` • <t:{timestamp}:d> • par <@{moderatorId}>\nRaison : {reason}\nSanction : {sanction}",
+      "countTitle": "📛 Avertissements de {user}",
+      "never": "Jamais",
+      "clearTitle": "🧹 Effacer les avertissements",
+      "clearConfirm": "Supprimer **tous** les avertissements de **{user}** ({count}) ? Cette action est irréversible.",
+      "clearConfirmButton": "Tout supprimer",
+      "clearCancelButton": "Annuler",
+      "clearCancelled": "Suppression annulée.",
+      "cleared": "**{count}** avertissement(s) supprimé(s) pour **{user}**."
+    },
+    "config": {
+      "title": "⚖️ Sanctions progressives",
+      "description": "Échelle actuelle des sanctions automatiques (par nombre d'avertissements). Sélectionnez un palier pour le modifier. Le palier 1 est toujours un simple avertissement.",
+      "line": "**{level}** warn(s) → {sanction}",
+      "disabled": "Désactivé (aucune sanction)",
+      "selectTier": "Choisir un palier à modifier…",
+      "tierOption": "Palier {level}",
+      "tierTitle": "⚖️ Palier {level}",
+      "tierEditDescription": "Choisissez la sanction appliquée à partir de **{level}** avertissement(s).",
+      "tierLockedDescription": "Le palier {level} est verrouillé sur un simple **avertissement** (règle obligatoire).",
+      "selectType": "Choisir le type de sanction…",
+      "disable": "Désactiver ce palier",
+      "back": "Retour",
+      "durationTitle": "Durée du timeout",
+      "durationLabel": "Durée (ex. : 30s, 10m, 1h, 1d)",
+      "changeDetail": "Palier {level} → {sanction}",
+      "resetDone": "Échelle des sanctions restaurée par défaut.",
+      "noPermission": "Vous devez posséder la permission **Gérer le serveur** pour configurer les sanctions."
+    },
+    "errors": {
+      "botTarget": "Impossible d'avertir un bot.",
+      "warnNotFound": "Aucun avertissement avec l'identifiant `{id}` pour cet utilisateur.",
+      "notYourSession": "Seule la personne ayant lancé la commande peut confirmer cette action."
+    },
+    "logs": {
+      "added": "Avertissement ajouté",
+      "removed": "Avertissement supprimé",
+      "cleared": "Avertissements remis à zéro",
+      "autoSanction": "Sanction automatique appliquée",
+      "rulesChanged": "Règles de sanction modifiées"
+    }
+  },
+  "contact": {
+    "command": {
+      "sent": "✉️ Votre message a été transmis aux owners du bot (**{count}** notifié(s)). Référence : **{id}**. Conservez cette référence pour le suivi.",
+      "responded": "Réponse envoyée au propriétaire du serveur pour **{id}**."
+    },
+    "owner": {
+      "newTitle": "✉️ Nouvelle demande de contact — {id}",
+      "messageTitle": "✉️ Nouveau message — {id}",
+      "replyHint": "Répondez avec `/respond {id} <message>` — votre compte Discord ne sera jamais exposé.",
+      "replyHintLabel": "Répondre"
+    },
+    "reply": {
+      "header": "Réponse de l'équipe NaoBot",
+      "by": "Répondu par : {name}",
+      "date": "Date : {date}",
+      "messageLabel": "Message :",
+      "footer": "Réf. {id}"
+    },
+    "sync": {
+      "title": "🔄 Réponse envoyée — {id}"
+    },
+    "list": {
+      "title": "✉️ Conversations de contact",
+      "empty": "Aucune conversation de contact.",
+      "entry": "`{id}` • {status}\n**{server}** — <t:{date}:R>\n> {last}"
+    },
+    "info": {
+      "title": "✉️ Conversation {id}",
+      "changeStatus": "Changer le statut…"
+    },
+    "field": {
+      "id": "Identifiant",
+      "server": "Serveur",
+      "owner": "Propriétaire",
+      "members": "Membres",
+      "status": "Statut",
+      "date": "Date",
+      "message": "Message",
+      "replyHint": "Répondre",
+      "respondedBy": "Owners ayant répondu",
+      "detail": "Détail",
+      "messages": "Messages",
+      "created": "Créée le",
+      "lastActivity": "Dernière activité"
+    },
+    "logs": {
+      "opened": "Conversation ouverte",
+      "responded": "Réponse d'un owner",
+      "status": "Changement de statut",
+      "closed": "Conversation fermée",
+      "error": "Erreur d'envoi"
+    },
+    "errors": {
+      "banned": "Ce serveur ne peut pas contacter les owners du bot.",
+      "notServerOwner": "Seul le **propriétaire du serveur** peut utiliser cette commande.",
+      "noOwners": "Aucun owner n'est configuré pour recevoir votre message.",
+      "notFound": "Aucune conversation avec l'identifiant `{id}`.",
+      "ownerUnreachable": "Le propriétaire du serveur est introuvable.",
+      "dmClosed": "Impossible d'envoyer le message : le propriétaire a fermé ses messages privés.",
+      "invalidStatus": "Statut invalide."
+    }
+  },
+  "reactionRoles": {
+    "panel": {
+      "defaultTitle": "Rôles réactions",
+      "rolesField": "Rôles disponibles",
+      "modeField": "Mode",
+      "modeLimited": "🔢 Limité ({limit} max)",
+      "selectPlaceholder": "Choisissez vos rôles…"
+    },
+    "list": {
+      "title": "📌 Panneaux de rôles réactions",
+      "empty": "Aucun panneau configuré. Créez-en un avec `reactionrole create`.",
+      "entry": "`{id}` • <#{channel}>\nRôles : **{roles}** · Mode : **{mode}** · Créé le <t:{date}:d>"
+    },
+    "delete": {
+      "title": "🗑️ Supprimer un panneau",
+      "confirm": "Supprimer le panneau `{id}` (<#{channel}>, {roles} rôle(s)) ? Choisissez si le message Discord associé doit aussi être supprimé.",
+      "withMessage": "Supprimer + message",
+      "configOnly": "Config seule",
+      "cancel": "Annuler",
+      "cancelled": "Suppression annulée.",
+      "done": "Panneau `{id}` supprimé."
+    },
+    "assign": {
+      "added": "Rôle {role} ajouté ✅",
+      "removed": "Rôle {role} retiré ✅",
+      "limitReached": "Vous ne pouvez pas sélectionner plus de **{limit}** rôle(s) de ce panneau.",
+      "addedList": "Rôles ajoutés : {roles}",
+      "removedList": "Rôles retirés : {roles}",
+      "skippedList": "Rôles ignorés (non attribuables) : {roles}",
+      "noChange": "Aucune modification.",
+      "notFound": "Rôle {role} introuvable.",
+      "botNoPerm": "Je n'ai pas la permission **Gérer les rôles**.",
+      "everyone": "Ce rôle ne peut pas être attribué.",
+      "managed": "Le rôle {role} est géré par une intégration et ne peut pas être attribué.",
+      "tooHigh": "Le rôle {role} est supérieur ou égal à mon rôle le plus haut : je ne peux pas l'attribuer."
+    },
+    "logs": {
+      "created": "Panneau créé",
+      "updated": "Panneau modifié",
+      "deleted": "Panneau supprimé",
+      "error": "Erreur d'attribution",
+      "panel": "Panneau",
+      "roles": "Rôles",
+      "mode": "Mode",
+      "detail": "Détail"
+    },
+    "errors": {
+      "idRequired": "Précisez l'identifiant du panneau (voir `reactionrole list`).",
+      "notFound": "Aucun panneau avec l'identifiant `{id}`.",
+      "noPermission": "Vous devez posséder la permission **Gérer les rôles** pour gérer les panneaux.",
+      "panelGone": "Ce panneau n'existe plus.",
+      "notYourSession": "Seule la personne ayant lancé la commande peut confirmer cette action."
+    },
+    "wizard": {
+      "createTitle": "📌 Création d'un panneau de rôles réactions",
+      "editTitle": "📌 Modification d'un panneau",
+      "help": "Configurez le panneau à l'aide des menus et boutons ci-dessous, puis publiez. Le composant (boutons ou menu déroulant) est choisi automatiquement selon le nombre de rôles.",
+      "statusChannel": "**Salon** : {channel}",
+      "statusMode": "**Mode** : {mode}",
+      "statusRoles": "**Rôles** : {count}",
+      "notSet": "*(non défini)*",
+      "pickChannel": "Salon d'envoi du panneau…",
+      "pickRoles": "Rôles disponibles dans le panneau…",
+      "pickMode": "Mode de fonctionnement…",
+      "editText": "Apparence",
+      "editRoles": "Éditer les rôles",
+      "save": "Enregistrer",
+      "publish": "Publier",
+      "cancel": "Annuler",
+      "roleEditorTitle": "🎭 Édition des rôles (emoji, nom, description)",
+      "noRoles": "Aucun rôle sélectionné.",
+      "pickRoleToEdit": "Choisir un rôle à personnaliser…",
+      "back": "Retour",
+      "textModalTitle": "Apparence du panneau",
+      "fieldTitle": "Titre",
+      "fieldDescription": "Description",
+      "fieldFooter": "Pied de page",
+      "fieldColor": "Couleur (hex, ex. #5865F2)",
+      "fieldImage": "Image (URL)",
+      "limitModalTitle": "Mode limité",
+      "limitLabel": "Nombre maximal de rôles",
+      "roleModalTitle": "Personnaliser le rôle",
+      "roleLabel": "Nom affiché",
+      "roleEmoji": "Emoji (Unicode ou personnalisé)",
+      "roleDescription": "Description (menu déroulant)",
+      "expired": "Cet assistant a expiré. Relancez `reactionrole create`.",
+      "needChannel": "Choisissez d'abord un salon d'envoi.",
+      "needRoles": "Ajoutez au moins un rôle au panneau.",
+      "cancelledTitle": "Assistant annulé",
+      "cancelled": "La configuration a été abandonnée.",
+      "saved": "Panneau `{id}` mis à jour dans {channel}.",
+      "published": "Panneau `{id}` publié dans {channel}.",
+      "error": {
+        "noChannel": "Salon d'envoi invalide.",
+        "sendFailed": "Impossible d'envoyer le message du panneau (permissions ?).",
+        "notFound": "Panneau introuvable."
+      }
+    }
+  },
   "watch": {
     "warning": {
       "title": "⚠️ Surveillance de modération",

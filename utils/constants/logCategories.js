@@ -98,4 +98,22 @@ module.exports = {
     channelName: 'logs-surveillance',
     emoji: '👁️',
   },
+  warns: {
+    label: 'Avertissements',
+    description: 'Système de warns : ajout, suppression, remise à zéro, sanction automatique, règles',
+    channelName: 'logs-warns',
+    emoji: '📛',
+  },
+  'roles-reactions': {
+    label: 'Rôles réactions',
+    description: 'Panneaux de rôles réactions : création, modification, suppression, rôles, mode, erreurs',
+    channelName: 'logs-roles-reactions',
+    emoji: '📌',
+  },
+  contact: {
+    label: 'Contact owners',
+    description: 'Communication propriétaires ↔ owners : ouverture, réponse, statut, fermeture, erreurs',
+    channelName: 'logs-contact',
+    emoji: '✉️',
+  },
 };
