@@ -304,42 +304,77 @@ aucun compte Discord d'owner n'est jamais exposé.
 
 ### 🎫 Tickets
 
-| Commande | Description | Permission requise (auteur) | Exemple |
+**Configuration** (administrateurs — assistants interactifs) :
+
+| Commande | Description | Permission | Exemple |
 |---|---|---|---|
-| `setticket <salon> <type>` | Publie le panneau de création de tickets d'un type dans un salon (types : `assistance`, `questions`, `report`, `signalement`) | Gérer le serveur | `!setticket #support assistance` |
-| `ticket` | Informations du ticket courant (type, créateur, statut, participants) | — | `!ticket` |
-| `ticketclose` | Ferme le ticket courant | Créateur ou modérateur | `!ticketclose` |
-| `ticketopen` (alias `ticketreopen`) | Réouvre le ticket courant | Créateur ou modérateur | `!ticketopen` |
-| `ticketdelete` | Supprime le ticket courant, avec confirmation | Créateur ou modérateur | `!ticketdelete` |
+| `ticketcategory <create\|edit\|delete\|list> [id]` (alias `tcategory`, `ticketcat`) | Gère les catégories de tickets (assistant : identité, salon, message, comportement, notifications) | Administrateur | `!ticketcategory create` |
+| `ticketpanel <create\|edit\|delete\|list> [id]` (alias `tpanel`) | Gère les panneaux (salon, catégories affichées, boutons ou menu déroulant, contenu) | Administrateur | `!ticketpanel create` |
+| `ticketstats` (alias `ticketstatistics`) | Statistiques par catégorie et globales (total, temps moyen, modérateurs/catégories les plus actifs) | Gérer le serveur | `!ticketstats` |
 
-## Système de tickets
+**Gestion d'un ticket** (créateur, modérateur assigné ou équipe — utilisables aussi via les boutons du ticket) :
 
-Multi-serveurs et persistant (`database/data/tickets.json`) : panneaux,
-compteur, tickets ouverts/fermés et archive des tickets supprimés (base
-des futurs transcripts) survivent aux redémarrages.
+| Commande | Description | Exemple |
+|---|---|---|
+| `ticket` / `ticketinfo` | Informations du ticket courant | `!ticketinfo` |
+| `ticketclose` | Ferme le ticket courant | `!ticketclose` |
+| `ticketopen` (alias `ticketreopen`) | Réouvre le ticket courant | `!ticketopen` |
+| `ticketrename <nom>` | Renomme le ticket courant | `!ticketrename urgent-paiement` |
+| `ticketdelete` | Supprime le ticket courant (confirmation + transcript) | `!ticketdelete` |
+| `ticketadd <membre>` | Ajoute un membre au ticket | `!ticketadd @Membre` |
+| `ticketremove <membre>` | Retire un membre du ticket | `!ticketremove @Membre` |
+| `ticketmove <id_catégorie>` (alias `tickettransfer`) | Transfère le ticket vers une autre catégorie | `!ticketmove a1b2c3d4` |
+| `ticketclaim` | S'assigne le ticket | `!ticketclaim` |
+| `ticketunclaim` | Retire l'assignation | `!ticketunclaim` |
 
-- **Types indépendants** (`utils/constants/ticketTypes.js`) : assistance,
-  questions, report, signalement — chacun avec son panneau (embed :
-  description, règles, nombre de tickets ouverts + bouton 🎫 **Ouvrir un
-  ticket**). Ajouter un type = une entrée dans ce fichier.
-- **Création** : au clic, vérification qu'aucun ticket du même type n'est
-  déjà ouvert par l'utilisateur, création/réutilisation de la catégorie
-  **📁 Tickets**, salon privé `ticket-n001` (compteur incrémental propre
-  au serveur, persistant) visible uniquement du créateur, des rôles de
-  modération (*Modérer les membres*) et du bot.
-- **Message d'accueil** : embed (type, créateur, date, identifiant,
-  instructions) + boutons 🔒 Fermer, ✏️ Renommer (modal natif),
-  🗑️ Supprimer (avec confirmation), ➕/➖ Ajouter/Retirer un utilisateur
-  (sélecteurs d'utilisateurs natifs).
-- **Fermeture** : écriture coupée pour le créateur et les participants,
-  embed d'accueil mis à jour (fermé par X, date), bouton 🔓 **Réouvrir le
-  ticket**. Les commandes `ticketclose`/`ticketopen`/`ticketdelete`
-  fonctionnent même sans les boutons.
-- **Suppression** : confirmation obligatoire, informations archivées,
-  salon supprimé définitivement.
-- **Logs** : catégorie dédiée `tickets` (création, fermeture,
-  réouverture, suppression, ajout/retrait d'utilisateur, renommage,
-  configuration de panneau).
+## Système de tickets avancé
+
+Système **entièrement personnalisable et modulaire**, multi-serveurs et
+persistant (`database/data/tickets.json`, `ticketCategories.json`,
+`ticketPanels.json`) : catégories, panneaux, compteurs, tickets,
+assignations, statistiques et paramètres survivent aux redémarrages.
+
+- **Catégories illimitées et indépendantes** (`ticketcategory`) : chaque
+  catégorie possède sa propre configuration (nom, description, emoji,
+  couleur, catégorie Discord cible, rôles d'accès), son **propre compteur
+  persistant**, son **format de salon** personnalisable
+  (`support-{counter}`, `plainte-{username}-{counter}`… variables
+  `{counter} {user} {username} {userid} {category} {date}`, extensibles via
+  `utils/constants/ticketVariables.js`), son message d'accueil (variables
+  `{user} {mention} {category} {ticketid} {date}`), son mode d'ouverture
+  (directe ou **formulaire modal**) et son **comportement** (nombre max de
+  tickets ouverts, délai entre deux tickets, fermeture automatique par
+  inactivité, suppression automatique, archivage).
+- **Notifications & sortie par catégorie** : rôles/utilisateurs à notifier à
+  l'ouverture, salon de logs dédié (sinon la catégorie de logs globale
+  `tickets`).
+- **Panneaux personnalisables** (`ticketpanel`) : salon d'envoi, titre,
+  description, couleur, image, pied de page, et une ou plusieurs catégories
+  affichées via des **boutons** ou un **menu déroulant** (au choix ; repli
+  automatique en menu au-delà de 25 catégories).
+- **Ouverture** : bouton, menu déroulant ou **formulaire Discord** (modal)
+  selon la catégorie ; vérification de la limite de tickets ouverts et du
+  délai ; salon privé placé dans la catégorie Discord cible, visible du
+  créateur, du staff (rôles d'accès + rôles notifiés) et du bot.
+- **Message d'ouverture** : embed (catégorie, créateur, statut, assigné,
+  demande) + boutons 🔒 Fermer, 🙋 S'assigner, ✏️ Renommer (modal),
+  🗑️ Supprimer (confirmation), ➕/➖ Ajouter/Retirer un utilisateur.
+- **Assignation** (`ticketclaim`/`ticketunclaim`) : prise en charge par un
+  modérateur, affichée dans le ticket et journalisée.
+- **Transcripts** (`services/tickets/transcriptService.js`, extensible) :
+  à la suppression, capture des messages en **texte** et **HTML** (PDF dans
+  une future version), joints au salon de logs de la catégorie.
+- **Fermeture / suppression automatiques** : planificateur (inactivité,
+  délai après fermeture) selon la configuration de chaque catégorie.
+- **Statistiques** (`ticketstats`) : total par catégorie, temps moyen de
+  traitement, modérateurs et catégories les plus actifs.
+- **Logs** : catégorie dédiée `tickets` (ouverture, fermeture, réouverture,
+  suppression, renommage, assignation, transfert, membres) + salon de logs
+  propre à chaque catégorie.
+- **Extensible sans refonte** : le schéma des catégories/tickets accepte de
+  nouveaux champs (SLA, priorités, tags, formulaires avancés, réponses
+  automatiques, IA…) via les modules `services/tickets`,
+  `services/ticketCategories`, `services/ticketPanels`.
 
 ### 👁️ Surveillance (modération)
 
@@ -615,7 +650,7 @@ par serveur (`database/data/logSettings.json`) :
 | `erreurs` | Erreurs du bot pendant les commandes | `#logs-erreurs` |
 | `bumps` | Système de bump (activation, salon, bumps, erreurs, invitations) | `#logs-bumps` |
 | `gestion-serveurs` | Actions globales du bot : départs manuels, liste noire, départs automatiques | `#logs-gestion-serveurs` |
-| `tickets` | Système de tickets : cycle de vie complet des tickets et panneaux | `#logs-tickets` |
+| `tickets` | Système de tickets : ouverture, fermeture, réouverture, suppression, renommage, assignation, transfert, membres, erreurs | `#logs-tickets` |
 | `surveillance` | Système de surveillance : démarrage, arrêt, reprise, expiration, erreurs | `#logs-surveillance` |
 | `warns` | Sanctions progressives : ajout, suppression, remise à zéro, sanction automatique, règles | `#logs-warns` |
 | `roles-reactions` | Panneaux de rôles réactions : création, modification, suppression, rôles, mode, erreurs | `#logs-roles-reactions` |
@@ -674,7 +709,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── fun/             #   8ball, coinflip, dice, say, rps
 │   ├── moderation/
 │   ├── owner/           #   addowner+rmowner, serveurs, rep, leave, serverban…
-│   ├── tickets/         #   setticket, ticket, ticketclose+ticketopen+ticketdelete
+│   ├── tickets/         #   ticketcategory, ticketpanel, ticket (info+composants), ticketManage (cycle de vie), ticketstats
 │   ├── reactionRoles/   #   reactionrole (assistant + composants live)
 │   ├── contact/         #   contactowner, respond, contactlist+contactinfo
 │   ├── protections/     #   antispam+antilink+antibot, protections (tableau de bord)
@@ -700,7 +735,8 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── backup/          #   ready (sauvegardes disponibles)
 │   ├── forms/           #   ready (formulaires actifs)
 │   ├── reminders/       #   ready (planificateur des rappels dus)
-│   └── polls/           #   ready (fermeture des sondages expirés)
+│   ├── polls/           #   ready (fermeture des sondages expirés)
+│   └── tickets/         #   ready (planificateur), activity (anti-inactivité)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
 │   ├── logging/         #   logService (logs par catégories), modLogService
@@ -709,7 +745,9 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── tracking/        #   guildStatsService, ownerNotifier (arrivées/départs)
 │   ├── bump/            #   bumpService (bump inter-serveurs)
 │   ├── serverManagement/#   départ manuel, liste noire globale, journal owner
-│   ├── tickets/         #   ticketService (panneaux, cycle de vie, logs)
+│   ├── tickets/         #   ticketService (cycle de vie, planificateur) + transcriptService
+│   ├── ticketCategories/#   ticketCategoryService + ticketCategoryWizard (catégories)
+│   ├── ticketPanels/    #   ticketPanelService + ticketPanelWizard (panneaux)
 │   ├── watch/           #   watchService (surveillance de modération, 7 j max)
 │   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
 │   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
@@ -728,7 +766,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   ├── cooldowns/       # Anti-spam par utilisateur et par commande
 │   ├── moderation/      # Garde des warns (cible valide + hiérarchie)
-│   ├── tickets/         # Accès aux tickets (créateur ou modérateur)
+│   ├── tickets/         # Admin (config) + accès ticket (créateur / assigné / équipe)
 │   ├── watch/           # Accès à la surveillance (admin / modérateur / owner)
 │   ├── reactionRoles/   # Sécurité d'attribution des rôles (hiérarchie du bot)
 │   ├── contact/         # Accès au contact (propriétaire du serveur)

@@ -1,16 +1,16 @@
 /**
- * Système de tickets multi-serveurs.
+ * Système de tickets avancé : cycle de vie complet d'un ticket rattaché à une
+ * catégorie personnalisable (services/ticketCategories) et publié via des
+ * panneaux (services/ticketPanels).
  *
- * Toute la logique métier vit ici : panneaux par type, création de salons
- * privés (catégorie « 📁 Tickets » créée/réutilisée automatiquement),
- * compteur persistant par serveur (ticket-n001…), fermeture/réouverture/
- * suppression, gestion des participants, renommage, et logs (catégorie
- * « tickets »).
+ * Responsabilités : création du salon (catégorie Discord + format + accès +
+ * message d'accueil + notifications), fermeture/réouverture, renommage,
+ * suppression (avec transcript), ajout/retrait de membres, transfert de
+ * catégorie, assignation (claim/unclaim), planificateur (fermeture et
+ * suppression automatiques), statistiques et logs.
  *
- * Le module est conçu pour être étendu : les tickets archivés
- * (repository.archiveTicket) sont la base des futurs transcripts ; le
- * schéma des tickets accepte de nouveaux champs (priorité, assignation…) ;
- * ajouter un type = une entrée dans utils/constants/ticketTypes.
+ * Modulaire et extensible : le schéma des tickets accepte de nouveaux champs
+ * (SLA, priorités, tags…) sans refonte des appelants.
  */
 const {
   ActionRowBuilder,
@@ -20,361 +20,224 @@ const {
   PermissionFlagsBits,
 } = require('discord.js');
 const repository = require('../../database/ticketRepository');
-const ticketTypes = require('../../utils/constants/ticketTypes');
+const categoryRepository = require('../../database/ticketCategoryRepository');
+const transcriptService = require('./transcriptService');
 const logService = require('../logging/logService');
 const { infoEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
+const ticketVariables = require('../../utils/constants/ticketVariables');
 const { t } = require('../../utils/helpers/i18n');
 
-const TICKETS_CATEGORY_NAME = '📁 Tickets';
-
-function isValidType(type) {
-  return type in ticketTypes;
-}
-
-/** « ticket-n001 », « ticket-n002 »… */
-function formatTicketChannelName(number) {
-  return `ticket-n${String(number).padStart(3, '0')}`;
-}
-
-/** Nettoie un nom de salon saisi par un utilisateur (renommage). */
-function sanitizeChannelName(input) {
-  return String(input)
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9à-ÿ_-]/g, '')
-    .slice(0, 100);
-}
+const LOG_COLORS = {
+  created: COLORS.LOG_CREATE,
+  closed: COLORS.LOG_UPDATE,
+  reopened: COLORS.LOG_CREATE,
+  deleted: COLORS.LOG_DELETE,
+  renamed: COLORS.LOG_NEUTRAL,
+  assigned: COLORS.INFO,
+  unassigned: COLORS.LOG_NEUTRAL,
+  moved: COLORS.LOG_UPDATE,
+  userAdded: COLORS.LOG_NEUTRAL,
+  userRemoved: COLORS.LOG_NEUTRAL,
+};
 
 // ---------------------------------------------------------------------------
-// Logs
+// Logs (catégorie globale « tickets » + salon de logs propre à la catégorie)
 // ---------------------------------------------------------------------------
 
-async function logTicketEvent(guild, action, ticket, byUser, extraFields = []) {
-  const definition = ticketTypes[ticket.type];
-  await logService.log(
-    guild,
-    'tickets',
-    logEventEmbed({
-      title: `🎫 ${t(`tickets.logs.${action}`)}`,
-      color: {
-        created: COLORS.LOG_CREATE,
-        closed: COLORS.LOG_UPDATE,
-        reopened: COLORS.LOG_CREATE,
-        deleted: COLORS.LOG_DELETE,
-      }[action] ?? COLORS.LOG_NEUTRAL,
-      user: byUser,
-      fields: [
-        {
-          name: t('tickets.logs.ticket'),
-          value: `${formatTicketChannelName(ticket.id)} (<#${ticket.channelId}>)`,
-          inline: true,
-        },
-        {
-          name: t('tickets.logs.type'),
-          value: definition ? `${definition.emoji} ${definition.label}` : ticket.type,
-          inline: true,
-        },
-        ...extraFields,
-      ],
-    }),
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Catégorie et panneaux
-// ---------------------------------------------------------------------------
-
-/** Retrouve ou crée la catégorie « 📁 Tickets » (jamais de doublon). */
-async function ensureTicketsCategory(guild) {
-  const data = repository.getGuildData(guild.id);
-  let category = data.categoryId ? guild.channels.cache.get(data.categoryId) : null;
-  if (!category || category.type !== ChannelType.GuildCategory) {
-    category =
-      guild.channels.cache.find(
-        (channel) => channel.type === ChannelType.GuildCategory && channel.name === TICKETS_CATEGORY_NAME,
-      ) ?? null;
+async function deliverLog(guild, category, action, ticket, byUser, extraFields = []) {
+  const embed = logEventEmbed({
+    title: `🎫 ${t(`tickets.logs.${action}`)}`,
+    color: LOG_COLORS[action] ?? COLORS.LOG_NEUTRAL,
+    user: byUser,
+    fields: [
+      { name: t('tickets.logs.ticket'), value: `\`${ticket.channelName}\` (<#${ticket.channelId}>)`, inline: true },
+      { name: t('tickets.logs.category'), value: category ? `${category.emoji ?? '🎫'} ${category.name}` : ticket.categoryId, inline: true },
+      ...extraFields,
+    ],
+  });
+  await logService.log(guild, 'tickets', embed);
+  // Salon de logs dédié à la catégorie, s'il est configuré.
+  if (category?.logChannelId) {
+    const channel = guild.channels.cache.get(category.logChannelId);
+    if (channel?.isTextBased()) await channel.send({ embeds: [embed] }).catch(() => null);
   }
-  if (!category) {
-    category = await guild.channels.create({
-      name: TICKETS_CATEGORY_NAME,
-      type: ChannelType.GuildCategory,
-      permissionOverwrites: [
-        { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-      ],
-      reason: 'Création de la catégorie des tickets',
-    });
-  }
-  if (data.categoryId !== category.id) {
-    data.categoryId = category.id;
-    repository.saveGuildData(guild.id, data);
-  }
-  return category;
-}
-
-/** Panneau d'un type de ticket : embed (description, règles, compteur) + bouton. */
-function buildPanelPayload(guild, type) {
-  const definition = ticketTypes[type];
-  const embed = infoEmbed(`${definition.emoji} ${definition.label}`, definition.description).addFields(
-    { name: t('tickets.panel.rules'), value: definition.rules },
-    {
-      name: t('tickets.panel.openCount'),
-      value: String(repository.countOpenTickets(guild.id, type)),
-      inline: true,
-    },
-  );
-  const buttons = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`ticket:open:${type}`)
-      .setLabel(t('tickets.panel.openButton'))
-      .setEmoji('🎫')
-      .setStyle(ButtonStyle.Primary),
-  );
-  return { embeds: [embed], components: [buttons] };
-}
-
-/** Publie (ou republie) le panneau d'un type dans un salon, et le persiste. */
-async function setupPanel(guild, channel, type, byUser) {
-  const data = repository.getGuildData(guild.id);
-
-  // Supprime l'ancien panneau du même type pour éviter les doublons.
-  const previous = data.panels[type];
-  if (previous) {
-    const previousChannel = guild.channels.cache.get(previous.channelId);
-    const previousMessage = await previousChannel?.messages
-      .fetch(previous.messageId)
-      .catch(() => null);
-    await previousMessage?.delete().catch(() => null);
-  }
-
-  await ensureTicketsCategory(guild);
-  const message = await channel.send(buildPanelPayload(guild, type));
-  data.panels[type] = { channelId: channel.id, messageId: message.id };
-  repository.saveGuildData(guild.id, data);
-
-  const definition = ticketTypes[type];
-  await logService.log(
-    guild,
-    'tickets',
-    logEventEmbed({
-      title: `🎫 ${t('tickets.logs.panelConfigured')}`,
-      color: COLORS.LOG_CREATE,
-      user: byUser,
-      fields: [
-        { name: t('tickets.logs.type'), value: `${definition.emoji} ${definition.label}`, inline: true },
-        { name: t('common.channel'), value: `${channel}`, inline: true },
-      ],
-    }),
-  );
-  return message;
-}
-
-/** Met à jour le compteur affiché sur le panneau d'un type (best effort). */
-async function refreshPanel(guild, type) {
-  const panel = repository.getGuildData(guild.id).panels[type];
-  if (!panel) return;
-  const channel = guild.channels.cache.get(panel.channelId);
-  const message = await channel?.messages.fetch(panel.messageId).catch(() => null);
-  await message?.edit(buildPanelPayload(guild, type)).catch(() => null);
 }
 
 // ---------------------------------------------------------------------------
-// Message d'accueil du ticket
+// Message d'accueil
 // ---------------------------------------------------------------------------
 
-function ticketButtons(closed) {
-  if (closed) {
+function ticketButtons(ticket) {
+  if (ticket.status === 'closed') {
     return [
       new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('ticket:reopen')
-          .setLabel(t('tickets.buttons.reopen'))
-          .setEmoji('🔓')
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId('ticket:delete')
-          .setLabel(t('tickets.buttons.delete'))
-          .setEmoji('🗑️')
-          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId('ticket:reopen').setLabel(t('tickets.buttons.reopen')).setEmoji('🔓').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('ticket:delete').setLabel(t('tickets.buttons.delete')).setEmoji('🗑️').setStyle(ButtonStyle.Danger),
       ),
     ];
   }
   return [
     new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('ticket:close')
-        .setLabel(t('tickets.buttons.close'))
-        .setEmoji('🔒')
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId('ticket:rename')
-        .setLabel(t('tickets.buttons.rename'))
-        .setEmoji('✏️')
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId('ticket:delete')
-        .setLabel(t('tickets.buttons.delete'))
-        .setEmoji('🗑️')
-        .setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId('ticket:close').setLabel(t('tickets.buttons.close')).setEmoji('🔒').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId('ticket:claim').setLabel(t('tickets.buttons.claim')).setEmoji('🙋').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('ticket:rename').setLabel(t('tickets.buttons.rename')).setEmoji('✏️').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId('ticket:delete').setLabel(t('tickets.buttons.delete')).setEmoji('🗑️').setStyle(ButtonStyle.Danger),
     ),
     new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('ticket:adduser')
-        .setLabel(t('tickets.buttons.addUser'))
-        .setEmoji('➕')
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId('ticket:removeuser')
-        .setLabel(t('tickets.buttons.removeUser'))
-        .setEmoji('➖')
-        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId('ticket:adduser').setLabel(t('tickets.buttons.addUser')).setEmoji('➕').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId('ticket:removeuser').setLabel(t('tickets.buttons.removeUser')).setEmoji('➖').setStyle(ButtonStyle.Secondary),
     ),
   ];
 }
 
-/** Embed d'accueil (reconstruit à la fermeture/réouverture). */
-function buildWelcomePayload(ticket) {
-  const definition = ticketTypes[ticket.type];
+function buildWelcomePayload(ticket, category) {
   const closed = ticket.status === 'closed';
-  const embed = infoEmbed(
-    t('tickets.welcome.title', { number: String(ticket.id).padStart(3, '0') }),
-    t('tickets.welcome.instructions'),
-  ).addFields(
-    {
-      name: t('tickets.logs.type'),
-      value: definition ? `${definition.emoji} ${definition.label}` : ticket.type,
-      inline: true,
-    },
+  const instructions = category?.welcomeMessage
+    ? ticketVariables.renderMessage(category.welcomeMessage, {
+        user: { id: ticket.userId, username: ticket.creatorTag ?? ticket.userId },
+        category,
+        ticketId: ticket.channelName,
+        date: Date.parse(ticket.createdAt),
+      })
+    : t('tickets.welcome.instructions');
+
+  const embed = infoEmbed(t('tickets.welcome.title', { name: ticket.channelName }), instructions).addFields(
+    { name: t('tickets.logs.category'), value: category ? `${category.emoji ?? '🎫'} ${category.name}` : ticket.categoryId, inline: true },
     { name: t('tickets.welcome.creator'), value: `<@${ticket.userId}>`, inline: true },
-    { name: t('tickets.welcome.ticketId'), value: `\`${formatTicketChannelName(ticket.id)}\``, inline: true },
-    {
-      name: t('tickets.welcome.openedAt'),
-      value: `<t:${Math.floor(Date.parse(ticket.createdAt) / 1000)}:f>`,
-      inline: true,
-    },
-    {
-      name: t('tickets.welcome.status'),
-      value: closed
-        ? t('tickets.welcome.statusClosed', {
-            by: ticket.closedBy,
-            at: Math.floor(Date.parse(ticket.closedAt) / 1000),
-          })
-        : t('tickets.welcome.statusOpen'),
-      inline: true,
-    },
+    { name: t('tickets.welcome.status'), value: closed ? t('tickets.welcome.statusClosed', { by: ticket.closedBy, at: Math.floor(Date.parse(ticket.closedAt) / 1000) }) : t('tickets.welcome.statusOpen'), inline: true },
   );
+  if (ticket.subject) embed.addFields({ name: t('tickets.welcome.subject'), value: ticket.subject.slice(0, 1024) });
+  embed.addFields({ name: t('tickets.welcome.assignee'), value: ticket.assignedTo ? `<@${ticket.assignedTo}>` : t('tickets.welcome.unassigned'), inline: true });
+  if (category?.color != null) embed.setColor(category.color);
   if (closed) embed.setColor(COLORS.ERROR);
-  return { embeds: [embed], components: ticketButtons(closed) };
+  return { embeds: [embed], components: ticketButtons(ticket) };
 }
 
-/** Réédite le message d'accueil pour refléter l'état du ticket. */
-async function updateWelcomeMessage(guild, channel, ticket) {
+async function updateWelcomeMessage(guild, channel, ticket, category) {
   if (!ticket.welcomeMessageId) return;
   const message = await channel.messages.fetch(ticket.welcomeMessageId).catch(() => null);
-  await message?.edit(buildWelcomePayload(ticket)).catch(() => null);
+  await message?.edit(buildWelcomePayload(ticket, category)).catch(() => null);
+}
+
+/** Embed d'information (lecture seule) sur un ticket (commande ticketinfo). */
+function buildInfoEmbed(ticket, category) {
+  const embed = infoEmbed(t('tickets.info.title', { name: ticket.channelName }), null).addFields(
+    { name: t('tickets.logs.category'), value: category ? `${category.emoji ?? '🎫'} ${category.name}` : ticket.categoryId, inline: true },
+    { name: t('tickets.welcome.creator'), value: `<@${ticket.userId}>`, inline: true },
+    { name: t('tickets.welcome.assignee'), value: ticket.assignedTo ? `<@${ticket.assignedTo}>` : t('tickets.welcome.unassigned'), inline: true },
+    { name: t('tickets.welcome.status'), value: ticket.status === 'closed' ? t('tickets.welcome.statusClosed', { by: ticket.closedBy, at: Math.floor(Date.parse(ticket.closedAt) / 1000) }) : t('tickets.welcome.statusOpen'), inline: true },
+    { name: t('tickets.welcome.openedAt'), value: `<t:${Math.floor(Date.parse(ticket.createdAt) / 1000)}:f>`, inline: true },
+    { name: t('tickets.info.participants'), value: ticket.participants.length ? ticket.participants.map((id) => `<@${id}>`).join(', ') : t('help.none'), inline: true },
+  );
+  if (ticket.subject) embed.addFields({ name: t('tickets.welcome.subject'), value: ticket.subject.slice(0, 1024) });
+  if (category?.color != null) embed.setColor(category.color);
+  return embed;
 }
 
 // ---------------------------------------------------------------------------
-// Cycle de vie des tickets
+// Permissions du salon
 // ---------------------------------------------------------------------------
 
-/** Rôles de modération (Modérer les membres) autorisés à voir les tickets. */
-function moderatorRoleOverwrites(guild) {
-  return guild.roles.cache
-    .filter(
-      (role) =>
-        !role.managed &&
-        role.id !== guild.roles.everyone.id &&
-        role.permissions.has(PermissionFlagsBits.ModerateMembers) &&
-        !role.permissions.has(PermissionFlagsBits.Administrator),
-    )
-    .map((role) => ({
-      id: role.id,
-      allow: [
-        PermissionFlagsBits.ViewChannel,
-        PermissionFlagsBits.SendMessages,
-        PermissionFlagsBits.ReadMessageHistory,
-      ],
-    }));
+function ticketOverwrites(guild, member, category) {
+  const staffAllow = [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles];
+  const overwrites = [
+    { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+    { id: member.id, allow: staffAllow },
+    {
+      id: guild.members.me.id,
+      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageMessages],
+    },
+  ];
+  // Staff : rôles d'accès + rôles à notifier (union), afin qu'ils puissent agir.
+  const staffRoles = new Set([...(category.accessRoleIds ?? []), ...(category.pingRoleIds ?? [])]);
+  for (const roleId of staffRoles) {
+    if (guild.roles.cache.has(roleId)) overwrites.push({ id: roleId, allow: staffAllow });
+  }
+  for (const userId of category.pingUserIds ?? []) {
+    if (userId !== member.id) overwrites.push({ id: userId, allow: staffAllow });
+  }
+  return overwrites;
 }
+
+// ---------------------------------------------------------------------------
+// Création
+// ---------------------------------------------------------------------------
 
 /**
- * Crée un ticket : salon privé (créateur + modérateurs + bot), message
- * d'accueil avec boutons, persistance, log, rafraîchissement du panneau.
- * @returns {Promise<{ ok: true, channel, ticket } | { ok: false, code: string, channelId?: string }>}
+ * Crée un ticket dans une catégorie donnée.
+ * @returns {Promise<{ ok: true, channel, ticket } | { ok: false, code, ... }>}
  */
-async function createTicket(guild, member, type) {
-  if (!isValidType(type)) return { ok: false, code: 'unknownType' };
+async function createTicket(guild, member, category, { subject = null } = {}) {
+  // Limite de tickets ouverts par membre.
+  if (category.maxOpen > 0) {
+    const open = repository.openByUser(guild.id, member.id, category.id);
+    if (open.length >= category.maxOpen) {
+      return { ok: false, code: 'limitReached', channelId: open[0].channelId, max: category.maxOpen };
+    }
+  }
+  // Délai entre deux tickets.
+  if (category.cooldownMs > 0) {
+    const last = repository.lastCreatedAt(guild.id, member.id, category.id);
+    if (last && Date.now() - last < category.cooldownMs) {
+      return { ok: false, code: 'cooldown', retryAt: last + category.cooldownMs };
+    }
+  }
 
-  const existing = repository.findOpenTicketByUser(guild.id, member.id, type);
-  if (existing) return { ok: false, code: 'alreadyOpen', channelId: existing.channelId };
+  const number = categoryRepository.nextNumber(guild.id, category.id);
+  const channelName = ticketVariables.renderChannelName(category.channelFormat, { counter: number, category, user: member.user, date: Date.now() });
+  const parent = category.discordCategoryId && guild.channels.cache.get(category.discordCategoryId)?.type === ChannelType.GuildCategory ? category.discordCategoryId : undefined;
 
-  const category = await ensureTicketsCategory(guild).catch(() => null);
-  if (!category) return { ok: false, code: 'createFailed' };
-
-  const number = repository.nextTicketNumber(guild.id);
   const channel = await guild.channels
     .create({
-      name: formatTicketChannelName(number),
+      name: channelName,
       type: ChannelType.GuildText,
-      parent: category.id,
-      permissionOverwrites: [
-        { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-        {
-          id: member.id,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.ReadMessageHistory,
-            PermissionFlagsBits.AttachFiles,
-          ],
-        },
-        {
-          id: guild.members.me.id,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.ReadMessageHistory,
-            PermissionFlagsBits.ManageChannels,
-            PermissionFlagsBits.ManageMessages,
-          ],
-        },
-        ...moderatorRoleOverwrites(guild),
-      ],
-      reason: `Ticket ${type} ouvert par ${member.user.tag}`,
+      parent,
+      permissionOverwrites: ticketOverwrites(guild, member, category),
+      reason: `Ticket ${category.name} ouvert par ${member.user.tag}`,
     })
     .catch(() => null);
   if (!channel) return { ok: false, code: 'createFailed' };
 
+  const now = new Date().toISOString();
   const ticket = {
     id: number,
-    type,
-    userId: member.id,
-    status: 'open',
+    categoryId: category.id,
+    guildId: guild.id,
     channelId: channel.id,
-    createdAt: new Date().toISOString(),
+    channelName: channel.name,
+    userId: member.id,
+    creatorTag: member.user.tag,
+    subject,
+    status: 'open',
+    assignedTo: null,
+    participants: [],
+    createdAt: now,
     closedAt: null,
     closedBy: null,
-    participants: [],
+    lastActivityAt: now,
     welcomeMessageId: null,
   };
-  const welcome = await channel
-    .send({ content: `<@${member.id}>`, ...buildWelcomePayload(ticket) })
-    .catch(() => null);
-  if (welcome) ticket.welcomeMessageId = welcome.id;
-  repository.saveTicket(guild.id, channel.id, ticket);
 
-  await logTicketEvent(guild, 'created', ticket, member.user);
-  await refreshPanel(guild, type);
+  const mentions = [`<@${member.id}>`, ...(category.pingRoleIds ?? []).map((id) => `<@&${id}>`), ...(category.pingUserIds ?? []).map((id) => `<@${id}>`)];
+  const welcome = await channel.send({ content: mentions.join(' '), ...buildWelcomePayload(ticket, category) }).catch(() => null);
+  if (welcome) ticket.welcomeMessageId = welcome.id;
+
+  repository.saveTicket(ticket);
+  repository.recordCreated(guild.id, category.id);
+  await deliverLog(guild, category, 'created', ticket, member.user);
   return { ok: true, channel, ticket };
 }
 
-/**
- * Ferme un ticket : plus aucun message possible pour le créateur et les
- * participants, embed d'accueil mis à jour (fermé par X, date), log.
- */
-async function closeTicket(guild, channel, byUser) {
+// ---------------------------------------------------------------------------
+// Cycle de vie
+// ---------------------------------------------------------------------------
+
+function categoryOf(ticket) {
+  return categoryRepository.getCategory(ticket.guildId, ticket.categoryId);
+}
+
+async function closeTicket(guild, channel, byUser, { system = false } = {}) {
   const ticket = repository.getTicket(guild.id, channel.id);
   if (!ticket) return { ok: false, code: 'notTicket' };
   if (ticket.status === 'closed') return { ok: false, code: 'alreadyClosed' };
@@ -384,16 +247,16 @@ async function closeTicket(guild, channel, byUser) {
   }
   ticket.status = 'closed';
   ticket.closedAt = new Date().toISOString();
-  ticket.closedBy = byUser.id;
-  repository.saveTicket(guild.id, channel.id, ticket);
+  ticket.closedBy = system ? guild.members.me.id : byUser.id;
+  repository.saveTicket(ticket);
 
-  await updateWelcomeMessage(guild, channel, ticket);
-  await logTicketEvent(guild, 'closed', ticket, byUser);
-  await refreshPanel(guild, ticket.type);
+  const category = categoryOf(ticket);
+  repository.recordClosed(guild.id, ticket.categoryId, Date.parse(ticket.closedAt) - Date.parse(ticket.createdAt), ticket.closedBy);
+  await updateWelcomeMessage(guild, channel, ticket, category);
+  await deliverLog(guild, category, 'closed', ticket, system ? guild.members.me.user : byUser, system ? [{ name: t('tickets.logs.reason'), value: t('tickets.logs.autoClose'), inline: true }] : []);
   return { ok: true, ticket };
 }
 
-/** Réouvre un ticket fermé : parole rendue, embed d'accueil restauré, log. */
 async function reopenTicket(guild, channel, byUser) {
   const ticket = repository.getTicket(guild.id, channel.id);
   if (!ticket) return { ok: false, code: 'notTicket' };
@@ -405,81 +268,77 @@ async function reopenTicket(guild, channel, byUser) {
   ticket.status = 'open';
   ticket.closedAt = null;
   ticket.closedBy = null;
-  repository.saveTicket(guild.id, channel.id, ticket);
+  ticket.lastActivityAt = new Date().toISOString();
+  repository.saveTicket(ticket);
 
-  await updateWelcomeMessage(guild, channel, ticket);
-  await logTicketEvent(guild, 'reopened', ticket, byUser);
-  await refreshPanel(guild, ticket.type);
+  const category = categoryOf(ticket);
+  await updateWelcomeMessage(guild, channel, ticket, category);
+  await deliverLog(guild, category, 'reopened', ticket, byUser);
   return { ok: true, ticket };
 }
 
-/**
- * Supprime définitivement un ticket : les informations importantes sont
- * archivées (base des futurs transcripts), puis le salon est supprimé.
- * La confirmation préalable est gérée côté commande/composants.
- */
-async function deleteTicket(guild, channel, byUser) {
+/** Supprime le ticket : transcript (si archivage), archive puis suppression. */
+async function deleteTicket(guild, channel, byUser, { system = false } = {}) {
   const ticket = repository.getTicket(guild.id, channel.id);
   if (!ticket) return { ok: false, code: 'notTicket' };
+  const category = categoryOf(ticket);
+
+  let transcript = { count: 0, attachments: [] };
+  if (category?.archive) {
+    const header = { channelName: ticket.channelName, categoryName: category?.name ?? ticket.categoryId, creatorTag: ticket.creatorTag ?? ticket.userId };
+    transcript = await transcriptService.generate(channel, ticket, header).catch(() => ({ count: 0, attachments: [] }));
+  }
 
   repository.archiveTicket(guild.id, channel.id, {
     deletedAt: new Date().toISOString(),
-    deletedBy: byUser.id,
+    deletedBy: system ? guild.members.me.id : byUser.id,
+    transcriptMessages: transcript.count,
   });
-  await logTicketEvent(guild, 'deleted', ticket, byUser);
-  await refreshPanel(guild, ticket.type);
-  await channel.delete(`Ticket supprimé par ${byUser.tag}`).catch(() => null);
-  return { ok: true, ticket };
+  await deliverLog(
+    guild,
+    category,
+    'deleted',
+    ticket,
+    system ? guild.members.me.user : byUser,
+    transcript.count ? [{ name: t('tickets.logs.transcript'), value: t('tickets.logs.transcriptValue', { count: transcript.count }), inline: true }] : [],
+  );
+  // Joint le transcript au salon de logs (ou au salon global des tickets).
+  if (transcript.attachments.length) {
+    const logChannel = category?.logChannelId ? guild.channels.cache.get(category.logChannelId) : null;
+    await logChannel?.send({ content: t('tickets.logs.transcriptFor', { name: ticket.channelName }), files: transcript.attachments }).catch(() => null);
+  }
+  await channel.delete(`Ticket supprimé par ${system ? 'le système' : byUser.tag}`).catch(() => null);
+  return { ok: true, ticket, transcript };
 }
 
-/** Renomme le salon d'un ticket (nom nettoyé), avec log ancien → nouveau. */
 async function renameTicket(guild, channel, rawName, byUser) {
   const ticket = repository.getTicket(guild.id, channel.id);
   if (!ticket) return { ok: false, code: 'notTicket' };
-
-  const name = sanitizeChannelName(rawName);
+  const name = ticketVariables.renderChannelName(rawName, { counter: ticket.id, category: categoryOf(ticket), user: { id: ticket.userId, username: ticket.creatorTag ?? '' } });
   if (!name) return { ok: false, code: 'invalidName' };
 
   const oldName = channel.name;
-  const renamed = await channel
-    .setName(name, `Ticket renommé par ${byUser.tag}`)
-    .then(() => true)
-    .catch(() => false);
+  const renamed = await channel.setName(name, `Ticket renommé par ${byUser.tag}`).then(() => true).catch(() => false);
   if (!renamed) return { ok: false, code: 'actionFailed' };
-
-  await logTicketEvent(guild, 'renamed', ticket, byUser, [
-    { name: t('logs.events.name'), value: `\`${oldName}\` → \`${name}\`` },
-  ]);
+  ticket.channelName = name;
+  repository.saveTicket(ticket);
+  await deliverLog(guild, categoryOf(ticket), 'renamed', ticket, byUser, [{ name: t('logs.events.name'), value: `\`${oldName}\` → \`${name}\`` }]);
   return { ok: true, oldName, newName: name };
 }
 
-/** Ajoute un utilisateur au ticket (accès complet tant qu'il est ouvert). */
 async function addUserToTicket(guild, channel, user, byUser) {
   const ticket = repository.getTicket(guild.id, channel.id);
   if (!ticket) return { ok: false, code: 'notTicket' };
-  if (user.id === ticket.userId || ticket.participants.includes(user.id)) {
-    return { ok: false, code: 'alreadyParticipant' };
-  }
+  if (user.id === ticket.userId || ticket.participants.includes(user.id)) return { ok: false, code: 'alreadyParticipant' };
 
-  const added = await channel.permissionOverwrites
-    .edit(user.id, {
-      ViewChannel: true,
-      SendMessages: ticket.status === 'open',
-      ReadMessageHistory: true,
-    })
-    .then(() => true)
-    .catch(() => false);
+  const added = await channel.permissionOverwrites.edit(user.id, { ViewChannel: true, SendMessages: ticket.status === 'open', ReadMessageHistory: true }).then(() => true).catch(() => false);
   if (!added) return { ok: false, code: 'actionFailed' };
-
   ticket.participants = [...ticket.participants, user.id];
-  repository.saveTicket(guild.id, channel.id, ticket);
-  await logTicketEvent(guild, 'userAdded', ticket, byUser, [
-    { name: t('common.member'), value: `${user.tag} (\`${user.id}\`)`, inline: true },
-  ]);
+  repository.saveTicket(ticket);
+  await deliverLog(guild, categoryOf(ticket), 'userAdded', ticket, byUser, [{ name: t('common.member'), value: `${user.tag}`, inline: true }]);
   return { ok: true };
 }
 
-/** Retire un utilisateur ajouté (le créateur ne peut pas être retiré). */
 async function removeUserFromTicket(guild, channel, user, byUser) {
   const ticket = repository.getTicket(guild.id, channel.id);
   if (!ticket) return { ok: false, code: 'notTicket' };
@@ -487,22 +346,116 @@ async function removeUserFromTicket(guild, channel, user, byUser) {
 
   await channel.permissionOverwrites.delete(user.id).catch(() => null);
   ticket.participants = ticket.participants.filter((id) => id !== user.id);
-  repository.saveTicket(guild.id, channel.id, ticket);
-  await logTicketEvent(guild, 'userRemoved', ticket, byUser, [
-    { name: t('common.member'), value: `${user.tag} (\`${user.id}\`)`, inline: true },
-  ]);
+  repository.saveTicket(ticket);
+  await deliverLog(guild, categoryOf(ticket), 'userRemoved', ticket, byUser, [{ name: t('common.member'), value: `${user.tag}`, inline: true }]);
   return { ok: true };
 }
 
+/** Transfère un ticket vers une autre catégorie (salon déplacé + renuméroté). */
+async function moveTicket(guild, channel, targetCategory, byUser) {
+  const ticket = repository.getTicket(guild.id, channel.id);
+  if (!ticket) return { ok: false, code: 'notTicket' };
+  if (ticket.categoryId === targetCategory.id) return { ok: false, code: 'sameCategory' };
+
+  const number = categoryRepository.nextNumber(guild.id, targetCategory.id);
+  const name = ticketVariables.renderChannelName(targetCategory.channelFormat, { counter: number, category: targetCategory, user: { id: ticket.userId, username: ticket.creatorTag ?? '' }, date: Date.now() });
+  const parent = targetCategory.discordCategoryId && guild.channels.cache.get(targetCategory.discordCategoryId)?.type === ChannelType.GuildCategory ? targetCategory.discordCategoryId : null;
+
+  await channel.edit({ name, parent, reason: `Ticket transféré par ${byUser.tag}` }).catch(() => null);
+  // Ajoute les accès du staff de la catégorie cible.
+  for (const roleId of new Set([...(targetCategory.accessRoleIds ?? []), ...(targetCategory.pingRoleIds ?? [])])) {
+    if (guild.roles.cache.has(roleId)) await channel.permissionOverwrites.edit(roleId, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true }).catch(() => null);
+  }
+  const fromCategory = categoryOf(ticket);
+  ticket.categoryId = targetCategory.id;
+  ticket.id = number;
+  ticket.channelName = name;
+  repository.saveTicket(ticket);
+  await updateWelcomeMessage(guild, channel, ticket, targetCategory);
+  await deliverLog(guild, targetCategory, 'moved', ticket, byUser, [
+    { name: t('tickets.logs.from'), value: fromCategory ? fromCategory.name : ticket.categoryId, inline: true },
+    { name: t('tickets.logs.to'), value: targetCategory.name, inline: true },
+  ]);
+  return { ok: true, ticket };
+}
+
+async function claimTicket(guild, channel, moderator) {
+  const ticket = repository.getTicket(guild.id, channel.id);
+  if (!ticket) return { ok: false, code: 'notTicket' };
+  if (ticket.assignedTo === moderator.id) return { ok: false, code: 'alreadyClaimedSelf' };
+  if (ticket.assignedTo) return { ok: false, code: 'alreadyClaimed', by: ticket.assignedTo };
+
+  ticket.assignedTo = moderator.id;
+  repository.saveTicket(ticket);
+  await channel.permissionOverwrites.edit(moderator.id, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true }).catch(() => null);
+  const category = categoryOf(ticket);
+  await updateWelcomeMessage(guild, channel, ticket, category);
+  await deliverLog(guild, category, 'assigned', ticket, moderator, [{ name: t('tickets.logs.assignee'), value: `${moderator}`, inline: true }]);
+  return { ok: true, ticket };
+}
+
+async function unclaimTicket(guild, channel, moderator) {
+  const ticket = repository.getTicket(guild.id, channel.id);
+  if (!ticket) return { ok: false, code: 'notTicket' };
+  if (!ticket.assignedTo) return { ok: false, code: 'notClaimed' };
+
+  const previous = ticket.assignedTo;
+  ticket.assignedTo = null;
+  repository.saveTicket(ticket);
+  const category = categoryOf(ticket);
+  await updateWelcomeMessage(guild, channel, ticket, category);
+  await deliverLog(guild, category, 'unassigned', ticket, moderator, [{ name: t('tickets.logs.previousAssignee'), value: `<@${previous}>`, inline: true }]);
+  return { ok: true, ticket };
+}
+
+/** Met à jour l'horodatage d'activité (pour la fermeture automatique). */
+function touchActivity(guildId, channelId) {
+  const ticket = repository.getTicket(guildId, channelId);
+  if (!ticket || ticket.status !== 'open') return;
+  ticket.lastActivityAt = new Date().toISOString();
+  repository.saveTicket(ticket);
+}
+
+// ---------------------------------------------------------------------------
+// Planificateur : fermeture / suppression automatiques
+// ---------------------------------------------------------------------------
+
+async function sweep(client) {
+  const now = Date.now();
+  for (const flat of repository.allTickets()) {
+    const guild = client.guilds.cache.get(flat.guildId);
+    if (!guild) continue;
+    const category = categoryRepository.getCategory(flat.guildId, flat.categoryId);
+    if (!category) continue;
+    const channel = guild.channels.cache.get(flat.channelId);
+
+    if (flat.status === 'open' && category.autoCloseHours > 0) {
+      const idle = now - (Date.parse(flat.lastActivityAt) || Date.parse(flat.createdAt));
+      if (channel && idle >= category.autoCloseHours * 3600 * 1000) {
+        await closeTicket(guild, channel, null, { system: true }).catch(() => null);
+        continue;
+      }
+    }
+    if (flat.status === 'closed' && category.autoDeleteHours > 0) {
+      const since = now - (Date.parse(flat.closedAt) || now);
+      if (since >= category.autoDeleteHours * 3600 * 1000) {
+        if (channel) await deleteTicket(guild, channel, null, { system: true }).catch(() => null);
+        else repository.archiveTicket(flat.guildId, flat.channelId, { deletedAt: new Date().toISOString(), deletedBy: guild.members.me.id });
+      }
+    }
+  }
+}
+
+function startScheduler(client) {
+  sweep(client).catch(() => null);
+  const timer = setInterval(() => sweep(client).catch(() => null), 60 * 1000);
+  timer.unref?.();
+  return timer;
+}
+
 module.exports = {
-  TICKETS_CATEGORY_NAME,
-  isValidType,
-  formatTicketChannelName,
-  sanitizeChannelName,
-  buildPanelPayload,
   buildWelcomePayload,
-  setupPanel,
-  refreshPanel,
+  buildInfoEmbed,
   createTicket,
   closeTicket,
   reopenTicket,
@@ -510,4 +463,12 @@ module.exports = {
   renameTicket,
   addUserToTicket,
   removeUserFromTicket,
+  moveTicket,
+  claimTicket,
+  unclaimTicket,
+  touchActivity,
+  sweep,
+  startScheduler,
+  deliverLog,
+  categoryOf,
 };

@@ -1,29 +1,31 @@
 /**
- * Persistance du système de tickets (database/data/tickets.json).
- * Tout survit à un redémarrage : panneaux, compteur, tickets ouverts et
- * fermés, archive des tickets supprimés (base des futurs transcripts).
- *
+ * Persistance des tickets (database/data/tickets.json).
  * Structure par serveur :
  * {
- *   counter,          // compteur incrémental propre au serveur
- *   categoryId,       // catégorie Discord « 📁 Tickets »
- *   panels: { [type]: { channelId, messageId } },
- *   tickets: {        // tickets existants (ouverts ou fermés), par salon
- *     [channelId]: { id, type, userId, status: 'open'|'closed', channelId,
- *                    createdAt, closedAt, closedBy, participants,
- *                    welcomeMessageId }
- *   },
- *   archivedTickets: [ ... tickets supprimés, + deletedAt/deletedBy ]
+ *   tickets: { [channelId]: Ticket },   // tickets ouverts ou fermés
+ *   archived: [ Ticket + { deletedAt, deletedBy, transcriptFile } ],
+ *   stats: { [categoryId]: { total, closed, totalHandlingMs, moderators: {} } }
  * }
+ *
+ * Ticket = {
+ *   id,                // numéro **propre à la catégorie** (compteur dédié)
+ *   categoryId, guildId, channelId, channelName, userId, subject,
+ *   status: 'open'|'closed', assignedTo,
+ *   participants: [], createdAt, closedAt, closedBy,
+ *   lastActivityAt,    // pour la fermeture automatique par inactivité
+ *   welcomeMessageId
+ * }
+ *
+ * Tout survit aux redémarrages : tickets, assignations, statistiques.
  */
 const path = require('node:path');
 const { JsonStore } = require('./jsonStore');
 
 const store = new JsonStore(path.join(__dirname, 'data', 'tickets.json'));
-const ARCHIVE_LIMIT = 200;
+const ARCHIVE_LIMIT = 500;
 
 function defaultGuildData() {
-  return { counter: 0, categoryId: null, panels: {}, tickets: {}, archivedTickets: [] };
+  return { tickets: {}, archived: [], stats: {} };
 }
 
 function getGuildData(guildId) {
@@ -34,57 +36,111 @@ function saveGuildData(guildId, data) {
   store.set(guildId, data);
 }
 
-/** Incrémente et retourne le compteur de tickets du serveur (persistant). */
-function nextTicketNumber(guildId) {
-  const data = getGuildData(guildId);
-  data.counter += 1;
-  saveGuildData(guildId, data);
-  return data.counter;
-}
+// --- Tickets ---
 
 function getTicket(guildId, channelId) {
   return getGuildData(guildId).tickets[channelId] ?? null;
 }
 
-function saveTicket(guildId, channelId, ticket) {
-  const data = getGuildData(guildId);
-  data.tickets[channelId] = ticket;
-  saveGuildData(guildId, data);
+function saveTicket(ticket) {
+  const data = getGuildData(ticket.guildId);
+  data.tickets[ticket.channelId] = ticket;
+  saveGuildData(ticket.guildId, data);
+  return ticket;
 }
 
-/** Archive puis supprime un ticket (le salon est supprimé par le service). */
+function listTickets(guildId) {
+  return Object.values(getGuildData(guildId).tickets);
+}
+
+function listOpenTickets(guildId) {
+  return listTickets(guildId).filter((ticket) => ticket.status === 'open');
+}
+
+function listByCategory(guildId, categoryId) {
+  return listTickets(guildId).filter((ticket) => ticket.categoryId === categoryId);
+}
+
+/** Tickets ouverts d'un membre dans une catégorie (limite maxOpen). */
+function openByUser(guildId, userId, categoryId) {
+  return listTickets(guildId).filter(
+    (ticket) => ticket.userId === userId && ticket.categoryId === categoryId && ticket.status === 'open',
+  );
+}
+
+/** Date de création du dernier ticket d'un membre dans une catégorie (cooldown). */
+function lastCreatedAt(guildId, userId, categoryId) {
+  const all = [
+    ...listTickets(guildId),
+    ...getGuildData(guildId).archived,
+  ].filter((ticket) => ticket.userId === userId && ticket.categoryId === categoryId);
+  if (all.length === 0) return null;
+  return all.reduce((max, ticket) => Math.max(max, Date.parse(ticket.createdAt) || 0), 0);
+}
+
+/** Archive un ticket (retiré des tickets actifs) et retourne l'entrée. */
 function archiveTicket(guildId, channelId, extra = {}) {
   const data = getGuildData(guildId);
   const ticket = data.tickets[channelId];
   if (!ticket) return null;
   delete data.tickets[channelId];
-  data.archivedTickets = [...data.archivedTickets, { ...ticket, ...extra }].slice(-ARCHIVE_LIMIT);
+  data.archived = [...data.archived, { ...ticket, ...extra }].slice(-ARCHIVE_LIMIT);
   saveGuildData(guildId, data);
   return ticket;
 }
 
-/** Ticket ouvert d'un utilisateur pour un type donné (null si aucun). */
-function findOpenTicketByUser(guildId, userId, type) {
-  return (
-    Object.values(getGuildData(guildId).tickets).find(
-      (ticket) => ticket.userId === userId && ticket.type === type && ticket.status === 'open',
-    ) ?? null
-  );
+// --- Statistiques (incrémentales, persistantes) ---
+
+function ensureStats(data, categoryId) {
+  if (!data.stats[categoryId]) {
+    data.stats[categoryId] = { total: 0, closed: 0, totalHandlingMs: 0, moderators: {} };
+  }
+  return data.stats[categoryId];
 }
 
-function countOpenTickets(guildId, type) {
-  return Object.values(getGuildData(guildId).tickets).filter(
-    (ticket) => ticket.type === type && ticket.status === 'open',
-  ).length;
+function recordCreated(guildId, categoryId) {
+  const data = getGuildData(guildId);
+  ensureStats(data, categoryId).total += 1;
+  saveGuildData(guildId, data);
+}
+
+function recordClosed(guildId, categoryId, handlingMs, moderatorId) {
+  const data = getGuildData(guildId);
+  const stats = ensureStats(data, categoryId);
+  stats.closed += 1;
+  stats.totalHandlingMs += Math.max(0, handlingMs || 0);
+  if (moderatorId) stats.moderators[moderatorId] = (stats.moderators[moderatorId] ?? 0) + 1;
+  saveGuildData(guildId, data);
+}
+
+function getStats(guildId) {
+  return getGuildData(guildId).stats;
+}
+
+// --- Planificateur (tous serveurs) ---
+
+/** Tous les tickets (ouverts et fermés) de tous les serveurs, avec guildId. */
+function allTickets() {
+  const result = [];
+  for (const [guildId, data] of Object.entries(store.all())) {
+    for (const ticket of Object.values(data.tickets ?? {})) result.push({ ...ticket, guildId });
+  }
+  return result;
 }
 
 module.exports = {
   getGuildData,
   saveGuildData,
-  nextTicketNumber,
   getTicket,
   saveTicket,
+  listTickets,
+  listOpenTickets,
+  listByCategory,
+  openByUser,
+  lastCreatedAt,
   archiveTicket,
-  findOpenTicketByUser,
-  countOpenTickets,
+  recordCreated,
+  recordClosed,
+  getStats,
+  allTickets,
 };

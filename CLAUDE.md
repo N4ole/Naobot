@@ -34,8 +34,8 @@ Respecter l'organisation :
 
 ```
 commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, bump/, tickets/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/, watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, watch/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/)
-services/      # logique métier (moderation/, logging/, owners/, reputation/, tracking/, bump/, serverManagement/, tickets/, watch/, warnings/, reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, emergency/, welcome/, backup/, forms/, reminders/, polls/)
+events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, watch/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/)
+services/      # logique métier (moderation/, logging/, owners/, reputation/, tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/, reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, emergency/, welcome/, backup/, forms/, reminders/, polls/)
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, tickets/, watch/, reactionRoles/, contact/, protections/, emergency/, backup/, forms/, reminders/, polls/
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
 config/        # config.js (env), permissions.js (permissions par commande)

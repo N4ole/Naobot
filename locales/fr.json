@@ -1023,36 +1023,44 @@
     }
   },
   "tickets": {
-    "panel": {
-      "rules": "Règles",
-      "openCount": "Tickets ouverts",
-      "openButton": "Ouvrir un ticket",
-      "configured": "Panneau **{type}** publié dans {channel}."
+    "buttons": {
+      "close": "Fermer",
+      "reopen": "Réouvrir",
+      "delete": "Supprimer",
+      "rename": "Renommer",
+      "claim": "S'assigner",
+      "addUser": "Ajouter",
+      "removeUser": "Retirer"
+    },
+    "open": {
+      "formTitle": "Ouvrir un ticket",
+      "formLabel": "Décrivez votre demande"
     },
     "welcome": {
-      "title": "🎫 Ticket n°{number}",
+      "title": "🎫 {name}",
       "instructions": "Merci d'avoir ouvert un ticket ! Décrivez votre demande le plus précisément possible : l'équipe vous répondra dès que possible.\nUtilisez les boutons ci-dessous pour gérer le ticket.",
       "creator": "Créateur",
       "openedAt": "Ouvert le",
-      "ticketId": "Identifiant",
       "status": "Statut",
       "statusOpen": "🟢 Ouvert",
-      "statusClosed": "🔒 Fermé par <@{by}> le <t:{at}:f>"
+      "statusClosed": "🔒 Fermé par <@{by}> le <t:{at}:f>",
+      "subject": "Demande",
+      "assignee": "Assigné à",
+      "unassigned": "Personne"
     },
-    "buttons": {
-      "close": "Fermer",
-      "reopen": "Réouvrir le ticket",
-      "delete": "Supprimer",
-      "rename": "Renommer",
-      "addUser": "Ajouter un utilisateur",
-      "removeUser": "Retirer un utilisateur"
+    "info": {
+      "title": "ℹ️ {name}",
+      "participants": "Utilisateurs ajoutés"
     },
     "actions": {
       "created": "Votre ticket a été créé : {channel}",
       "closed": "🔒 Ticket fermé par {user}.",
       "reopened": "🔓 Ticket réouvert par {user}.",
+      "claimed": "🙋 Ticket pris en charge par {user}.",
+      "unclaimed": "Assignation retirée par {user}.",
+      "moved": "📦 Ticket transféré vers la catégorie **{category}**.",
       "deleting": "Suppression du ticket…",
-      "deleteConfirm": "Supprimer définitivement ce ticket ? Ses informations importantes sont archivées, mais le salon sera supprimé.",
+      "deleteConfirm": "Supprimer définitivement ce ticket ? Un transcript est archivé (si la catégorie le prévoit), mais le salon sera supprimé.",
       "deleteConfirmButton": "Confirmer la suppression",
       "deleteCancelButton": "Annuler",
       "deleteCancelled": "Suppression annulée.",
@@ -1066,10 +1074,7 @@
     },
     "errors": {
       "notTicketChannel": "Ce salon n'est pas un ticket.",
-      "noPermission": "Seul le créateur du ticket ou un modérateur peut effectuer cette action.",
-      "unknownType": "Type de ticket inconnu : `{type}`. Types disponibles : {types}",
-      "invalidChannel": "Le salon du panneau doit être un salon textuel.",
-      "alreadyOpen": "Vous avez déjà un ticket **{type}** ouvert : {channel}",
+      "noPermission": "Seul le créateur du ticket, le modérateur assigné ou un membre de l’équipe peut effectuer cette action.",
       "alreadyClosed": "Ce ticket est déjà fermé.",
       "notClosed": "Ce ticket n'est pas fermé.",
       "createFailed": "Impossible de créer le salon du ticket (permissions insuffisantes ?).",
@@ -1077,22 +1082,183 @@
       "alreadyParticipant": "{user} a déjà accès à ce ticket.",
       "notParticipant": "{user} n'a pas été ajouté à ce ticket (le créateur ne peut pas être retiré).",
       "invalidName": "Nom de salon invalide.",
-      "botMissingPerms": "Il me manque des permissions dans {channel} : **{perms}**."
+      "limitReached": "Vous avez atteint la limite de **{max}** ticket(s) ouvert(s) dans cette catégorie : {channel}",
+      "cooldown": "Veuillez patienter avant d’ouvrir un nouveau ticket dans cette catégorie ({at}).",
+      "categoryGone": "Cette catégorie de tickets n'existe plus.",
+      "alreadyClaimed": "Ce ticket est déjà assigné à {by}.",
+      "alreadyClaimedSelf": "Ce ticket vous est déjà assigné.",
+      "notClaimed": "Ce ticket n'est assigné à personne.",
+      "sameCategory": "Le ticket est déjà dans cette catégorie."
     },
-    "info": {
-      "participants": "Utilisateurs ajoutés"
+    "stats": {
+      "title": "📊 Statistiques des tickets",
+      "empty": "Aucune statistique pour le moment.",
+      "summary": "Total : **{total}** ticket(s) • Fermés : **{closed}** • Temps moyen de traitement : **{avg}**",
+      "topCategories": "Catégories les plus utilisées",
+      "topModerators": "Modérateurs les plus actifs",
+      "categoryEntry": "{category} — {total} ouvert(s), {closed} fermé(s)",
+      "moderatorEntry": "{user} — {count} ticket(s) traité(s)",
+      "none": "—"
     },
     "logs": {
-      "created": "Ticket créé",
+      "created": "Ticket ouvert",
       "closed": "Ticket fermé",
       "reopened": "Ticket réouvert",
       "deleted": "Ticket supprimé",
-      "userAdded": "Utilisateur ajouté à un ticket",
-      "userRemoved": "Utilisateur retiré d'un ticket",
       "renamed": "Ticket renommé",
-      "panelConfigured": "Panneau de tickets configuré",
+      "assigned": "Ticket assigné",
+      "unassigned": "Assignation retirée",
+      "moved": "Ticket transféré",
+      "userAdded": "Utilisateur ajouté à un ticket",
+      "userRemoved": "Utilisateur retiré d’un ticket",
       "ticket": "Ticket",
-      "type": "Type"
+      "category": "Catégorie",
+      "assignee": "Assigné à",
+      "previousAssignee": "Ancien assigné",
+      "from": "Depuis",
+      "to": "Vers",
+      "reason": "Raison",
+      "autoClose": "Fermeture automatique (inactivité)",
+      "transcript": "Transcript",
+      "transcriptValue": "{count} message(s) archivé(s)",
+      "transcriptFor": "Transcript du ticket `{name}` :"
+    }
+  },
+  "ticketCategories": {
+    "field": {
+      "name": "Nom",
+      "emoji": "Emoji",
+      "color": "Couleur",
+      "description": "Description",
+      "openMode": "Mode d’ouverture",
+      "discordCategory": "Catégorie Discord",
+      "channelFormat": "Format des salons",
+      "welcomeMessage": "Message d’accueil",
+      "accessRoles": "Rôles ayant accès",
+      "ping": "Notifications",
+      "logChannel": "Salon de logs",
+      "behavior": "Comportement"
+    },
+    "wizard": {
+      "createTitle": "Nouvelle catégorie de tickets",
+      "editTitle": "Modifier la catégorie",
+      "help": "Configurez la catégorie (identité, salon, message, comportement, notifications) puis enregistrez. Variables de format : {counter}, {user}, {username}, {userid}, {category}, {date}.",
+      "notSet": "Non définie",
+      "none": "Aucun",
+      "globalLog": "Logs globaux (catégorie « tickets »)",
+      "yes": "oui",
+      "no": "non",
+      "off": "désactivé",
+      "hours": "{count} h",
+      "behaviorValue": "Max ouverts : **{maxOpen}** • Délai : **{cooldown}** • Fermeture auto : **{autoClose}** • Suppression auto : **{autoDelete}** • Archivage : **{archive}**",
+      "pickDiscordCategory": "Catégorie Discord cible…",
+      "pickAccessRoles": "Rôles ayant accès…",
+      "pickOpenMode": "Mode d’ouverture…",
+      "pickPingRoles": "Rôles à notifier…",
+      "pickPingUsers": "Utilisateurs à notifier…",
+      "pickLogChannel": "Salon de logs (facultatif)…",
+      "identity": "Identité",
+      "channelMsg": "Salon & message",
+      "behaviorBtn": "Comportement",
+      "notify": "Notifications",
+      "save": "Enregistrer",
+      "create": "Créer",
+      "cancel": "Annuler",
+      "back": "Retour",
+      "notifyTitle": "🔔 Notifications & sortie",
+      "notifyHelp": "Choisissez les rôles et utilisateurs à notifier à l’ouverture, et un salon de logs dédié (facultatif).",
+      "identityTitle": "Identité de la catégorie",
+      "channelMsgTitle": "Salon & message d’accueil",
+      "welcomePlaceholder": "Bonjour {mention}, l’équipe vous répondra dans les plus brefs délais.",
+      "behaviorTitle": "Comportement de la catégorie",
+      "maxOpenLabel": "Tickets ouverts max par membre (0 = illimité)",
+      "cooldownLabel": "Délai entre deux tickets (minutes)",
+      "autoCloseLabel": "Fermeture auto après inactivité (heures, 0 = off)",
+      "autoDeleteLabel": "Suppression auto après fermeture (heures, 0 = off)",
+      "archiveLabel": "Archiver (transcript) à la suppression (oui/non)",
+      "expired": "Cette session de configuration a expiré. Relancez `ticketcategory create`.",
+      "incomplete": "Renseignez au moins un nom et une catégorie Discord.",
+      "created": "✅ Catégorie **{name}** créée (`{id}`).",
+      "saved": "✅ Catégorie **{name}** mise à jour (`{id}`).",
+      "cancelledTitle": "Configuration annulée",
+      "cancelled": "La configuration de la catégorie a été annulée."
+    },
+    "list": {
+      "title": "🎫 Catégories de tickets ({count})",
+      "empty": "Aucune catégorie. Créez-en une avec `ticketcategory create`.",
+      "entry": "{emoji} **{name}** — `{id}`\n> Compteur : {counter} • Catégorie : {channel}"
+    },
+    "delete": {
+      "title": "🗑️ Supprimer une catégorie",
+      "confirm": "Supprimer la catégorie **{name}** (`{id}`) ? Les panneaux qui l’affichent seront mis à jour. Les tickets existants ne sont pas supprimés.",
+      "confirmButton": "Supprimer",
+      "cancelButton": "Annuler",
+      "cancelled": "Suppression annulée.",
+      "done": "Catégorie `{id}` supprimée."
+    },
+    "errors": {
+      "idRequired": "Précisez l’identifiant de la catégorie.",
+      "notFound": "Aucune catégorie `{id}` sur ce serveur.",
+      "noPermission": "Seuls les administrateurs peuvent gérer les catégories de tickets.",
+      "notYourSession": "Cette action ne vous est pas destinée."
+    }
+  },
+  "ticketPanels": {
+    "defaultTitle": "Ouvrir un ticket",
+    "selectPlaceholder": "Choisissez une catégorie…",
+    "field": {
+      "title": "Titre",
+      "description": "Description",
+      "color": "Couleur",
+      "image": "Image (URL)",
+      "footer": "Pied de page",
+      "channel": "Salon",
+      "display": "Affichage",
+      "categories": "Catégories"
+    },
+    "wizard": {
+      "createTitle": "🧩 Nouveau panneau de tickets",
+      "editTitle": "🧩 Modifier le panneau",
+      "help": "Choisissez le salon d’envoi, les catégories affichées et le mode d’affichage (boutons ou menu déroulant), personnalisez le contenu, puis publiez.",
+      "notSet": "Non défini",
+      "noCategories": "Aucune catégorie sélectionnée. Créez-en d’abord avec `ticketcategory create`.",
+      "pickChannel": "Salon d’envoi…",
+      "pickCategories": "Catégories à afficher…",
+      "pickDisplay": "Mode d’affichage…",
+      "content": "Contenu",
+      "save": "Enregistrer",
+      "publish": "Publier",
+      "cancel": "Annuler",
+      "contentTitle": "Contenu du panneau",
+      "expired": "Cette session de configuration a expiré. Relancez `ticketpanel create`.",
+      "incomplete": "Choisissez un salon et au moins une catégorie.",
+      "published": "🧩 Panneau `{id}` publié dans {channel}.",
+      "saved": "🧩 Panneau `{id}` mis à jour dans {channel}.",
+      "cancelledTitle": "Configuration annulée",
+      "cancelled": "La configuration du panneau a été annulée.",
+      "error": {
+        "noChannel": "Salon introuvable ou invalide.",
+        "sendFailed": "Impossible de publier le panneau (permissions du bot dans le salon ?)."
+      }
+    },
+    "list": {
+      "title": "🧩 Panneaux de tickets ({count})",
+      "empty": "Aucun panneau. Créez-en un avec `ticketpanel create`.",
+      "entry": "**{title}** — `{id}`\n> Salon : {channel} • Catégories : {categories}"
+    },
+    "delete": {
+      "title": "🗑️ Supprimer un panneau",
+      "confirm": "Supprimer le panneau **{title}** (`{id}`) ? Son message sera retiré.",
+      "confirmButton": "Supprimer",
+      "cancelButton": "Annuler",
+      "cancelled": "Suppression annulée.",
+      "done": "Panneau `{id}` supprimé."
+    },
+    "errors": {
+      "idRequired": "Précisez l’identifiant du panneau.",
+      "notFound": "Aucun panneau `{id}` sur ce serveur.",
+      "noPermission": "Seuls les administrateurs peuvent gérer les panneaux de tickets.",
+      "notYourSession": "Cette action ne vous est pas destinée."
     }
   },
   "serverManagement": {
