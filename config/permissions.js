@@ -66,6 +66,10 @@ module.exports = {
     user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
+  setwarnrole: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [PermissionFlagsBits.ManageRoles],
+  },
   reactionrole: {
     user: [PermissionFlagsBits.ManageRoles],
     bot: [PermissionFlagsBits.ManageRoles],
@@ -86,8 +90,11 @@ module.exports = {
     user: [],
     bot: [PermissionFlagsBits.CreateInstantInvite],
   },
+  // Accès (admin serveur OU propriétaire du serveur OU owner du bot) vérifié
+  // dans la commande : pas de permission `user` déclarative ici, sinon le
+  // pipeline bloquerait les owners du bot sans permission Discord.
   say: {
-    user: [PermissionFlagsBits.ManageMessages],
+    user: [],
     bot: [],
   },
   // Configuration des tickets (catégories + panneaux) : administrateurs.

@@ -34,9 +34,10 @@ Respecter l'organisation :
 
 ```
 commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, bump/, tickets/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/, watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, watch/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/)
-services/      # logique métier (moderation/, logging/, owners/, reputation/, tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/, reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, emergency/, welcome/, backup/, forms/, reminders/, polls/)
+events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, watch/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, warnings/, web/)
+services/      # logique métier (moderation/, logging/, owners/, reputation/, tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/, reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, emergency/, welcome/, backup/, forms/, reminders/, polls/, web/)
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, tickets/, watch/, reactionRoles/, contact/, protections/, emergency/, backup/, forms/, reminders/, polls/
+web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
 config/        # config.js (env), permissions.js (permissions par commande)
 database/      # jsonStore.js + repositories ; données dans database/data/*.json (gitignoré)
@@ -93,7 +94,10 @@ Le `.env` doit **uniquement** contenir :
 - le token Discord (`BOT_TOKEN`) ;
 - l'owner principal (`OWNER_ID`) ;
 - des données statiques globales (`CLIENT_ID`, `GUILD_ID`, `PREFIX`,
-  `LOCALE`, `MUTED_ROLE_NAME`, `OWNER_ROLE_NAME`).
+  `LOCALE`, `MUTED_ROLE_NAME`, `OWNER_ROLE_NAME`) ;
+- la configuration **statique** de l'interface web (`WEB_ENABLED`,
+  `WEB_PORT`, `WEB_BASE_URL`, `DISCORD_CLIENT_SECRET`, `WEB_SESSION_SECRET`) —
+  jamais de configuration dynamique de serveur.
 
 Toutes les données serveur (salons, rôles, options activables,
 statistiques, paramètres utilisateurs) sont stockées **séparément**, par

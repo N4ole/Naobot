@@ -158,4 +158,10 @@ module.exports = {
     channelName: 'logs-sondages',
     emoji: '📊',
   },
+  web: {
+    label: 'Interface web',
+    description: 'Tableau de bord web : connexions, authentifications, modifications via le site, erreurs',
+    channelName: 'logs-web',
+    emoji: '🌐',
+  },
 };
