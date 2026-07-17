@@ -26,6 +26,13 @@ modulaire stricte pensée pour être maintenue et étendue facilement.
 - **Charte graphique unifiée** : toutes les réponses passent par les
   constructeurs d'embeds centralisés (`utils/embeds/`), avec composants
   interactifs (boutons, menus) lorsque c'est pertinent.
+- **Rappels personnels** : `remind` planifie un rappel (durée relative ou date
+  absolue) envoyé en message privé à l'échéance ; consultation paginée,
+  modification et suppression, persistants (survivent aux redémarrages).
+- **Sondages avancés** : `poll` crée un sondage via un assistant interactif
+  (choix multiples, quatre modes de vote — classique, multiple, anonyme,
+  public), avec durée, fermeture automatique ou anticipée, résultats détaillés
+  (pourcentages, gagnants, égalités, participants) et persistance.
 - **Textes centralisés** dans `locales/fr.json` (traduction facile).
 
 ## Installation
@@ -438,6 +445,42 @@ leurs rôles eux-mêmes via boutons ou menu déroulant.
 | `say <message>` | Le bot répète un message (embed, mentions neutralisées) | Gérer les messages | `!say Bienvenue !` |
 | `rps` (alias `pfc`, `chifoumi`) | Pierre-feuille-ciseaux contre le bot, avec boutons | — | `!rps` |
 
+### ⏰ Rappels personnels
+
+Rappels personnels (par utilisateur, valables sur tous les serveurs), envoyés
+en **message privé** à l'échéance. Ils sont **persistants** : un rappel dû
+pendant l'arrêt du bot est envoyé au redémarrage.
+
+| Commande | Description | Exemple |
+|---|---|---|
+| `remind <durée\|date> <message>` (alias `rappel`, `remindme`) | Crée un rappel. Durée relative (`30s`, `15m`, `2h`, `3j`, `1w`/`1sem`) ou date absolue (`JJ/MM/AAAA [HH:mm]`) | `!remind 2h Préparer la réunion` · `!remind 25/12/2026 18:00 Repas` |
+| `remindlist` (alias `reminders`, `rappels`) | Liste vos rappels actifs (identifiant, échéance, contenu), paginée par **boutons** | `!remindlist` |
+| `remindedit <id> <échéance\|garder> [message]` | Modifie l'échéance et/ou le texte d'un rappel (`garder` conserve l'échéance) | `!remindedit a1b2c3 garder Nouveau texte` |
+| `reminddelete <id>` (alias `remindremove`) | Supprime un rappel (**confirmation par boutons**) | `!reminddelete a1b2c3` |
+
+À l'échéance, le message privé rappelle le texte d'origine, la date de
+création, le temps écoulé et un lien vers le message d'origine si disponible.
+
+### 📊 Sondages avancés
+
+Sondages créés via un **assistant interactif** (menus + modal) : titre,
+description, choix (2 à 20, un par ligne), salon de publication, mode de vote
+et durée. Le sondage est publié dans le salon choisi avec des **boutons** (≤ 5
+choix) ou un **menu déroulant** (> 5 choix). Il se ferme automatiquement à
+l'expiration (ou manuellement) ; tout est **persistant**.
+
+**Modes de vote** : `classique` (un seul choix), `multiple` (plusieurs choix),
+`anonyme` (décomptes masqués pendant le vote, seuls les résultats agrégés sont
+révélés à la fermeture), `public` (liste des votants visible dans les
+résultats).
+
+| Commande | Description | Permission | Exemple |
+|---|---|---|---|
+| `poll [titre]` (alias `sondage`) | Ouvre l'assistant de création d'un sondage | Gérer les messages | `!poll Quel jeu ce week-end ?` |
+| `pollclose <id>` (alias `closepoll`) | Ferme un sondage par anticipation (**confirmation** + résultats immédiats) | Créateur ou gestionnaire | `!pollclose a1b2c3` |
+| `pollresults <id>` (alias `resultspoll`) | Résultats détaillés : total, pourcentages, gagnants, égalités, participants (paginés, sauf anonyme) | — | `!pollresults a1b2c3` |
+| `polllist` (alias `polls`, `sondages`) | Liste les sondages du serveur (actifs et terminés, créateurs, dates), paginée | — | `!polllist` |
+
 ## Système de bump inter-serveurs
 
 Par défaut **désactivé** sur chaque serveur. Seuls les serveurs activés
@@ -582,6 +625,8 @@ par serveur (`database/data/logSettings.json`) :
 | `bienvenue` | Bienvenue : arrivées, rôles automatiques, réponses aux questions, erreurs | `#logs-bienvenue` |
 | `sauvegardes` | Sauvegardes : création, restauration, suppression, erreurs | `#logs-sauvegardes` |
 | `formulaires` | Formulaires : création, modification, suppression, soumission, traitement, erreurs | `#logs-formulaires` |
+| `rappels` | Rappels personnels : création, modification, suppression, exécution | `#logs-rappels` |
+| `sondages` | Sondages : création, fermeture, consultation des résultats | `#logs-sondages` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -637,6 +682,8 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── welcome/         #   setwelcome, welcomestatus+welcomepreview
 │   ├── backup/          #   backup (create/load/delete/list)
 │   ├── forms/           #   form (create/edit/delete/list + remplissage)
+│   ├── reminders/       #   remind, remindlist+reminddelete+remindedit
+│   ├── polls/           #   poll (assistant + vote), pollclose+pollresults+polllist
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
@@ -651,7 +698,9 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── emergency/       #   channelLock (verrouillage des nouveaux salons)
 │   ├── welcome/         #   memberJoin (carte, rôles auto, MP, questions)
 │   ├── backup/          #   ready (sauvegardes disponibles)
-│   └── forms/           #   ready (formulaires actifs)
+│   ├── forms/           #   ready (formulaires actifs)
+│   ├── reminders/       #   ready (planificateur des rappels dus)
+│   └── polls/           #   ready (fermeture des sondages expirés)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
 │   ├── logging/         #   logService (logs par catégories), modLogService
@@ -672,7 +721,9 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── emergency/       #   emergencyService (verrouillage/restauration)
 │   ├── welcome/         #   welcomeService + welcomeCardService (modèles)
 │   ├── backup/          #   backupService + botConfigBackup (structure + config)
-│   └── forms/           #   formService + formWizard (questions, soumissions)
+│   ├── forms/           #   formService + formWizard (questions, soumissions)
+│   ├── reminders/       #   reminderService (planificateur, envoi en MP)
+│   └── polls/           #   pollService + pollWizard (votes, modes, résultats)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   ├── cooldowns/       # Anti-spam par utilisateur et par commande
@@ -684,7 +735,9 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── protections/     # Exemptions (bot, admin, hiérarchie) + permissions bot
 │   ├── emergency/       # Accès mode urgence (admin / propriétaire / owner)
 │   ├── backup/          # Accès sauvegardes (administrateur)
-│   └── forms/           # Gestion (Gérer le serveur) + accès au remplissage
+│   ├── forms/           # Gestion (Gérer le serveur) + accès au remplissage
+│   ├── reminders/       # Appartenance d'un rappel (auteur uniquement)
+│   └── polls/           # Gestion des sondages (créateur ou gestionnaire)
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…

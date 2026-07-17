@@ -146,4 +146,16 @@ module.exports = {
     channelName: 'logs-formulaires',
     emoji: '📝',
   },
+  rappels: {
+    label: 'Rappels',
+    description: 'Rappels personnels : création, modification, suppression, exécution',
+    channelName: 'logs-rappels',
+    emoji: '⏰',
+  },
+  sondages: {
+    label: 'Sondages',
+    description: 'Sondages : création, fermeture, résultats, erreurs',
+    channelName: 'logs-sondages',
+    emoji: '📊',
+  },
 };
