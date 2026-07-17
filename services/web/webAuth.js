@@ -19,8 +19,22 @@ const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 /** Sessions en mémoire (perdues au redémarrage : reconnexion requise). */
 const sessions = new Map();
 
+/**
+ * URI de redirection OAuth2 : celle déclarée explicitement (DISCORD_REDIRECT_URI)
+ * ou, à défaut, dérivée de l'URL de base (<baseUrl>/callback). DOIT être
+ * identique à celle enregistrée dans le portail Discord.
+ */
 function redirectUri() {
-  return `${config.web.baseUrl}/callback`;
+  return config.web.redirectUri || `${config.web.baseUrl}/callback`;
+}
+
+/** Chemin de rappel servi par le serveur, extrait de l'URI de redirection. */
+function callbackPath() {
+  try {
+    return new URL(redirectUri()).pathname || '/callback';
+  } catch {
+    return '/callback';
+  }
 }
 
 /** URL d'autorisation Discord (scopes identify + guilds). */
@@ -143,6 +157,8 @@ function accessibleGuilds(session, client) {
 
 module.exports = {
   SESSION_TTL_MS,
+  redirectUri,
+  callbackPath,
   authUrl,
   exchangeCode,
   fetchUser,

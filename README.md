@@ -728,19 +728,25 @@ OAuth2 est complète.
   badges et succès à venir). Interface **responsive**.
 - **Temps réel** : flux **SSE** (équivalent WebSocket) — statistiques
   poussées en continu et journal web en direct (owners).
-- **Authentification** : **OAuth2 Discord** (scopes `identify`, `guilds`),
-  sessions signées (cookie HMAC). L'accès à un serveur est réservé aux
-  **administrateurs du serveur**, à son **propriétaire** et aux **owners du
-  bot** ; les endpoints d'administration (écriture) sont structurés mais non
-  exposés dans cette itération (lecture seule).
+- **Authentification Discord OAuth2** (scopes `identify`, `guilds`) : bouton
+  « Se connecter avec Discord » → `/login` (redirection vers Discord avec un
+  `state` anti-CSRF) → retour sur l'URI de redirection → échange du code contre
+  un jeton (`fetch`) → récupération du profil et des serveurs → **session
+  signée** (cookie HMAC, en mémoire, TTL 24 h) ; `/logout` détruit la session.
+  L'accès à un serveur est réservé aux **administrateurs du serveur**, à son
+  **propriétaire** et aux **owners du bot** ; les endpoints d'administration
+  (écriture) sont structurés mais non exposés dans cette itération (lecture
+  seule).
 - **Modules** : `web/frontend` (dashboard statique), `web/backend` (serveur
-  HTTP + OAuth2), `web/api` (API REST), `web/websocket` (hub SSE),
+  HTTP + tunnel OAuth2), `web/api` (API REST), `web/websocket` (hub SSE),
   `services/web` (`webService` = pont de données, `webAuth` = OAuth2 +
   permissions, `webLog` = journal). Catégorie de logs dédiée `web`.
 - **Configuration** (statique, `.env` uniquement — jamais de config dynamique
-  de serveur) : `WEB_ENABLED`, `WEB_PORT`, `WEB_BASE_URL`, `CLIENT_ID`,
-  `DISCORD_CLIENT_SECRET`, `WEB_SESSION_SECRET`. URL de redirection OAuth2 à
-  déclarer dans le portail Discord : `<WEB_BASE_URL>/callback`.
+  de serveur) : `WEB_ENABLED`, `WEB_PORT`, `WEB_URL`, `DISCORD_CLIENT_ID`,
+  `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, `WEB_SESSION_SECRET`.
+  L'**URI de redirection** (`DISCORD_REDIRECT_URI`, défaut `<WEB_URL>/callback`)
+  doit être déclarée **à l'identique** dans le portail Discord
+  (*OAuth2 → Redirects*) ; elle est affichée dans la console au démarrage.
 
 ## Architecture
 

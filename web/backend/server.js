@@ -104,6 +104,8 @@ async function handleCallback(req, res, url, cookies, client) {
 }
 
 function createServer(client) {
+  // Chemin de rappel OAuth2 (dérivé de DISCORD_REDIRECT_URI, défaut /callback).
+  const callbackPath = webAuth.callbackPath();
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, config.web.baseUrl);
@@ -117,7 +119,7 @@ function createServer(client) {
         setCookie(res, STATE_COOKIE, state, { maxAge: 600 });
         return redirect(res, webAuth.authUrl(state));
       }
-      if (pathname === '/callback') return handleCallback(req, res, url, cookies, client);
+      if (pathname === callbackPath) return handleCallback(req, res, url, cookies, client);
       if (pathname === '/logout') {
         webAuth.destroySession(cookies[SESSION_COOKIE]);
         setCookie(res, SESSION_COOKIE, '', { clear: true });
@@ -151,13 +153,16 @@ function start(client) {
   const { enabled, clientId, clientSecret, sessionSecret, port } = config.web;
   if (!enabled) return null;
   if (!clientId || !clientSecret || !sessionSecret) {
-    console.warn('[web] Interface web activée mais configuration OAuth2 incomplète (CLIENT_ID / DISCORD_CLIENT_SECRET / WEB_SESSION_SECRET). Serveur non démarré.');
+    console.warn('[web] Interface web activée mais configuration OAuth2 incomplète (DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET / WEB_SESSION_SECRET). Serveur non démarré.');
     return null;
   }
 
   const server = createServer(client);
   server.on('error', (error) => console.error('[web] Erreur du serveur HTTP :', error.message));
-  server.listen(port, () => console.log(`[web] Tableau de bord NaoBot démarré sur ${config.web.baseUrl} (port ${port}).`));
+  server.listen(port, () => {
+    console.log(`[web] Tableau de bord NaoBot démarré sur ${config.web.baseUrl} (port ${port}).`);
+    console.log(`[web] OAuth2 — URI de redirection à déclarer dans le portail Discord : ${webAuth.redirectUri()}`);
+  });
 
   // Temps réel : pousse les statistiques globales et relaie le journal web.
   realtime.start({ onTick: (broadcast) => broadcast('stats', webService.globalStats(client)) });
