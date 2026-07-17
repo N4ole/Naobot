@@ -359,6 +359,286 @@
       "rulesChanged": "Règles de sanction modifiées"
     }
   },
+  "forms": {
+    "public": {
+      "questions": "Questions",
+      "required": "obligatoire",
+      "noQuestions": "Aucune question.",
+      "fill": "Remplir le formulaire"
+    },
+    "list": {
+      "title": "📝 Formulaires",
+      "empty": "Aucun formulaire. Créez-en un avec `form create <nom>`.",
+      "entry": "`{id}` • **{name}**\n<#{channel}> · {questions} question(s)"
+    },
+    "delete": { "done": "Formulaire **{name}** supprimé." },
+    "wizard": {
+      "createTitle": "📝 Création d'un formulaire",
+      "editTitle": "📝 Modification d'un formulaire",
+      "help": "Configurez le salon, les rôles autorisés et les questions, puis publiez.",
+      "noDescription": "*(aucune description)*",
+      "notSet": "*(non défini)*",
+      "allowedRoles": "Rôles autorisés",
+      "everyone": "Tout le monde",
+      "questions": "Questions ({count}/{max})",
+      "noQuestions": "Aucune question ajoutée.",
+      "pickChannel": "Salon d'affichage…",
+      "pickRoles": "Rôles autorisés à répondre (optionnel)…",
+      "addQuestion": "Ajouter une question (choisir le type)…",
+      "editInfo": "Nom & description",
+      "removeLast": "Retirer la dernière",
+      "save": "Enregistrer",
+      "publish": "Publier",
+      "cancel": "Annuler",
+      "expired": "Cet assistant a expiré. Relancez `form create`.",
+      "labelRequired": "L'intitulé de la question est obligatoire.",
+      "questionModalTitle": "Question — {type}",
+      "qLabel": "Intitulé de la question",
+      "qRequired": "Obligatoire ? (oui/non)",
+      "qMaxLength": "Longueur max (optionnel)",
+      "qChoices": "Choix (séparés par des virgules)",
+      "qChoicesNA": "Choix (ignoré pour ce type)",
+      "fName": "Nom du formulaire",
+      "fDescription": "Description",
+      "cancelledTitle": "Assistant annulé",
+      "cancelled": "La création a été abandonnée.",
+      "saved": "Formulaire `{id}` mis à jour dans {channel}.",
+      "published": "Formulaire `{id}` publié dans {channel}.",
+      "error": {
+        "noChannel": "Salon d'affichage invalide.",
+        "sendFailed": "Impossible de publier le formulaire (permissions ?)."
+      }
+    },
+    "fill": {
+      "title": "📝 {form}",
+      "selectHint": "Répondez aux questions à choix ci-dessous, puis cliquez sur **Continuer**.",
+      "continue": "Continuer",
+      "noChoice": "(aucun choix défini)",
+      "submitted": "✅ Votre réponse au formulaire **{form}** a été envoyée.",
+      "invalidNumber": "La réponse à « {question} » doit être un nombre.",
+      "invalidDate": "La réponse à « {question} » doit être une date (ex. JJ/MM/AAAA).",
+      "missingRequired": "La question « {question} » est obligatoire."
+    },
+    "submission": {
+      "title": "📝 Soumission — {form}",
+      "by": "Envoyée par",
+      "status": "Statut",
+      "id": "Identifiant",
+      "notes": "Notes"
+    },
+    "action": {
+      "accept": "Accepter",
+      "refuse": "Refuser",
+      "hold": "En attente",
+      "comment": "Commenter",
+      "commentLabel": "Votre commentaire"
+    },
+    "field": { "form": "Formulaire" },
+    "logs": {
+      "created": "Formulaire créé",
+      "deleted": "Formulaire supprimé",
+      "submitted": "Formulaire soumis",
+      "processed": "Soumission traitée"
+    },
+    "errors": {
+      "idRequired": "Précisez l'identifiant du formulaire (voir `form list`).",
+      "notFound": "Aucun formulaire avec l'identifiant `{id}`.",
+      "noPermission": "Vous devez posséder la permission **Gérer le serveur** pour gérer les formulaires.",
+      "gone": "Ce formulaire n'existe plus.",
+      "notAllowed": "Vous n'avez pas de rôle autorisé à remplir ce formulaire.",
+      "submissionGone": "Cette soumission n'existe plus."
+    }
+  },
+  "backup": {
+    "defaultName": "Sauvegarde",
+    "summary": "📁 {categories} catégorie(s) · 💬 {text} textuel(s) · 🔊 {voice} vocal(aux) · 🗣️ {forums} forum(s) · 📢 {announcements} annonce(s) · 🎭 {roles} rôle(s) · ⚙️ {configSystems} système(s) de config",
+    "cancel": "Annuler",
+    "cancelledTitle": "Action annulée",
+    "cancelled": "Aucune modification effectuée.",
+    "field": {
+      "id": "Identifiant",
+      "roles": "Rôles",
+      "channels": "Salons",
+      "rolesCreated": "Rôles recréés",
+      "channelsCreated": "Salons recréés",
+      "configRestored": "Systèmes restaurés"
+    },
+    "create": {
+      "done": "💾 Sauvegarde **{name}** créée (`{id}`).",
+      "evicted": "⚠️ Limite atteinte : la plus ancienne sauvegarde (`{id}`) a été supprimée.",
+      "confirmButton": "Créer"
+    },
+    "load": {
+      "title": "♻️ Restaurer une sauvegarde",
+      "confirm": "Restaurer la sauvegarde `{id}` (**{name}**) ? La restauration est **non destructive** : seuls les éléments manquants seront recréés et la configuration du bot réappliquée.",
+      "confirmButton": "Restaurer",
+      "inProgress": "Restauration en cours…",
+      "done": "♻️ Restauration terminée : **{roles}** rôle(s) recréé(s), **{channels}** salon(s) recréé(s), **{config}** système(s) de configuration restauré(s)."
+    },
+    "delete": {
+      "title": "🗑️ Supprimer une sauvegarde",
+      "confirm": "Supprimer définitivement la sauvegarde `{id}` (**{name}**) ?",
+      "confirmButton": "Supprimer",
+      "done": "Sauvegarde `{id}` supprimée."
+    },
+    "list": {
+      "title": "💾 Sauvegardes du serveur ({count})",
+      "empty": "Aucune sauvegarde. Créez-en une avec `backup create`.",
+      "entry": "`{id}` • **{name}**\nPar <@{by}> le <t:{date}:d> · {roles} rôle(s), {channels} salon(s)",
+      "footer": "Maximum {max} sauvegardes par serveur"
+    },
+    "logs": {
+      "created": "Sauvegarde créée",
+      "restored": "Sauvegarde restaurée",
+      "deleted": "Sauvegarde supprimée"
+    },
+    "errors": {
+      "idRequired": "Précisez l'identifiant de la sauvegarde (voir `backup list`).",
+      "notFound": "Aucune sauvegarde avec l'identifiant `{id}`.",
+      "noPermission": "Seul un administrateur ayant lancé la commande peut confirmer cette action."
+    }
+  },
+  "welcome": {
+    "panel": {
+      "title": "👋 Configuration de la bienvenue",
+      "help": "Configurez le salon, le message, le modèle de carte, les rôles automatiques, le MP et les questions d'accueil.",
+      "notSet": "*(non défini)*",
+      "pickChannel": "Salon de bienvenue…",
+      "pickRoles": "Rôles automatiques…",
+      "pickTemplate": "Modèle de carte…",
+      "editMessage": "Message & couleur",
+      "editQuestions": "Questions d'accueil",
+      "questionN": "Question {n} (laisser vide pour aucune)",
+      "dmOn": "Activer le MP",
+      "dmOff": "Désactiver le MP",
+      "enable": "Activer",
+      "disable": "Désactiver"
+    },
+    "status": {
+      "title": "👋 Configuration de bienvenue",
+      "on": "🟢 activée",
+      "off": "🔴 désactivée"
+    },
+    "preview": {
+      "note": "Aperçu de la carte de bienvenue :"
+    },
+    "card": {
+      "title": "Bienvenue sur {server} !",
+      "welcome": "Bienvenue {username} !",
+      "member": "Membre",
+      "count": "Membre n°",
+      "footer": "{server} • {count} membres"
+    },
+    "field": {
+      "state": "État",
+      "template": "Modèle",
+      "autoRoles": "Rôles automatiques",
+      "dm": "Message privé",
+      "questions": "Questions",
+      "message": "Message",
+      "color": "Couleur (hex, ex. #57F287)",
+      "dmMessage": "Message privé",
+      "member": "Membre"
+    },
+    "template": {
+      "classic": "Classique (vignette)",
+      "banner": "Bannière (grande image)"
+    },
+    "questions": {
+      "button": "Répondre aux questions",
+      "title": "Questions d'accueil",
+      "none": "Aucune question d'accueil n'est configurée.",
+      "saved": "Merci ! Vos réponses ont été enregistrées."
+    },
+    "logs": {
+      "joined": "Nouveau membre accueilli"
+    },
+    "errors": {
+      "noPermission": "Vous devez posséder la permission **Gérer le serveur** pour configurer la bienvenue."
+    }
+  },
+  "emergency": {
+    "status": {
+      "title": "🚨 Mode urgence",
+      "active": "🔴 Le mode urgence est **actif** : les salons sont verrouillés.",
+      "inactive": "🟢 Le mode urgence est **inactif**."
+    },
+    "activated": {
+      "title": "🚨 Mode urgence activé",
+      "body": "Le serveur a été verrouillé par {user}. **{locked}** salon(s) verrouillé(s) : envoi de messages, réactions, fils et vocal désactivés pour @everyone. Utilisez `urgence off` pour restaurer."
+    },
+    "deactivated": {
+      "body": "🟢 Mode urgence désactivé par {user}. **{restored}** salon(s) restauré(s) dans leur état d'origine."
+    },
+    "field": {
+      "locked": "Salons verrouillés",
+      "restored": "Salons restaurés",
+      "by": "Activé par",
+      "since": "Depuis"
+    },
+    "logs": {
+      "activated": "Mode urgence activé",
+      "deactivated": "Mode urgence désactivé"
+    },
+    "errors": {
+      "noPermission": "Réservé aux administrateurs, au propriétaire du serveur et aux owners du bot.",
+      "alreadyActive": "Le mode urgence est déjà actif.",
+      "notActive": "Le mode urgence n'est pas actif."
+    }
+  },
+  "protections": {
+    "command": {
+      "title": "🛡️ Protections — {guild}",
+      "line": "{indicator} {emoji} **{label}** — {state} · {stat} détection(s)",
+      "on": "activée",
+      "off": "désactivée",
+      "enabled": "Protection {protection} **activée**.",
+      "disabled": "Protection {protection} **désactivée**.",
+      "lastModified": "Dernière modification",
+      "lastModifiedBy": "Modifiée par",
+      "never": "Jamais",
+      "raidsBlocked": "Raids bloqués",
+      "refresh": "Actualiser",
+      "noPermission": "Vous devez posséder la permission **Gérer le serveur** pour cela."
+    },
+    "field": {
+      "protection": "Protection",
+      "reason": "Motif",
+      "action": "Action",
+      "deleted": "Message supprimé",
+      "notDeleted": "Message non supprimé (permissions insuffisantes)",
+      "bot": "Bot",
+      "addedBy": "Ajouté par",
+      "unknownAdder": "Inconnu (logs d'audit indisponibles)"
+    },
+    "spam": {
+      "flood": "Messages trop rapides (flood)",
+      "repeat": "Messages répétés",
+      "crosspost": "Message identique sur plusieurs salons",
+      "mentions": "Mentions abusives",
+      "charspam": "Caractères répétitifs",
+      "raid": "Raid détecté (afflux de comptes récents)"
+    },
+    "link": {
+      "link": "Lien externe",
+      "invite": "Invitation Discord",
+      "shortener": "Raccourcisseur d'URL",
+      "suspicious": "Domaine suspect"
+    },
+    "bot": {
+      "raid": "Ajout massif de bots détecté ({count} en peu de temps)"
+    },
+    "logs": {
+      "enabled": "Protection activée",
+      "disabled": "Protection désactivée",
+      "spam": "Spam détecté",
+      "raid": "Raid détecté",
+      "link": "Lien supprimé",
+      "botJoin": "Arrivée d'un bot",
+      "botRaid": "Raid de bots détecté",
+      "error": "Erreur de protection"
+    }
+  },
   "contact": {
     "command": {
       "sent": "✉️ Votre message a été transmis aux owners du bot (**{count}** notifié(s)). Référence : **{id}**. Conservez cette référence pour le suivi.",

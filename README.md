@@ -139,6 +139,104 @@ palier 1 est toujours un simple avertissement.
 | `logs desactiver <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs desactiver tout` |
 | `setwarnsanction [reset]` | Configure l'échelle des sanctions progressives des warns (panneau interactif : menus + boutons + modal ; `reset` restaure les valeurs par défaut) | Gérer le serveur | `!setwarnsanction` |
 
+### 🛡️ Protections automatiques
+
+| Commande | Description | Permission requise (auteur) | Exemple |
+|---|---|---|---|
+| `antispam <on\|off>` | Active/désactive l'anti-spam intelligent | Gérer le serveur | `!antispam on` |
+| `antilink <on\|off>` | Active/désactive l'anti-link | Gérer le serveur | `!antilink on` |
+| `antibot <on\|off>` | Active/désactive l'anti-bot | Gérer le serveur | `!antibot on` |
+| `protections` (alias `protection`) | Tableau de bord de l'état des protections (indicateurs, dernière modification, bouton d'actualisation) | Gérer le serveur | `!protections` |
+
+Protections indépendantes, **désactivées par défaut**, configurées par
+serveur et persistantes (`database/data/protections.json`).
+
+- **Anti-spam intelligent** : détecte flood (fréquence), messages répétés,
+  messages identiques multi-salons, mentions abusives (@everyone/rôles),
+  suites de caractères répétitifs, tentatives de **contournement**
+  (normalisation : casse, invisibles, ponctuation, répétitions) et **raids**
+  (afflux de comptes récents). Réaction par défaut : suppression + logs.
+- **Anti-link** : détecte liens externes, invitations Discord,
+  raccourcisseurs et domaines suspects (liste blanche prévue). Réaction par
+  défaut : suppression + logs.
+- **Anti-bot** : surveille l'arrivée des bots, identifie l'ajouteur via les
+  **logs d'audit** (si permission disponible) et détecte les **ajouts
+  massifs** (raid). Notification des modérateurs.
+- **Réactions extensibles** : l'architecture (`REACTIONS`, `applyReaction`)
+  permet d'ajouter ultérieurement des sanctions configurables (warn,
+  timeout, mute) ; les listes blanches/noires anti-bot et anti-link sont
+  prévues.
+- **Sécurité** : les membres exemptés (bots, *Gérer les messages* /
+  administrateurs, rang ≥ au bot) ne sont jamais sanctionnés ; le bot
+  vérifie ses propres permissions avant d'agir.
+- **Logs** : catégorie dédiée `protections` (activation, désactivation,
+  spam, lien supprimé, arrivée de bot, raid, erreurs).
+
+#### 🚨 Mode urgence
+
+| Commande | Description | Accès | Exemple |
+|---|---|---|---|
+| `urgence <on\|off\|status>` (alias `emergency`, `lockdown`) | Verrouille / déverrouille tous les salons du serveur | Admin / propriétaire / owner du bot | `!urgence on` |
+
+- **`on`** : mémorise les permissions @everyone de chaque salon puis les
+  restreint (plus d'envoi de messages, réactions, fils, connexion ni prise
+  de parole vocale) ; embed d'alerte dans le salon + log.
+- **`off`** : **restaure exactement** les permissions d'origine.
+- Résiste au redémarrage (état persistant), salons neufs verrouillés
+  automatiquement pendant l'urgence, jamais de verrouillage irréversible,
+  salons critiques ignorables (`exemptChannelIds`, extension future).
+
+#### 👋 Bienvenue
+
+| Commande | Description | Permission | Exemple |
+|---|---|---|---|
+| `setwelcome` | Panneau interactif : salon, message, couleur, modèle de carte, rôles automatiques, MP, questions d'accueil | Gérer le serveur | `!setwelcome` |
+| `welcomestatus` | Affiche la configuration de bienvenue | Gérer le serveur | `!welcomestatus` |
+| `welcomepreview` | Aperçu de la carte de bienvenue | Gérer le serveur | `!welcomepreview` |
+
+Carte de bienvenue par **modèles** (`classic`, `banner` — extensible), avec
+avatar, pseudo, nom du serveur et nombre de membres. Placeholders
+`{user} {username} {server} {count}`. Rôles automatiques (hiérarchie
+vérifiée), MP optionnel, et **questions d'accueil** (le nouvel arrivant
+répond via un bouton + modal ; réponses enregistrées). Logs `bienvenue`.
+
+#### 💾 Sauvegarde du serveur
+
+| Commande | Description | Permission | Exemple |
+|---|---|---|---|
+| `backup create [nom]` | Sauvegarde structure + permissions + configuration du bot | Administrateur | `!backup create Avant refonte` |
+| `backup list` | Liste des sauvegardes (id, auteur, date, contenu) | Administrateur | `!backup list` |
+| `backup load <id>` | Restaure (confirmation par boutons, **non destructif**) | Administrateur | `!backup load a1b2c3d4` |
+| `backup delete <id>` | Supprime une sauvegarde (confirmation) | Administrateur | `!backup delete a1b2c3d4` |
+
+Chaque sauvegarde capture les **rôles** (nom, couleur, position,
+permissions…), la **structure** (catégories, salons textuels/vocaux/forums/
+annonces, ordre, permissions) et la **configuration du bot** propre au
+serveur (logs, bump, tickets, rôles réactions, protections, bienvenue,
+sanctions, réputation…). Identifiant unique, auteur et date enregistrés ;
+nombre plafonné par serveur (10, la plus ancienne évincée). La
+restauration est **non destructive** (recrée uniquement les éléments
+manquants + réapplique la config), avec résumé détaillé et confirmation.
+Logs `sauvegardes`.
+
+#### 📝 Formulaires personnalisables
+
+| Commande | Description | Permission | Exemple |
+|---|---|---|---|
+| `form create <nom>` (alias `formulaire`) | Assistant de création (questions typées, salon, rôles autorisés) | Gérer le serveur | `!form create Candidature staff` |
+| `form edit <id>` | Modifie un formulaire (met à jour le message) | Gérer le serveur | `!form edit a1b2c3d4` |
+| `form delete <id>` | Supprime un formulaire | Gérer le serveur | `!form delete a1b2c3d4` |
+| `form list` | Liste des formulaires | Gérer le serveur | `!form list` |
+
+Formulaires pour recrutements, candidatures, demandes d'accès… **Questions
+typées** : texte court, texte long, nombre, date (via **modal**), choix
+unique/multiple (via **menus**). Chaque question : obligatoire ou non,
+longueur max, ordre. Le membre remplit via un bouton (menus de choix +
+modal de saisie) ; les **réponses sont stockées** et consultables
+(exportables ultérieurement). Les modérateurs **traitent** chaque
+soumission via des boutons : accepter / refuser / en attente / commenter.
+Logs `formulaires`.
+
 ### 👑 Owner (réservées aux owners du bot)
 
 | Commande | Description | Exemple |
@@ -479,6 +577,11 @@ par serveur (`database/data/logSettings.json`) :
 | `warns` | Sanctions progressives : ajout, suppression, remise à zéro, sanction automatique, règles | `#logs-warns` |
 | `roles-reactions` | Panneaux de rôles réactions : création, modification, suppression, rôles, mode, erreurs | `#logs-roles-reactions` |
 | `contact` | Contact owners : ouverture, réponse, changement de statut, fermeture, erreurs | `#logs-contact` |
+| `protections` | Protections automatiques : activation, spam, lien supprimé, arrivée de bot, raid, erreurs | `#logs-protections` |
+| `urgence` | Mode urgence : activation, désactivation, restauration, erreurs | `#logs-urgence` |
+| `bienvenue` | Bienvenue : arrivées, rôles automatiques, réponses aux questions, erreurs | `#logs-bienvenue` |
+| `sauvegardes` | Sauvegardes : création, restauration, suppression, erreurs | `#logs-sauvegardes` |
+| `formulaires` | Formulaires : création, modification, suppression, soumission, traitement, erreurs | `#logs-formulaires` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -529,6 +632,11 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── tickets/         #   setticket, ticket, ticketclose+ticketopen+ticketdelete
 │   ├── reactionRoles/   #   reactionrole (assistant + composants live)
 │   ├── contact/         #   contactowner, respond, contactlist+contactinfo
+│   ├── protections/     #   antispam+antilink+antibot, protections (tableau de bord)
+│   ├── emergency/       #   urgence (verrouillage on/off/status)
+│   ├── welcome/         #   setwelcome, welcomestatus+welcomepreview
+│   ├── backup/          #   backup (create/load/delete/list)
+│   ├── forms/           #   form (create/edit/delete/list + remplissage)
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
@@ -538,7 +646,12 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── member/          #   logs des arrivées/départs et des rôles
 │   ├── message/         #   messageCreate (préfixe) + logs des messages
 │   ├── reactionRoles/   #   ready (panneaux persistés opérationnels)
-│   └── contact/         #   ready (conversations de contact persistées)
+│   ├── contact/         #   ready (conversations de contact persistées)
+│   ├── protections/     #   messageProtection (spam/link), botJoinProtection
+│   ├── emergency/       #   channelLock (verrouillage des nouveaux salons)
+│   ├── welcome/         #   memberJoin (carte, rôles auto, MP, questions)
+│   ├── backup/          #   ready (sauvegardes disponibles)
+│   └── forms/           #   ready (formulaires actifs)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
 │   ├── logging/         #   logService (logs par catégories), modLogService
@@ -551,7 +664,15 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── watch/           #   watchService (surveillance de modération, 7 j max)
 │   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
 │   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
-│   └── contact/         #   contactService (communication owners ↔ propriétaires)
+│   ├── contact/         #   contactService (communication owners ↔ propriétaires)
+│   ├── protections/     #   protectionService (état, stats, logs partagés)
+│   ├── antispam/        #   antispamService (moteur de détection)
+│   ├── antilink/        #   antilinkService (moteur de détection)
+│   ├── antibot/         #   antibotService (arrivées de bots, raids)
+│   ├── emergency/       #   emergencyService (verrouillage/restauration)
+│   ├── welcome/         #   welcomeService + welcomeCardService (modèles)
+│   ├── backup/          #   backupService + botConfigBackup (structure + config)
+│   └── forms/           #   formService + formWizard (questions, soumissions)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   ├── cooldowns/       # Anti-spam par utilisateur et par commande
@@ -559,7 +680,11 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── tickets/         # Accès aux tickets (créateur ou modérateur)
 │   ├── watch/           # Accès à la surveillance (admin / modérateur / owner)
 │   ├── reactionRoles/   # Sécurité d'attribution des rôles (hiérarchie du bot)
-│   └── contact/         # Accès au contact (propriétaire du serveur)
+│   ├── contact/         # Accès au contact (propriétaire du serveur)
+│   ├── protections/     # Exemptions (bot, admin, hiérarchie) + permissions bot
+│   ├── emergency/       # Accès mode urgence (admin / propriétaire / owner)
+│   ├── backup/          # Accès sauvegardes (administrateur)
+│   └── forms/           # Gestion (Gérer le serveur) + accès au remplissage
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…

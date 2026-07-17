@@ -116,4 +116,34 @@ module.exports = {
     channelName: 'logs-contact',
     emoji: '✉️',
   },
+  protections: {
+    label: 'Protections',
+    description: 'Protections automatiques : activation, détection de spam, lien supprimé, bot, raid, erreurs',
+    channelName: 'logs-protections',
+    emoji: '🛡️',
+  },
+  urgence: {
+    label: 'Mode urgence',
+    description: 'Verrouillage d’urgence : activation, désactivation, restauration, erreurs',
+    channelName: 'logs-urgence',
+    emoji: '🚨',
+  },
+  bienvenue: {
+    label: 'Bienvenue',
+    description: 'Système de bienvenue : arrivées, rôles automatiques, réponses aux questions, erreurs',
+    channelName: 'logs-bienvenue',
+    emoji: '👋',
+  },
+  sauvegardes: {
+    label: 'Sauvegardes',
+    description: 'Sauvegardes du serveur : création, restauration, suppression, erreurs',
+    channelName: 'logs-sauvegardes',
+    emoji: '💾',
+  },
+  formulaires: {
+    label: 'Formulaires',
+    description: 'Formulaires : création, modification, suppression, soumission, traitement, erreurs',
+    channelName: 'logs-formulaires',
+    emoji: '📝',
+  },
 };

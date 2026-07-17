@@ -106,4 +106,47 @@ module.exports = {
     user: [],
     bot: [],
   },
+  // Protections automatiques : configuration réservée à « Gérer le serveur ».
+  antispam: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [PermissionFlagsBits.ManageMessages],
+  },
+  antilink: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [PermissionFlagsBits.ManageMessages],
+  },
+  antibot: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
+  },
+  protections: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
+  },
+  // Accès (admin OU propriétaire OU owner) contrôlé dans la commande ;
+  // seule la permission du bot est vérifiée par le pipeline.
+  urgence: {
+    user: [],
+    bot: [PermissionFlagsBits.ManageChannels],
+  },
+  setwelcome: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [PermissionFlagsBits.ManageRoles],
+  },
+  welcomestatus: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
+  },
+  welcomepreview: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
+  },
+  backup: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles],
+  },
+  form: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
+  },
 };
