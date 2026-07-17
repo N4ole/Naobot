@@ -149,4 +149,11 @@ module.exports = {
     user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
+  // Création de sondages réservée à « Gérer les messages ». La fermeture
+  // (pollclose) est vérifiée dans la commande (créateur OU gestionnaire) ;
+  // la consultation (pollresults / polllist) reste ouverte à tous.
+  poll: {
+    user: [PermissionFlagsBits.ManageMessages],
+    bot: [],
+  },
 };

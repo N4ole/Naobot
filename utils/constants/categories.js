@@ -11,6 +11,8 @@ module.exports = {
   welcome: { label: 'Bienvenue', emoji: '👋' },
   backup: { label: 'Sauvegardes', emoji: '💾' },
   forms: { label: 'Formulaires', emoji: '📝' },
+  reminders: { label: 'Rappels', emoji: '⏰' },
+  polls: { label: 'Sondages', emoji: '📊' },
   watch: { label: 'Surveillance', emoji: '👁️' },
   owner: { label: 'Owner', emoji: '👑' },
 };

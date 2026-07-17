@@ -359,6 +359,146 @@
       "rulesChanged": "Règles de sanction modifiées"
     }
   },
+  "reminders": {
+    "command": {
+      "created": "⏰ Rappel `{id}` créé pour {when} ({relative})."
+    },
+    "dm": {
+      "title": "⏰ Rappel"
+    },
+    "list": {
+      "title": "⏰ Vos rappels ({count})",
+      "empty": "Vous n'avez aucun rappel actif. Créez-en un avec `remind <durée> <message>`.",
+      "entry": "`{id}` • <t:{when}:F> (<t:{when}:R>)\n> {message}"
+    },
+    "delete": {
+      "title": "🗑️ Supprimer un rappel",
+      "confirm": "Supprimer le rappel `{id}` ?\n> {message}",
+      "confirmButton": "Supprimer",
+      "cancelButton": "Annuler",
+      "cancelled": "Suppression annulée.",
+      "done": "Rappel `{id}` supprimé."
+    },
+    "edit": {
+      "done": "Rappel `{id}` modifié (échéance : {when}).",
+      "nothing": "Aucune modification à appliquer.",
+      "nothingChanged": "Rien n'a changé."
+    },
+    "field": {
+      "id": "Identifiant",
+      "user": "Utilisateur",
+      "executeAt": "Échéance",
+      "createdAt": "Créé le",
+      "elapsed": "Temps écoulé",
+      "origin": "Message d'origine",
+      "jump": "Aller au message"
+    },
+    "logs": {
+      "created": "Rappel créé",
+      "edited": "Rappel modifié",
+      "deleted": "Rappel supprimé",
+      "executed": "Rappel exécuté"
+    },
+    "errors": {
+      "empty": "Précisez une échéance.",
+      "invalid": "Échéance invalide. Exemples : `30s`, `15m`, `2h`, `3j`, `1w`, `25/12/2026 18:00`.",
+      "invalidDate": "Date invalide. Format attendu : `JJ/MM/AAAA [HH:mm]`.",
+      "past": "Cette date est déjà passée.",
+      "noMessage": "Précisez le message du rappel.",
+      "notFound": "Aucun rappel `{id}` ne vous appartient.",
+      "notYours": "Ce rappel ne vous appartient pas."
+    }
+  },
+  "polls": {
+    "field": {
+      "id": "Identifiant",
+      "options": "Choix",
+      "description": "Description",
+      "votes": "Votes",
+      "voters": "votants",
+      "mode": "Mode",
+      "status": "Statut",
+      "remaining": "Fin",
+      "vote": "Votez…",
+      "by": "Créé par {user}"
+    },
+    "status": {
+      "open": "🟢 En cours",
+      "closed": "🔴 Terminé"
+    },
+    "wizard": {
+      "title": "📊 Nouveau sondage",
+      "help": "Configurez votre sondage : modifiez le contenu (titre, description, choix, durée), choisissez un salon et un mode, puis publiez.",
+      "pTitle": "Titre",
+      "noDescription": "Aucune description.",
+      "noOptions": "Aucun choix. Utilisez « Modifier » pour en ajouter (un par ligne).",
+      "notSet": "Non défini",
+      "duration": "Durée",
+      "noDuration": "Illimitée",
+      "pickChannel": "Salon de publication",
+      "pickMode": "Mode de vote",
+      "edit": "Modifier",
+      "publish": "Publier",
+      "cancel": "Annuler",
+      "editModalTitle": "Contenu du sondage",
+      "fieldTitle": "Titre",
+      "fieldDescription": "Description (facultatif)",
+      "fieldOptions": "Choix (un par ligne, 2 à 20)",
+      "optionsPlaceholder": "Choix 1\nChoix 2\nChoix 3",
+      "fieldDuration": "Durée ou date (facultatif)",
+      "durationPlaceholder": "30m, 2h, 3j, 1w ou 25/12/2026 18:00",
+      "needOptions": "Ajoutez au moins deux choix.",
+      "needChannel": "Choisissez un salon de publication.",
+      "published": "📊 Sondage `{id}` publié dans {channel}.",
+      "expired": "Cette session de création a expiré. Relancez `poll`.",
+      "cancelledTitle": "Création annulée",
+      "cancelled": "La création du sondage a été annulée.",
+      "error": {
+        "noChannel": "Salon introuvable ou invalide.",
+        "sendFailed": "Impossible de publier le sondage (permissions du bot dans le salon ?)."
+      }
+    },
+    "vote": {
+      "recorded": "✅ Vote enregistré : {choices}.",
+      "cleared": "Votre vote a été retiré."
+    },
+    "close": {
+      "title": "🔒 Fermer le sondage",
+      "confirm": "Fermer le sondage `{id}` — « {title} » ?\nLes votes seront figés et les résultats affichés.",
+      "confirmButton": "Fermer",
+      "cancelButton": "Annuler",
+      "cancelled": "Fermeture annulée."
+    },
+    "results": {
+      "title": "📊 Résultats — {title}",
+      "outcome": "Verdict",
+      "noVotes": "Aucun vote.",
+      "winner": "🏆 Gagnant : {choice}",
+      "tie": "🤝 Égalité entre : {choices}",
+      "participants": "Participants",
+      "noParticipants": "Aucun participant.",
+      "participantEntry": "{user} → {choices}",
+      "anonymous": "🔒 Sondage anonyme : les votes individuels restent masqués."
+    },
+    "list": {
+      "title": "📊 Sondages ({count})",
+      "empty": "Aucun sondage. Créez-en un avec `poll`.",
+      "entry": "`{id}` • {status} — **{title}**\n> Par {creator} • <t:{date}:F> • {votes} vote(s)"
+    },
+    "logs": {
+      "created": "Sondage créé",
+      "closed": "Sondage fermé",
+      "results": "Résultats consultés"
+    },
+    "errors": {
+      "noPermission": "Vous devez pouvoir « Gérer les messages » pour créer ou gérer un sondage.",
+      "notFound": "Aucun sondage `{id}` sur ce serveur.",
+      "notYours": "Vous ne pouvez pas gérer ce sondage (réservé au créateur ou à un gestionnaire).",
+      "notYourSession": "Cette action ne vous est pas destinée.",
+      "alreadyClosed": "Ce sondage est déjà fermé.",
+      "closedOrGone": "Ce sondage est fermé ou n'existe plus."
+    }
+  },
   "forms": {
     "public": {
       "questions": "Questions",
