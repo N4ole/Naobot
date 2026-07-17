@@ -116,4 +116,10 @@ module.exports = {
     channelName: 'logs-contact',
     emoji: '✉️',
   },
+  protections: {
+    label: 'Protections',
+    description: 'Protections automatiques : activation, détection de spam, lien supprimé, bot, raid, erreurs',
+    channelName: 'logs-protections',
+    emoji: '🛡️',
+  },
 };

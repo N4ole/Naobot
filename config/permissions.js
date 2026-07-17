@@ -106,4 +106,21 @@ module.exports = {
     user: [],
     bot: [],
   },
+  // Protections automatiques : configuration réservée à « Gérer le serveur ».
+  antispam: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [PermissionFlagsBits.ManageMessages],
+  },
+  antilink: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [PermissionFlagsBits.ManageMessages],
+  },
+  antibot: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
+  },
+  protections: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
+  },
 };

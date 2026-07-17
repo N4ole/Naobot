@@ -33,10 +33,10 @@ les modules (loaders) et se connecte — rien d'autre.
 Respecter l'organisation :
 
 ```
-commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, bump/, tickets/, reactionRoles/, contact/, watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, watch/, reactionRoles/, contact/)
-services/      # logique métier (moderation/, logging/, owners/, reputation/, tracking/, bump/, serverManagement/, tickets/, watch/, warnings/, reactionRoles/, contact/)
-middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, tickets/, watch/, reactionRoles/, contact/
+commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, bump/, tickets/, reactionRoles/, contact/, protections/, watch/, owner/, administration/)
+events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, watch/, reactionRoles/, contact/, protections/)
+services/      # logique métier (moderation/, logging/, owners/, reputation/, tracking/, bump/, serverManagement/, tickets/, watch/, warnings/, reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/)
+middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, tickets/, watch/, reactionRoles/, contact/, protections/
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
 config/        # config.js (env), permissions.js (permissions par commande)
 database/      # jsonStore.js + repositories ; données dans database/data/*.json (gitignoré)

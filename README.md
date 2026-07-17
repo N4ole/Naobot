@@ -139,6 +139,39 @@ palier 1 est toujours un simple avertissement.
 | `logs desactiver <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs desactiver tout` |
 | `setwarnsanction [reset]` | Configure l'échelle des sanctions progressives des warns (panneau interactif : menus + boutons + modal ; `reset` restaure les valeurs par défaut) | Gérer le serveur | `!setwarnsanction` |
 
+### 🛡️ Protections automatiques
+
+| Commande | Description | Permission requise (auteur) | Exemple |
+|---|---|---|---|
+| `antispam <on\|off>` | Active/désactive l'anti-spam intelligent | Gérer le serveur | `!antispam on` |
+| `antilink <on\|off>` | Active/désactive l'anti-link | Gérer le serveur | `!antilink on` |
+| `antibot <on\|off>` | Active/désactive l'anti-bot | Gérer le serveur | `!antibot on` |
+| `protections` (alias `protection`) | Tableau de bord de l'état des protections (indicateurs, dernière modification, bouton d'actualisation) | Gérer le serveur | `!protections` |
+
+Protections indépendantes, **désactivées par défaut**, configurées par
+serveur et persistantes (`database/data/protections.json`).
+
+- **Anti-spam intelligent** : détecte flood (fréquence), messages répétés,
+  messages identiques multi-salons, mentions abusives (@everyone/rôles),
+  suites de caractères répétitifs, tentatives de **contournement**
+  (normalisation : casse, invisibles, ponctuation, répétitions) et **raids**
+  (afflux de comptes récents). Réaction par défaut : suppression + logs.
+- **Anti-link** : détecte liens externes, invitations Discord,
+  raccourcisseurs et domaines suspects (liste blanche prévue). Réaction par
+  défaut : suppression + logs.
+- **Anti-bot** : surveille l'arrivée des bots, identifie l'ajouteur via les
+  **logs d'audit** (si permission disponible) et détecte les **ajouts
+  massifs** (raid). Notification des modérateurs.
+- **Réactions extensibles** : l'architecture (`REACTIONS`, `applyReaction`)
+  permet d'ajouter ultérieurement des sanctions configurables (warn,
+  timeout, mute) ; les listes blanches/noires anti-bot et anti-link sont
+  prévues.
+- **Sécurité** : les membres exemptés (bots, *Gérer les messages* /
+  administrateurs, rang ≥ au bot) ne sont jamais sanctionnés ; le bot
+  vérifie ses propres permissions avant d'agir.
+- **Logs** : catégorie dédiée `protections` (activation, désactivation,
+  spam, lien supprimé, arrivée de bot, raid, erreurs).
+
 ### 👑 Owner (réservées aux owners du bot)
 
 | Commande | Description | Exemple |
@@ -479,6 +512,7 @@ par serveur (`database/data/logSettings.json`) :
 | `warns` | Sanctions progressives : ajout, suppression, remise à zéro, sanction automatique, règles | `#logs-warns` |
 | `roles-reactions` | Panneaux de rôles réactions : création, modification, suppression, rôles, mode, erreurs | `#logs-roles-reactions` |
 | `contact` | Contact owners : ouverture, réponse, changement de statut, fermeture, erreurs | `#logs-contact` |
+| `protections` | Protections automatiques : activation, spam, lien supprimé, arrivée de bot, raid, erreurs | `#logs-protections` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -529,6 +563,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── tickets/         #   setticket, ticket, ticketclose+ticketopen+ticketdelete
 │   ├── reactionRoles/   #   reactionrole (assistant + composants live)
 │   ├── contact/         #   contactowner, respond, contactlist+contactinfo
+│   ├── protections/     #   antispam+antilink+antibot, protections (tableau de bord)
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
@@ -538,7 +573,8 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── member/          #   logs des arrivées/départs et des rôles
 │   ├── message/         #   messageCreate (préfixe) + logs des messages
 │   ├── reactionRoles/   #   ready (panneaux persistés opérationnels)
-│   └── contact/         #   ready (conversations de contact persistées)
+│   ├── contact/         #   ready (conversations de contact persistées)
+│   └── protections/     #   messageProtection (spam/link), botJoinProtection
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
 │   ├── logging/         #   logService (logs par catégories), modLogService
@@ -551,7 +587,11 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── watch/           #   watchService (surveillance de modération, 7 j max)
 │   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
 │   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
-│   └── contact/         #   contactService (communication owners ↔ propriétaires)
+│   ├── contact/         #   contactService (communication owners ↔ propriétaires)
+│   ├── protections/     #   protectionService (état, stats, logs partagés)
+│   ├── antispam/        #   antispamService (moteur de détection)
+│   ├── antilink/        #   antilinkService (moteur de détection)
+│   └── antibot/         #   antibotService (arrivées de bots, raids)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   ├── cooldowns/       # Anti-spam par utilisateur et par commande
@@ -559,7 +599,8 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── tickets/         # Accès aux tickets (créateur ou modérateur)
 │   ├── watch/           # Accès à la surveillance (admin / modérateur / owner)
 │   ├── reactionRoles/   # Sécurité d'attribution des rôles (hiérarchie du bot)
-│   └── contact/         # Accès au contact (propriétaire du serveur)
+│   ├── contact/         # Accès au contact (propriétaire du serveur)
+│   └── protections/     # Exemptions (bot, admin, hiérarchie) + permissions bot
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…

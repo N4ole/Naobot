@@ -359,6 +359,59 @@
       "rulesChanged": "Règles de sanction modifiées"
     }
   },
+  "protections": {
+    "command": {
+      "title": "🛡️ Protections — {guild}",
+      "line": "{indicator} {emoji} **{label}** — {state} · {stat} détection(s)",
+      "on": "activée",
+      "off": "désactivée",
+      "enabled": "Protection {protection} **activée**.",
+      "disabled": "Protection {protection} **désactivée**.",
+      "lastModified": "Dernière modification",
+      "lastModifiedBy": "Modifiée par",
+      "never": "Jamais",
+      "raidsBlocked": "Raids bloqués",
+      "refresh": "Actualiser",
+      "noPermission": "Vous devez posséder la permission **Gérer le serveur** pour cela."
+    },
+    "field": {
+      "protection": "Protection",
+      "reason": "Motif",
+      "action": "Action",
+      "deleted": "Message supprimé",
+      "notDeleted": "Message non supprimé (permissions insuffisantes)",
+      "bot": "Bot",
+      "addedBy": "Ajouté par",
+      "unknownAdder": "Inconnu (logs d'audit indisponibles)"
+    },
+    "spam": {
+      "flood": "Messages trop rapides (flood)",
+      "repeat": "Messages répétés",
+      "crosspost": "Message identique sur plusieurs salons",
+      "mentions": "Mentions abusives",
+      "charspam": "Caractères répétitifs",
+      "raid": "Raid détecté (afflux de comptes récents)"
+    },
+    "link": {
+      "link": "Lien externe",
+      "invite": "Invitation Discord",
+      "shortener": "Raccourcisseur d'URL",
+      "suspicious": "Domaine suspect"
+    },
+    "bot": {
+      "raid": "Ajout massif de bots détecté ({count} en peu de temps)"
+    },
+    "logs": {
+      "enabled": "Protection activée",
+      "disabled": "Protection désactivée",
+      "spam": "Spam détecté",
+      "raid": "Raid détecté",
+      "link": "Lien supprimé",
+      "botJoin": "Arrivée d'un bot",
+      "botRaid": "Raid de bots détecté",
+      "error": "Erreur de protection"
+    }
+  },
   "contact": {
     "command": {
       "sent": "✉️ Votre message a été transmis aux owners du bot (**{count}** notifié(s)). Référence : **{id}**. Conservez cette référence pour le suivi.",
