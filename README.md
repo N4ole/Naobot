@@ -136,6 +136,22 @@ palier 1 est toujours un simple avertissement.
   le nécessaire aux futures statistiques (modérateurs les plus actifs,
   utilisateurs les plus sanctionnés, sanctions les plus fréquentes).
 
+**Rôles automatiques par palier** (`setwarnrole`) : chaque palier de warn
+peut être associé à un rôle, pour n'importe quel nombre de niveaux.
+
+- `setwarnrole` (liste), `setwarnrole <palier> <rôle>` (associe / modifie),
+  `setwarnrole <palier>` (supprime l'association), `setwarnrole sync`
+  (resynchronise immédiatement).
+- À chaque variation du nombre de warns (ajout, `unwarn`, `clearwarns`), le
+  membre voit ses rôles recalculés : retrait des anciens rôles de warn,
+  attribution du rôle du **plus haut palier atteint** (plafond). À zéro warn,
+  tous les rôles de warn sont retirés.
+- Une **tâche de cohérence** périodique (`services/warnings/warnRoleService`)
+  réconcilie automatiquement les rôles et le nombre réel de warns (corrige les
+  écarts, redémarrages…).
+- Chaque attribution / retrait / changement automatique est journalisé dans la
+  catégorie `warns` (persistance : `database/data/warnRoles.json`).
+
 ### ⚙️ Administration
 
 | Commande | Description | Permission requise (auteur) | Exemple |
@@ -145,6 +161,8 @@ palier 1 est toujours un simple avertissement.
 | `logs activer <catégories…\|tout>` | Active une, plusieurs ou toutes les catégories (crée les salons manquants) | Gérer le serveur | `!logs activer sanctions moderation` |
 | `logs desactiver <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs desactiver tout` |
 | `setwarnsanction [reset]` | Configure l'échelle des sanctions progressives des warns (panneau interactif : menus + boutons + modal ; `reset` restaure les valeurs par défaut) | Gérer le serveur | `!setwarnsanction` |
+| `setwarnrole [palier] [rôle]` (alias `warnrole`) | Associe un rôle automatique à un palier de warn (sans argument : liste ; palier seul : supprime ; `sync` : resynchronise) | Gérer le serveur | `!setwarnrole 3 @Warn 3` |
+| `say <message>` | Fait relayer un message par le bot (texte, mentions, emojis, liens, pièces jointes) ; supprime la commande d'origine, neutralise @everyone/@here, journalise l'auteur | Admin / propriétaire / owner du bot | `!say Bienvenue à tous !` |
 
 ### 🛡️ Protections automatiques
 
@@ -477,7 +495,6 @@ leurs rôles eux-mêmes via boutons ou menu déroulant.
 | `8ball <question>` (alias `boule`) | La boule magique répond | — | `!8ball Vais-je gagner ?` |
 | `coinflip` (alias `pileouface`, `pf`) | Pile ou face | — | `!coinflip` |
 | `dice [faces] [nombre]` (alias `de`, `roll`) | Lance des dés (2-1000 faces, 1-20 dés) | — | `!dice 20 3` |
-| `say <message>` | Le bot répète un message (embed, mentions neutralisées) | Gérer les messages | `!say Bienvenue !` |
 | `rps` (alias `pfc`, `chifoumi`) | Pierre-feuille-ciseaux contre le bot, avec boutons | — | `!rps` |
 
 ### ⏰ Rappels personnels
@@ -652,7 +669,7 @@ par serveur (`database/data/logSettings.json`) :
 | `gestion-serveurs` | Actions globales du bot : départs manuels, liste noire, départs automatiques | `#logs-gestion-serveurs` |
 | `tickets` | Système de tickets : ouverture, fermeture, réouverture, suppression, renommage, assignation, transfert, membres, erreurs | `#logs-tickets` |
 | `surveillance` | Système de surveillance : démarrage, arrêt, reprise, expiration, erreurs | `#logs-surveillance` |
-| `warns` | Sanctions progressives : ajout, suppression, remise à zéro, sanction automatique, règles | `#logs-warns` |
+| `warns` | Sanctions progressives : ajout, suppression, remise à zéro, sanction automatique, règles, rôles automatiques attribués/retirés | `#logs-warns` |
 | `roles-reactions` | Panneaux de rôles réactions : création, modification, suppression, rôles, mode, erreurs | `#logs-roles-reactions` |
 | `contact` | Contact owners : ouverture, réponse, changement de statut, fermeture, erreurs | `#logs-contact` |
 | `protections` | Protections automatiques : activation, spam, lien supprimé, arrivée de bot, raid, erreurs | `#logs-protections` |
@@ -662,6 +679,7 @@ par serveur (`database/data/logSettings.json`) :
 | `formulaires` | Formulaires : création, modification, suppression, soumission, traitement, erreurs | `#logs-formulaires` |
 | `rappels` | Rappels personnels : création, modification, suppression, exécution | `#logs-rappels` |
 | `sondages` | Sondages : création, fermeture, consultation des résultats | `#logs-sondages` |
+| `web` | Interface web : connexions, authentifications, modifications via le site, erreurs | `#logs-web` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -695,6 +713,35 @@ Avant chaque commande, le middleware central (`middlewares/permissions`) vérifi
 Chaque refus produit un message d'erreur explicite. Chaque sanction inscrit
 le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 
+## Interface web (tableau de bord)
+
+Tableau de bord officiel de NaoBot, **entièrement séparé de la logique
+Discord** (`web/` + `services/web/`) et **sans dépendance externe** (module
+`http` natif, SSE pour le temps réel, OAuth2 via `fetch`). **Désactivée par
+défaut** : elle ne démarre que si `WEB_ENABLED=true` et que la configuration
+OAuth2 est complète.
+
+- **Sections** : tableau de bord (serveurs, utilisateurs, tickets, bumps, état
+  du bot), serveurs (protections, tickets, rôles réactions, formulaires,
+  sauvegardes, réputation…), modération (warns, statistiques), tickets
+  (ouverts / fermés / catégories), profils (réputation, warns, historique ;
+  badges et succès à venir). Interface **responsive**.
+- **Temps réel** : flux **SSE** (équivalent WebSocket) — statistiques
+  poussées en continu et journal web en direct (owners).
+- **Authentification** : **OAuth2 Discord** (scopes `identify`, `guilds`),
+  sessions signées (cookie HMAC). L'accès à un serveur est réservé aux
+  **administrateurs du serveur**, à son **propriétaire** et aux **owners du
+  bot** ; les endpoints d'administration (écriture) sont structurés mais non
+  exposés dans cette itération (lecture seule).
+- **Modules** : `web/frontend` (dashboard statique), `web/backend` (serveur
+  HTTP + OAuth2), `web/api` (API REST), `web/websocket` (hub SSE),
+  `services/web` (`webService` = pont de données, `webAuth` = OAuth2 +
+  permissions, `webLog` = journal). Catégorie de logs dédiée `web`.
+- **Configuration** (statique, `.env` uniquement — jamais de config dynamique
+  de serveur) : `WEB_ENABLED`, `WEB_PORT`, `WEB_BASE_URL`, `CLIENT_ID`,
+  `DISCORD_CLIENT_SECRET`, `WEB_SESSION_SECRET`. URL de redirection OAuth2 à
+  déclarer dans le portail Discord : `<WEB_BASE_URL>/callback`.
+
 ## Architecture
 
 > 📘 Le fichier [`CLAUDE.md`](CLAUDE.md) est la référence permanente des
@@ -706,7 +753,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 ├── commands/            # Définition des commandes (1 fichier = 1 fonctionnalité,
 │   ├── administration/  # les familles proches partagent un fichier : ban+unban…)
 │   ├── bump/            #   bumpenable, bump, bumpcount+bumpunicount
-│   ├── fun/             #   8ball, coinflip, dice, say, rps
+│   ├── fun/             #   8ball, coinflip, dice, rps
 │   ├── moderation/
 │   ├── owner/           #   addowner+rmowner, serveurs, rep, leave, serverban…
 │   ├── tickets/         #   ticketcategory, ticketpanel, ticket (info+composants), ticketManage (cycle de vie), ticketstats
@@ -736,7 +783,9 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── forms/           #   ready (formulaires actifs)
 │   ├── reminders/       #   ready (planificateur des rappels dus)
 │   ├── polls/           #   ready (fermeture des sondages expirés)
-│   └── tickets/         #   ready (planificateur), activity (anti-inactivité)
+│   ├── tickets/         #   ready (planificateur), activity (anti-inactivité)
+│   ├── warnings/        #   ready (cohérence des rôles de warn)
+│   └── web/             #   ready (démarre l'interface web si activée)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
 │   ├── logging/         #   logService (logs par catégories), modLogService
@@ -749,7 +798,7 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── ticketCategories/#   ticketCategoryService + ticketCategoryWizard (catégories)
 │   ├── ticketPanels/    #   ticketPanelService + ticketPanelWizard (panneaux)
 │   ├── watch/           #   watchService (surveillance de modération, 7 j max)
-│   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
+│   ├── warnings/        #   warnService + sanctionService + warnRoleService (rôles auto)
 │   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
 │   ├── contact/         #   contactService (communication owners ↔ propriétaires)
 │   ├── protections/     #   protectionService (état, stats, logs partagés)
@@ -761,7 +810,13 @@ le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 │   ├── backup/          #   backupService + botConfigBackup (structure + config)
 │   ├── forms/           #   formService + formWizard (questions, soumissions)
 │   ├── reminders/       #   reminderService (planificateur, envoi en MP)
-│   └── polls/           #   pollService + pollWizard (votes, modes, résultats)
+│   ├── polls/           #   pollService + pollWizard (votes, modes, résultats)
+│   └── web/             #   webService (données) + webAuth (OAuth2) + webLog
+├── web/                 # Interface web (séparée de la logique Discord)
+│   ├── frontend/        #   dashboard statique responsive (HTML/CSS/JS)
+│   ├── backend/         #   serveur HTTP natif + tunnel OAuth2
+│   ├── api/             #   API REST (JSON, lecture seule)
+│   └── websocket/       #   hub temps réel SSE (équivalent WebSocket)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
 │   ├── cooldowns/       # Anti-spam par utilisateur et par commande

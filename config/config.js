@@ -27,4 +27,19 @@ module.exports = {
   // Contact affiché aux serveurs bannis pour un éventuel recours
   // (URL de serveur de support, adresse…). Donnée statique globale.
   supportContact: process.env.SUPPORT_CONTACT || null,
+
+  // Interface web (tableau de bord). Données STATIQUES uniquement (jamais de
+  // configuration dynamique de serveur). Désactivée par défaut : elle ne
+  // démarre que si activée ET correctement configurée (OAuth2 + secret de
+  // session). L'identifiant client réutilise CLIENT_ID.
+  web: {
+    enabled: /^(1|true|on|yes)$/i.test(process.env.WEB_ENABLED || ''),
+    port: Number.parseInt(process.env.WEB_PORT || '3000', 10),
+    // URL publique de base du site (pour la redirection OAuth2).
+    baseUrl: (process.env.WEB_BASE_URL || 'http://localhost:3000').replace(/\/$/, ''),
+    clientId: process.env.CLIENT_ID || null,
+    clientSecret: process.env.DISCORD_CLIENT_SECRET || null,
+    // Secret de signature des sessions (cookies signés HMAC).
+    sessionSecret: process.env.WEB_SESSION_SECRET || null,
+  },
 };

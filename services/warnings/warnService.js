@@ -13,6 +13,7 @@
  */
 const warnRepository = require('../../database/warnRepository');
 const sanctionService = require('./sanctionService');
+const warnRoleService = require('./warnRoleService');
 const logService = require('../logging/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
@@ -99,6 +100,9 @@ async function addWarn(guild, member, moderator, reason) {
     });
   }
 
+  // Rôles automatiques : retire les anciens paliers, attribue le nouveau.
+  await warnRoleService.syncMember(guild, member.id, total).catch(() => null);
+
   return { warn, total, sanction, applied, sanctionLabel, nextLabel };
 }
 
@@ -119,6 +123,8 @@ async function removeWarn(guild, targetUser, warnId, moderator) {
       { name: t('warns.field.total'), value: String(result.total), inline: true },
     ],
   });
+  // Recalcule les rôles de warn selon le nouveau total.
+  await warnRoleService.syncMember(guild, targetUser.id, result.total).catch(() => null);
   return { ok: true, total: result.total };
 }
 
@@ -136,6 +142,8 @@ async function clearWarns(guild, targetUser, moderator) {
     color: COLORS.LOG_CREATE,
     extraFields: [{ name: t('warns.field.removed'), value: String(count), inline: true }],
   });
+  // Plus aucun warn : retire tous les rôles de sanction liés aux warns.
+  await warnRoleService.syncMember(guild, targetUser.id, 0).catch(() => null);
   return { ok: true, count };
 }
 

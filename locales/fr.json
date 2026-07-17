@@ -356,7 +356,47 @@
       "removed": "Avertissement supprimé",
       "cleared": "Avertissements remis à zéro",
       "autoSanction": "Sanction automatique appliquée",
-      "rulesChanged": "Règles de sanction modifiées"
+      "rulesChanged": "Règles de sanction modifiées",
+      "roleAssigned": "Rôle de warn attribué",
+      "roleRemoved": "Rôle de warn retiré",
+      "roleConfig": "Rôles de warn configurés",
+      "roleAdded": "Rôle attribué",
+      "roleRemovedField": "Rôle retiré"
+    },
+    "roles": {
+      "title": "🎭 Rôles automatiques de warn",
+      "description": "Chaque palier de warn peut attribuer automatiquement un rôle. Le membre reçoit le rôle du plus haut palier atteint (les anciens sont retirés). À zéro warn, tous les rôles de warn sont retirés.",
+      "line": "**Warn {level}** → {role}",
+      "empty": "Aucune association. Utilisez `setwarnrole <palier> <rôle>`.",
+      "set": "✅ Palier **{level}** associé au rôle {role}.",
+      "removed": "Association du palier **{level}** supprimée.",
+      "notSet": "Le palier **{level}** n'a aucun rôle associé.",
+      "invalidLevel": "Palier invalide. Indiquez un entier ≥ 1.",
+      "invalidRole": "Ce rôle ne peut pas être utilisé (rôle géré ou @everyone).",
+      "roleTooHigh": "Le rôle {role} est trop haut dans la hiérarchie : placez-le sous le rôle du bot.",
+      "botMissingPerm": "Il me manque la permission **Gérer les rôles**.",
+      "synced": "Cohérence des rôles de warn vérifiée : **{count}** membre(s) corrigé(s).",
+      "auditReason": "Synchronisation des rôles de warn",
+      "logSet": "Palier {level} → rôle {role}",
+      "logRemoved": "Palier {level} : association supprimée"
+    }
+  },
+  "say": {
+    "noPermission": "Réservé aux administrateurs, au propriétaire du serveur et aux owners du bot.",
+    "empty": "Précisez un message (ou joignez un fichier).",
+    "sent": "Message envoyé.",
+    "logTitle": "🗣️ Message relayé (say)",
+    "logContent": "Contenu",
+    "noContent": "*(aucun texte)*",
+    "attachments": "Pièces jointes"
+  },
+  "web": {
+    "log": {
+      "connection": "Connexion : {user}",
+      "authOk": "Authentification réussie : {user}",
+      "authFail": "Échec d'authentification : {user}",
+      "guildAction": "Modification via le site",
+      "detail": "Détail"
     }
   },
   "reminders": {
@@ -1382,10 +1422,6 @@
     },
     "dice": {
       "result": "**{user}** lance {count}d{faces} : **{rolls}**\nTotal : **{total}**"
-    },
-    "say": {
-      "footer": "Demandé par {user}",
-      "sent": "Message envoyé."
     },
     "rps": {
       "prompt": "Choisissez votre coup avec les boutons ci-dessous !",
