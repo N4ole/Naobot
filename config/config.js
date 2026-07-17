@@ -28,17 +28,23 @@ module.exports = {
   // (URL de serveur de support, adresse…). Donnée statique globale.
   supportContact: process.env.SUPPORT_CONTACT || null,
 
-  // Interface web (tableau de bord). Données STATIQUES uniquement (jamais de
-  // configuration dynamique de serveur). Désactivée par défaut : elle ne
-  // démarre que si activée ET correctement configurée (OAuth2 + secret de
-  // session). L'identifiant client réutilise CLIENT_ID.
+  // Interface web (tableau de bord) et authentification Discord OAuth2.
+  // Données STATIQUES uniquement (jamais de configuration dynamique de
+  // serveur). Désactivée par défaut : elle ne démarre que si activée ET
+  // correctement configurée (OAuth2 + secret de session).
   web: {
     enabled: /^(1|true|on|yes)$/i.test(process.env.WEB_ENABLED || ''),
     port: Number.parseInt(process.env.WEB_PORT || '3000', 10),
-    // URL publique de base du site (pour la redirection OAuth2).
-    baseUrl: (process.env.WEB_BASE_URL || 'http://localhost:3000').replace(/\/$/, ''),
-    clientId: process.env.CLIENT_ID || null,
+    // URL publique de base du site. WEB_URL est le nom officiel ;
+    // WEB_BASE_URL reste accepté (héritage).
+    baseUrl: (process.env.WEB_URL || process.env.WEB_BASE_URL || 'http://localhost:3000').replace(/\/$/, ''),
+    // OAuth2 : DISCORD_CLIENT_ID est le nom officiel ; CLIENT_ID (identifiant
+    // de l'application, déjà utilisé pour l'invitation) sert de repli.
+    clientId: process.env.DISCORD_CLIENT_ID || process.env.CLIENT_ID || null,
     clientSecret: process.env.DISCORD_CLIENT_SECRET || null,
+    // URI de redirection OAuth2 déclarée dans le portail Discord. Si absente,
+    // elle est dérivée : <baseUrl>/callback.
+    redirectUri: process.env.DISCORD_REDIRECT_URI || null,
     // Secret de signature des sessions (cookies signés HMAC).
     sessionSecret: process.env.WEB_SESSION_SECRET || null,
   },

@@ -95,8 +95,9 @@ Le `.env` doit **uniquement** contenir :
 - l'owner principal (`OWNER_ID`) ;
 - des données statiques globales (`CLIENT_ID`, `GUILD_ID`, `PREFIX`,
   `LOCALE`, `MUTED_ROLE_NAME`, `OWNER_ROLE_NAME`) ;
-- la configuration **statique** de l'interface web (`WEB_ENABLED`,
-  `WEB_PORT`, `WEB_BASE_URL`, `DISCORD_CLIENT_SECRET`, `WEB_SESSION_SECRET`) —
+- la configuration **statique** de l'interface web et de l'authentification
+  OAuth2 (`WEB_ENABLED`, `WEB_PORT`, `WEB_URL`, `DISCORD_CLIENT_ID`,
+  `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, `WEB_SESSION_SECRET`) —
   jamais de configuration dynamique de serveur.
 
 Toutes les données serveur (salons, rôles, options activables,
