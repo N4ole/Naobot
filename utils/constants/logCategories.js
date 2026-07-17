@@ -88,7 +88,7 @@ module.exports = {
   },
   tickets: {
     label: 'Tickets',
-    description: 'Système de tickets : création, fermeture, réouverture, suppression, membres, renommage',
+    description: 'Système de tickets : ouverture, fermeture, réouverture, suppression, renommage, assignation, transfert, membres, erreurs',
     channelName: 'logs-tickets',
     emoji: '🎫',
   },

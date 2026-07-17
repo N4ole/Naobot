@@ -90,10 +90,24 @@ module.exports = {
     user: [PermissionFlagsBits.ManageMessages],
     bot: [],
   },
-  setticket: {
-    user: [PermissionFlagsBits.ManageGuild],
+  // Configuration des tickets (catégories + panneaux) : administrateurs.
+  // Le bot crée des salons/catégories et gère les permissions.
+  ticketcategory: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles],
+  },
+  ticketpanel: {
+    user: [PermissionFlagsBits.Administrator],
     bot: [PermissionFlagsBits.ManageChannels],
   },
+  ticketstats: {
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
+  },
+  // Les commandes de gestion d'un ticket (ticketclose, ticketclaim…) ne sont
+  // pas déclarées ici : leur accès (créateur / assigné / équipe) est vérifié
+  // dans la commande via middlewares/tickets/ticketAccess, sinon le pipeline
+  // bloquerait le créateur d'un ticket sans permission Discord.
   // Accès (admin OU modérateur OU owner) contrôlé dans la commande via
   // middlewares/watch/watchAccess : pas de permission `user` déclarative
   // ici, sinon le pipeline bloquerait les owners sans permission Discord.
