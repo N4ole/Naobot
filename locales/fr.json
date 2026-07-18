@@ -109,7 +109,10 @@
       "noPermission": "Vous devez posséder la permission **Gérer le serveur** pour utiliser ce panneau.",
       "selectPlaceholder": "Catégories de logs à activer…",
       "enableAll": "Tout activer",
-      "disableAll": "Tout désactiver"
+      "disableAll": "Tout désactiver",
+      "setupSuccess": "Système de logs configuré : catégorie **Logs** et salons créés (ou réutilisés), toutes les catégories activées.",
+      "modified": "Modifié <t:{date}:R> par {user}",
+      "never": "Jamais configuré"
     },
     "events": {
       "messageDeleted": "Message supprimé",
@@ -397,6 +400,57 @@
       "authFail": "Échec d'authentification : {user}",
       "guildAction": "Modification via le site",
       "detail": "Détail"
+    }
+  },
+  "repglobale": {
+    "title": "🌐 Réputation globale",
+    "profileTitle": "🌐 Profil global — {user}",
+    "scoreLine": "**{score}/100** — {emoji} {level}",
+    "statsLine": "📛 {warns} warn(s) • ⏳ {timeouts} timeout(s) • 🔇 {mutes} mute(s) • 👢 {kicks} kick(s) • ⛔ {bans} ban(s)",
+    "historyEntry": "`{action}` • {server} • <t:{date}:R>",
+    "noBadges": "Aucun badge.",
+    "field": {
+      "sanctions": "Sanctions cumulées",
+      "servers": "Serveurs concernés",
+      "account": "Compte créé",
+      "history": "Historique récent",
+      "user": "Utilisateur",
+      "id": "Identifiant",
+      "score": "Score",
+      "badges": "Badges",
+      "action": "Action",
+      "viewer": "Consultant"
+    },
+    "errors": {
+      "private": "🔒 Cette réputation est privée. Vous ne pouvez consulter que la vôtre (les administrateurs des serveurs concernés et les owners du bot peuvent voir les autres)."
+    },
+    "stats": {
+      "title": "🌐 Statistiques de réputation globale",
+      "summary": "**{users}** utilisateur(s) suivi(s) • **{sanctions}** sanction(s) • **{events}** événement(s) enregistrés",
+      "best": "🏆 Meilleures réputations",
+      "worst": "⚠️ Pires réputations"
+    },
+    "history": {
+      "title": "🌐 Historique global — {user}",
+      "empty": "Aucun événement enregistré pour cet utilisateur.",
+      "entry": "`{action}` • {server} • <t:{date}:f>\n> Par {moderator} • {reason} • score {score}"
+    },
+    "config": {
+      "title": "🌐 Pondérations de la réputation globale",
+      "invalidKey": "Clé de pondération inconnue.",
+      "change": "Modification",
+      "updated": "Pondération `{key}` fixée à **{value}**. Scores recalculés.",
+      "positive": "Facteurs positifs",
+      "positiveValue": "Ancienneté : +{perYear}/an (max +{max})",
+      "limits": "Anti-abus",
+      "limitsValue": "Max {max} événement(s) par serveur/jour/utilisateur"
+    },
+    "logs": {
+      "sanction": "Événement de réputation enregistré",
+      "view": "Consultation de réputation",
+      "config": "Configuration de réputation modifiée",
+      "recalc": "Recalcul des scores",
+      "limited": "Limite anti-abus atteinte (événement ignoré)"
     }
   },
   "captcha": {

@@ -14,7 +14,7 @@
 const { ChannelType, PermissionsBitField } = require('discord.js');
 const repository = require('../../database/backupRepository');
 const botConfigBackup = require('./botConfigBackup');
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');

@@ -3,7 +3,7 @@
  * et préfixées. Utilise la suppression en masse native de Discord
  * (bulkDelete), limitée par l'API aux messages de moins de 14 jours.
  */
-const { logModAction } = require('../logging/modLogService');
+const { logModAction } = require('../logs/modLogService');
 const { modLogEmbed } = require('../../utils/embeds/embeds');
 const { t } = require('../../utils/helpers/i18n');
 
@@ -32,6 +32,7 @@ async function purgeMessages(ctx, count) {
       ],
     }),
     'moderation',
+    { countsAsSanction: false },
   );
 
   const key = deleted.size < count ? 'moderation.purge.partial' : 'moderation.purge.success';

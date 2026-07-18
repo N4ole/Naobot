@@ -11,7 +11,7 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
 const repository = require('../../database/welcomeRepository');
 const welcomeCardService = require('./welcomeCardService');
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { dmUser } = require('../../utils/helpers/discordUtils');

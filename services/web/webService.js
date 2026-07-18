@@ -17,9 +17,10 @@ const protectionRepository = require('../../database/protectionRepository');
 const reactionRoleRepository = require('../../database/reactionRoleRepository');
 const formRepository = require('../../database/formRepository');
 const backupRepository = require('../../database/backupRepository');
-const logSettingsRepository = require('../../database/logSettingsRepository');
+const logService = require('../logs/logService');
 const tempVoiceRepository = require('../../database/tempVoiceRepository');
 const captchaRepository = require('../../database/captchaRepository');
+const globalReputationService = require('../reputation/globalReputationService');
 
 function safe(fn, fallback) {
   try {
@@ -87,7 +88,7 @@ function guildOverview(client, guildId) {
     reactionRoles: safe(() => Object.keys(reactionRoleRepository.getGuildPanels(guildId)).length, 0),
     forms: safe(() => formRepository.getForms(guildId).length, 0),
     backups: safe(() => backupRepository.getBackups(guildId).length, 0),
-    logs: safe(() => logSettingsRepository.getSettings(guildId), {}),
+    logs: safe(() => logService.getStatus(guildId), {}),
     reputation: safe(() => reputationService.getEffective(guild), null),
     tickets: ticketSummary(guildId),
     tempVoice: safe(() => ({ generators: tempVoiceRepository.listGenerators(guildId).length, active: tempVoiceRepository.listTemps(guildId).length }), { generators: 0, active: 0 }),
@@ -195,4 +196,14 @@ function profile(client, guildId, userId) {
   };
 }
 
-module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, moderation, profile, totalBumps, totalTickets };
+/** Profil de réputation globale d'un utilisateur (accès contrôlé côté API). */
+function reputationProfile(userId) {
+  return safe(() => globalReputationService.getProfile(userId), null);
+}
+
+/** Statistiques + pondérations de réputation globale (owners). */
+function reputationOverview() {
+  return safe(() => ({ stats: globalReputationService.globalStats(), config: globalReputationService.getConfig() }), null);
+}
+
+module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };

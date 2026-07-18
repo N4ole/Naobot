@@ -11,7 +11,7 @@
  */
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const repository = require('../../database/pollRepository');
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const { infoEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');

@@ -12,7 +12,7 @@
  */
 const repository = require('../../database/warnRoleRepository');
 const warnRepository = require('../../database/warnRepository');
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { auditReason } = require('../../utils/helpers/discordUtils');

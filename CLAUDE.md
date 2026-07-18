@@ -33,10 +33,10 @@ les modules (loaders) et se connecte — rien d'autre.
 Respecter l'organisation :
 
 ```
-commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, bump/, tickets/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, watch/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, warnings/, web/, temporaryVoice/, captcha/)
-services/      # logique métier (moderation/, logging/, owners/, reputation/, tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/, reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
-middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, tickets/, watch/, reactionRoles/, contact/, protections/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/
+commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/, watch/, owner/, administration/)
+events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, logs/, watch/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, warnings/, web/, temporaryVoice/, captcha/, reputation/)
+services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/, reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
+middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, reactionRoles/, contact/, protections/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
 config/        # config.js (env), permissions.js (permissions par commande)
@@ -152,17 +152,28 @@ Discord**) :
 # Logs
 
 Toutes les fonctionnalités importantes doivent intégrer le système de logs
-(`services/logging/logService.js`).
+(`services/logs/logService.js`).
+
+Le système est limité à **sept catégories fixes** (`utils/constants/logCategories.js`) :
+`moderation`, `sanctions`, `members`, `roles`, `tickets`, `watch`,
+`protections`. **Aucune nouvelle catégorie ne peut être créée sans modifier le
+code.** Les anciennes clés sont fusionnées vers ces sept catégories (ou
+supprimées) par la table `LEGACY_ALIASES` de `logService` : appeler
+`logService.log(guild, '<clé ou ancienne clé>', logEventEmbed({...}))` route
+automatiquement vers la bonne catégorie (ou ignore l'événement).
 
 Les logs doivent rester :
 
-- configurables (commande `logs`, panneau interactif) ;
-- activables/désactivables (par catégorie et en masse, persistant) ;
-- séparés par catégories (`utils/constants/logCategories.js`).
+- configurables (commande `logs` : panneau, `setup`, `status`, `enable`,
+  `disable`) ;
+- activables/désactivables (par catégorie et en masse, persistant, avec date
+  et auteur de la dernière modification) ;
+- migrés automatiquement au démarrage depuis l'ancien système
+  (`services/logs/logMigration.js`).
 
-Ajouter une catégorie = une entrée dans `logCategories.js` + des appels
-`logService.log(guild, '<clé>', logEventEmbed({...}))`. Le panneau, la
-persistance et la création automatique des salons suivent tout seuls.
+Ajouter une catégorie (rare, volontairement fermé) = une entrée dans
+`logCategories.js` + le routage des appels concernés ; le panneau, la
+persistance et la création automatique des salons suivent.
 
 # Multi-serveurs
 

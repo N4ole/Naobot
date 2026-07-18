@@ -51,6 +51,24 @@ function route(req, res, { client, session, pathname }) {
     return void json(res, 200, { guilds: webAuth.accessibleGuilds(session, client) }) || true;
   }
 
+  // /api/reputation (statistiques + pondérations : owners du bot)
+  if (parts.length === 2 && parts[1] === 'reputation') {
+    if (!ownerService.isOwner(session.userId)) {
+      json(res, 403, { error: 'forbidden' });
+      return true;
+    }
+    return void json(res, 200, webService.reputationOverview()) || true;
+  }
+  // /api/reputation/:userId (soi-même ou owner du bot — confidentialité)
+  if (parts.length === 3 && parts[1] === 'reputation') {
+    const targetId = parts[2];
+    if (session.userId !== targetId && !ownerService.isOwner(session.userId)) {
+      json(res, 403, { error: 'forbidden' });
+      return true;
+    }
+    return void json(res, 200, webService.reputationProfile(targetId) ?? { error: 'not_found' }) || true;
+  }
+
   // /api/logs (owner du bot uniquement — journal global sensible)
   if (parts.length === 2 && parts[1] === 'logs') {
     if (!ownerService.isOwner(session.userId)) {

@@ -15,7 +15,7 @@ test('parseCategoryInput : plusieurs catégories, séparateurs variés', () => {
 
 test('parseCategoryInput : tolère les accents et les doublons', () => {
   assert.deepEqual(parseCategoryInput('modération').keys, ['moderation']);
-  assert.deepEqual(parseCategoryInput('messages-supprimés').keys, ['messages-supprimes']);
+  assert.deepEqual(parseCategoryInput('protections').keys, ['protections']);
   assert.deepEqual(parseCategoryInput('roles roles').keys, ['roles']);
 });
 

@@ -2,7 +2,8 @@
  * Logique métier de l'expulsion, partagée par les commandes slash et préfixées.
  */
 const { checkTargetHierarchy } = require('../../middlewares/permissions/checkPermissions');
-const { logModAction } = require('../logging/modLogService');
+const { logModAction } = require('../logs/modLogService');
+const globalReputationService = require('../reputation/globalReputationService');
 const { modLogEmbed } = require('../../utils/embeds/embeds');
 const { auditReason, dmUser } = require('../../utils/helpers/discordUtils');
 const { t } = require('../../utils/helpers/i18n');
@@ -32,6 +33,7 @@ async function kickMember(ctx, member, reason) {
     ctx.guild,
     modLogEmbed({ action: t('moderation.kick.logAction'), target: member.user, moderator: ctx.user, reason }),
   );
+  globalReputationService.record({ guild: ctx.guild, user: member.user, moderator: ctx.user, action: 'kick', reason }).catch(() => null);
   return { ok: true, message: t('moderation.kick.success', { user: member.user.tag, reason }) };
 }
 

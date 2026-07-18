@@ -14,7 +14,8 @@
 const warnRepository = require('../../database/warnRepository');
 const sanctionService = require('./sanctionService');
 const warnRoleService = require('./warnRoleService');
-const logService = require('../logging/logService');
+const globalReputationService = require('../reputation/globalReputationService');
+const logService = require('../logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { dmUser } = require('../../utils/helpers/discordUtils');
@@ -102,6 +103,9 @@ async function addWarn(guild, member, moderator, reason) {
 
   // Rôles automatiques : retire les anciens paliers, attribue le nouveau.
   await warnRoleService.syncMember(guild, member.id, total).catch(() => null);
+
+  // Réputation globale : contribue au score inter-serveurs.
+  globalReputationService.record({ guild, user: member.user, moderator, action: 'warn', reason }).catch(() => null);
 
   return { warn, total, sanction, applied, sanctionLabel, nextLabel };
 }

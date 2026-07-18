@@ -8,7 +8,7 @@
 const { checkCommandPermissions } = require('../../middlewares/permissions/checkPermissions');
 const { checkCooldown } = require('../../middlewares/cooldowns/cooldowns');
 const serverBanRepository = require('../../database/serverBanRepository');
-const logService = require('../../services/logging/logService');
+const logService = require('../../services/logs/logService');
 const statsService = require('../../services/tracking/guildStatsService');
 const { errorEmbed, logEventEmbed } = require('../embeds/embeds');
 const COLORS = require('../constants/colors');

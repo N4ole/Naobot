@@ -22,7 +22,7 @@ const {
 const repository = require('../../database/ticketRepository');
 const categoryRepository = require('../../database/ticketCategoryRepository');
 const transcriptService = require('./transcriptService');
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const { infoEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const ticketVariables = require('../../utils/constants/ticketVariables');

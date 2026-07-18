@@ -10,7 +10,7 @@
  * pourront s'ajouter au schéma sans toucher aux appelants.
  */
 const repository = require('../../database/reminderRepository');
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const { infoEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { formatDuration } = require('../../utils/helpers/durationParser');

@@ -23,7 +23,7 @@ const {
   PermissionFlagsBits,
 } = require('discord.js');
 const repository = require('../../database/bumpRepository');
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const reputationService = require('../reputation/reputationService');
 const { infoEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');

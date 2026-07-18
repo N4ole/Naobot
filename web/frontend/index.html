@@ -33,6 +33,7 @@
           <button class="tab" data-tab="moderation">🛡️ Modération</button>
           <button class="tab" data-tab="tickets">🎫 Tickets</button>
           <button class="tab" data-tab="voice">🔊 Vocaux</button>
+          <button class="tab" data-tab="reputation">🌐 Réputation</button>
           <button class="tab" data-tab="profiles">👤 Profils</button>
         </nav>
 
@@ -68,6 +69,15 @@
         <div class="panel hidden" id="panel-voice">
           <div class="toolbar"><select id="voice-guild" class="select"></select></div>
           <div id="voice-detail"><p class="muted">Sélectionnez un serveur.</p></div>
+        </div>
+
+        <div class="panel hidden" id="panel-reputation">
+          <div class="toolbar">
+            <input id="rep-user" class="input" placeholder="Identifiant utilisateur (le vôtre par défaut)" />
+            <button id="rep-load" class="btn">Consulter</button>
+            <button id="rep-stats" class="btn btn-ghost" hidden>Statistiques globales (owner)</button>
+          </div>
+          <div id="rep-detail"><p class="muted">Consultez votre réputation globale, ou celle d'un utilisateur (owners).</p></div>
         </div>
 
         <div class="panel hidden" id="panel-profiles">
