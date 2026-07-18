@@ -15,6 +15,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = re
 const crypto = require('node:crypto');
 const repository = require('../../database/captchaRepository');
 const captchaTypes = require('../../utils/constants/captchaTypes');
+const globalReputationService = require('../reputation/globalReputationService');
 const logService = require('../logging/logService');
 const { infoEmbed, successEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
@@ -173,6 +174,7 @@ async function kick(member, config, pending, reason) {
   repository.removePending(guild.id, member.id);
   repository.recordStat(guild.id, 'kicked');
   await disableMessage(guild, config, pending, 'expired');
+  globalReputationService.record({ guild, user: member.user, action: 'captcha', reason: reason === 'failed' ? 'Captcha : trop de tentatives' : 'Captcha : délai dépassé', automatic: true }).catch(() => null);
   await member.kick(reason === 'failed' ? 'Captcha : trop de tentatives' : 'Captcha : délai dépassé').catch(() => null);
   await logCaptcha(
     guild,

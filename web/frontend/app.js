@@ -176,6 +176,47 @@ async function loadTempVoice(id) {
   }
 }
 
+async function loadReputation(userId) {
+  const box = $('#rep-detail');
+  const target = (userId || state.me?.user?.id || '').trim();
+  if (!target) return (box.innerHTML = '<p class="muted">Indiquez un identifiant utilisateur.</p>');
+  box.innerHTML = '<p class="muted">Chargement…</p>';
+  try {
+    const p = await api(`/api/reputation/${encodeURIComponent(target)}`);
+    box.innerHTML = '';
+    box.append(kv([
+      ['Score', `${p.score}/100`], ['Confiance', `${p.level.emoji} ${p.level.label}`],
+      ['Warns', p.stats.warns ?? 0], ['Timeouts', p.stats.timeouts ?? 0], ['Mutes', p.stats.mutes ?? 0],
+      ['Kicks', p.stats.kicks ?? 0], ['Bans', p.stats.bans ?? 0], ['Serveurs', p.guildsCount],
+      ['Badges', p.badges.length ? p.badges.join(' ') : '—'],
+    ]));
+    if (p.history.length) {
+      const table = el('table');
+      table.append(el('tr', {}, [el('th', {}, 'Action'), el('th', {}, 'Serveur'), el('th', {}, 'Date'), el('th', {}, 'Score')]));
+      for (const h of p.history.slice(-15).reverse()) table.append(el('tr', {}, [el('td', {}, h.action), el('td', {}, `${h.guildId ?? '—'}`), el('td', {}, new Date(h.date).toLocaleString('fr-FR')), el('td', {}, `${h.scoreBefore}→${h.scoreAfter}`)]));
+      box.append(el('h2', {}, 'Historique'), table);
+    }
+  } catch (e) {
+    box.innerHTML = e === 403 ? '<p class="muted">Accès refusé : vous ne pouvez consulter que votre propre réputation.</p>' : `<p class="muted">Erreur (${e}).</p>`;
+  }
+}
+
+async function loadReputationStats() {
+  const box = $('#rep-detail');
+  box.innerHTML = '<p class="muted">Chargement…</p>';
+  try {
+    const o = await api('/api/reputation');
+    box.innerHTML = '';
+    box.append(kv([['Utilisateurs suivis', o.stats.users], ['Sanctions', o.stats.totalSanctions], ['Événements', o.stats.totalEvents]]));
+    const table = el('table');
+    table.append(el('tr', {}, [el('th', {}, 'Pondération'), el('th', {}, 'Points')]));
+    for (const [k, v] of Object.entries(o.config.weights)) table.append(el('tr', {}, [el('td', {}, k), el('td', {}, `-${v}`)]));
+    box.append(el('h2', {}, 'Pondérations'), table);
+  } catch (e) {
+    box.innerHTML = `<p class="muted">Erreur (${e}).</p>`;
+  }
+}
+
 async function loadProfile(guildId, userId) {
   const box = $('#profile-detail');
   if (!guildId || !userId) return (box.innerHTML = '<p class="muted">Choisissez un serveur et un identifiant utilisateur.</p>');
@@ -253,6 +294,11 @@ async function init() {
   $('#mod-guild').addEventListener('change', (e) => loadModeration(e.target.value));
   $('#tickets-guild').addEventListener('change', (e) => loadTickets(e.target.value));
   $('#voice-guild').addEventListener('change', (e) => loadTempVoice(e.target.value));
+  $('#rep-load').addEventListener('click', () => loadReputation($('#rep-user').value));
+  if (me.user.botOwner) {
+    $('#rep-stats').hidden = false;
+    $('#rep-stats').addEventListener('click', loadReputationStats);
+  }
   $('#profile-load').addEventListener('click', () => loadProfile($('#profile-guild').value, $('#profile-user').value.trim()));
 }
 

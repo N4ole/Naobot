@@ -20,6 +20,7 @@ const backupRepository = require('../../database/backupRepository');
 const logSettingsRepository = require('../../database/logSettingsRepository');
 const tempVoiceRepository = require('../../database/tempVoiceRepository');
 const captchaRepository = require('../../database/captchaRepository');
+const globalReputationService = require('../reputation/globalReputationService');
 
 function safe(fn, fallback) {
   try {
@@ -195,4 +196,14 @@ function profile(client, guildId, userId) {
   };
 }
 
-module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, moderation, profile, totalBumps, totalTickets };
+/** Profil de réputation globale d'un utilisateur (accès contrôlé côté API). */
+function reputationProfile(userId) {
+  return safe(() => globalReputationService.getProfile(userId), null);
+}
+
+/** Statistiques + pondérations de réputation globale (owners). */
+function reputationOverview() {
+  return safe(() => ({ stats: globalReputationService.globalStats(), config: globalReputationService.getConfig() }), null);
+}
+
+module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };

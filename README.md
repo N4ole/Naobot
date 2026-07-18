@@ -41,6 +41,12 @@ modulaire stricte pensée pour être maintenue et étendue facilement.
   (bouton, code aléatoire, calcul) pour se protéger des raids et bots —
   rôle temporaire, rôle après validation, délai, expulsion automatique en cas
   d'échec ou d'expiration. Désactivé par défaut, configurable par serveur.
+- **Réputation globale inter-serveurs** : indicateur de confiance (0-100)
+  centralisé au niveau du bot, alimenté automatiquement par les sanctions
+  observées par NaoBot (warn, timeout, mute, kick, ban, anti-spam/link/bot,
+  captcha) sur tous les serveurs. `reputation`, `globalprofile`, plus des
+  commandes owner (`globalrepstats`, `userhistory`, `repconfig`). Confidentiel,
+  tracé, anti-abus.
 - **Textes centralisés** dans `locales/fr.json` (traduction facile).
 
 ## Installation
@@ -723,6 +729,50 @@ actifs, propriétaires et statistiques survivent aux redémarrages.
   ajustable, verrouillage, transfert de propriété, salons permanents…
   (services/temporaryVoice, schéma des générateurs/temps ouvert).
 
+## Réputation globale (inter-serveurs)
+
+Indicateur de confiance **global à l'utilisateur** (indépendant du serveur),
+**centralisé au niveau du bot** : il suit l'utilisateur entre tous les serveurs
+NaoBot. Il **ne remplace pas** la modération locale — c'est un simple indicateur
+fondé sur les actions observées par NaoBot. Persistant
+(`database/data/globalReputation.json`, `moderationHistory.json`,
+`reputationConfig.json`).
+
+| Commande | Description | Accès | Exemple |
+|---|---|---|---|
+| `reputation [utilisateur]` (alias `globalrep`, `grep`) | Score /100, niveau de confiance, sanctions (warns/timeouts/mutes/kicks/bans), serveurs, ancienneté, historique résumé | Sa propre réputation ; celle d'autrui : admin d'un serveur commun ou owner | `!reputation @Membre` |
+| `globalprofile [utilisateur]` (alias `gprofile`) | Profil complet : avatar, pseudo, ID, score, badges, statistiques, historique | idem | `!globalprofile @Membre` |
+| `globalrepstats` | Meilleures/pires réputations, total de sanctions, statistiques globales | Owners du bot | `!globalrepstats` |
+| `userhistory <utilisateur>` | Historique complet (action, serveur, date, modérateur, raison, score) paginé | Owners du bot | `!userhistory @Membre` |
+| `repconfig [clé] [valeur]` | Consulte/modifie les pondérations ; recalcule les scores | Owners du bot | `!repconfig ban 40` |
+
+- **Score 0-100** : 100 = très fiable, 50 = à surveiller, 0 = problématique.
+  Calcul **automatique** à partir de l'historique complet avec les pondérations
+  courantes (un changement de pondération **reprice** tous les scores).
+- **Facteurs négatifs** (pondérations configurables) : warn (-3), timeout court
+  (-5) / long (-10), mute (-8), kick (-15), ban (-30), anti-spam (-4),
+  anti-link (-4), anti-bot (-15), captcha (-6). **Facteurs positifs** :
+  ancienneté du compte Discord (+2/an, plafonné) — architecture ouverte à
+  d'autres facteurs (ancienneté serveur, activité…).
+- **Liaison automatique** : les modules de modération envoient leurs événements
+  au service (`warn`, `timeout`, `mute`, `kick` via les services, `ban` via
+  l'événement `GuildBanAdd` — NaoBot ou manuel —, `antispam`/`antilink`/
+  `antibot`, `captcha`). Chaque module peut appeler
+  `globalReputationService.record(...)`.
+- **Historique global** : chaque événement enregistre utilisateur, serveur,
+  action, raison, modérateur, date, durée, **score avant / après**.
+- **Protection contre les abus** : un serveur ne peut **jamais** fixer
+  directement le score (seulement contribuer via des événements **tracés**) ;
+  la configuration est centralisée (owners uniquement) ; le nombre d'événements
+  par (serveur, utilisateur, jour) est **plafonné**. Logs obligatoires.
+- **Confidentialité** : un membre ne voit que **sa propre** réputation ; celle
+  d'autrui n'est visible que des **administrateurs d'un serveur commun** et des
+  **owners**. Toute consultation d'un tiers est journalisée.
+- **Interface web** : section « Réputation » (score, statistiques, historique ;
+  pondérations pour les owners).
+- **Catégorie de logs dédiée** `repglobale`. Distinct de la réputation des
+  **serveurs** (`rep`).
+
 ## Système de logs
 
 Le système de logs est organisé en **catégories indépendantes**, persistées
@@ -757,6 +807,7 @@ par serveur (`database/data/logSettings.json`) :
 | `web` | Interface web : connexions, authentifications, modifications via le site, erreurs | `#logs-web` |
 | `vocaux` | Salons vocaux temporaires : création, suppression, renommage, configuration, erreurs | `#logs-vocaux` |
 | `captcha` | Captcha à l'arrivée : envoi, validation, échec, expiration/expulsion, configuration | `#logs-captcha` |
+| `repglobale` | Réputation globale : sanction enregistrée, recalcul, consultation sensible, limite anti-abus | `#logs-reputation-globale` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -802,8 +853,10 @@ OAuth2 est complète.
   du bot), serveurs (protections, tickets, rôles réactions, formulaires,
   sauvegardes, réputation…), modération (warns, statistiques), tickets
   (ouverts / fermés / catégories), vocaux temporaires (générateurs, salons
-  actifs, statistiques), captcha (état, statistiques), profils (réputation,
-  warns, historique ; badges et succès à venir). Interface **responsive**.
+  actifs, statistiques), captcha (état, statistiques), réputation globale
+  (score, statistiques, historique ; pondérations pour les owners), profils
+  (réputation, warns, historique ; badges et succès à venir). Interface
+  **responsive**.
 - **Temps réel** : flux **SSE** (équivalent WebSocket) — statistiques
   poussées en continu et journal web en direct (owners).
 - **Authentification Discord OAuth2** (scopes `identify`, `guilds`) : bouton
@@ -852,6 +905,7 @@ OAuth2 est complète.
 │   ├── polls/           #   poll (assistant + vote), pollclose+pollresults+polllist
 │   ├── temporaryVoice/  #   voicecreate+voiceedit+voicelist+voicedelete, renamevoice
 │   ├── captcha/         #   captcha (enable/disable/status/setup + vérification)
+│   ├── reputation/      #   reputation+globalprofile, globalrepstats+userhistory+repconfig
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
@@ -871,6 +925,7 @@ OAuth2 est complète.
 │   ├── polls/           #   ready (fermeture des sondages expirés)
 │   ├── tickets/         #   ready (planificateur), activity (anti-inactivité)
 │   ├── captcha/         #   memberJoin (envoi du captcha) + ready (expiration)
+│   ├── reputation/      #   guildBan (capture des bans → réputation globale)
 │   ├── warnings/        #   ready (cohérence des rôles de warn)
 │   ├── web/             #   ready (démarre l'interface web si activée)
 │   └── temporaryVoice/  #   voiceStateUpdate (create/delete) + ready (nettoyage)
@@ -878,7 +933,7 @@ OAuth2 est complète.
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
 │   ├── logging/         #   logService (logs par catégories), modLogService
 │   ├── owners/          #   ownerService (owners globaux + rôle décoratif)
-│   ├── reputation/      #   reputationService (score, niveaux, critères)
+│   ├── reputation/      #   reputationService (serveurs) + globalReputationService (utilisateurs, inter-serveurs)
 │   ├── tracking/        #   guildStatsService, ownerNotifier (arrivées/départs)
 │   ├── bump/            #   bumpService (bump inter-serveurs)
 │   ├── serverManagement/#   départ manuel, liste noire globale, journal owner
@@ -922,7 +977,8 @@ OAuth2 est complète.
 │   ├── reminders/       # Appartenance d'un rappel (auteur uniquement)
 │   ├── polls/           # Gestion des sondages (créateur ou gestionnaire)
 │   ├── temporaryVoice/  # Admin (config) + propriétaire d'un salon temporaire
-│   └── captcha/         # Admin (config du captcha)
+│   ├── captcha/         # Admin (config du captcha)
+│   └── reputation/      # Confidentialité de la réputation globale (self/admin/owner)
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…

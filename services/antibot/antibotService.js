@@ -12,6 +12,7 @@
  */
 const { AuditLogEvent } = require('discord.js');
 const protectionService = require('../protections/protectionService');
+const globalReputationService = require('../reputation/globalReputationService');
 const { t } = require('../../utils/helpers/i18n');
 
 const RAID_WINDOW_MS = 30000; // fenêtre de détection d'ajouts massifs
@@ -63,6 +64,10 @@ async function handleMemberAdd(member) {
       ...(isRaid ? [{ name: t('protections.field.reason'), value: t('protections.bot.raid', { count: stamps.length }) }] : []),
     ],
   });
+  // Réputation globale : impute l'ajout d'un bot malveillant au membre qui l'a ajouté.
+  if (adder && !adder.bot) {
+    globalReputationService.record({ guild: member.guild, user: adder, action: 'antibot', reason: isRaid ? 'raid de bots' : 'ajout de bot', automatic: true }).catch(() => null);
+  }
   return true;
 }
 

@@ -6,6 +6,7 @@
  */
 const { checkTargetHierarchy } = require('../../middlewares/permissions/checkPermissions');
 const { logModAction } = require('../logging/modLogService');
+const globalReputationService = require('../reputation/globalReputationService');
 const { modLogEmbed } = require('../../utils/embeds/embeds');
 const { auditReason, dmUser } = require('../../utils/helpers/discordUtils');
 const { formatDuration } = require('../../utils/helpers/durationParser');
@@ -44,6 +45,7 @@ async function applyTimeout(ctx, member, durationMs, reason) {
       extraFields: [{ name: t('common.duration'), value: duration, inline: true }],
     }),
   );
+  globalReputationService.record({ guild: ctx.guild, user: member.user, moderator: ctx.user, action: 'timeout', reason, durationMs }).catch(() => null);
   return { ok: true, message: t('moderation.timeout.success', { user: member.user.tag, duration, reason }) };
 }
 

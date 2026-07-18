@@ -10,6 +10,7 @@
  * facilement d'autres réactions (avertissement, warn) via applyReaction.
  */
 const protectionService = require('../protections/protectionService');
+const globalReputationService = require('../reputation/globalReputationService');
 const { isExempt, canModerateMessages } = require('../../middlewares/protections/protectionAccess');
 const { t } = require('../../utils/helpers/i18n');
 
@@ -66,6 +67,8 @@ async function applyReaction(message, detection) {
       { name: t('protections.field.action'), value: deleted ? t('protections.field.deleted') : t('protections.field.notDeleted') },
     ],
   });
+  // Réputation globale (plafonnée par serveur/jour côté service).
+  globalReputationService.record({ guild, user: message.author, action: 'antilink', reason: detection.reason, automatic: true }).catch(() => null);
   return { deleted };
 }
 

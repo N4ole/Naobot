@@ -176,4 +176,10 @@ module.exports = {
     channelName: 'logs-captcha',
     emoji: '🛂',
   },
+  repglobale: {
+    label: 'Réputation globale',
+    description: 'Réputation globale : ajout de sanction, recalcul du score, consultation sensible, limites anti-abus',
+    channelName: 'logs-reputation-globale',
+    emoji: '🌐',
+  },
 };
