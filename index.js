@@ -38,8 +38,4 @@ const client = new Client({
 loadCommands(client);
 loadEvents(client);
 
-process.on('unhandledRejection', (error) => {
-  console.error('[process] Promesse rejetée non gérée :', error);
-});
-
 client.login(config.token);

@@ -34,8 +34,8 @@ Respecter l'organisation :
 
 ```
 commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/, watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, logs/, watch/, reactionRoles/, contact/, protections/, antipub/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, warnings/, web/, temporaryVoice/, captcha/, reputation/)
-services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/, reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
+events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, logs/, errors/, watch/, reactionRoles/, contact/, protections/, antipub/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
+services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, reactionRoles/, contact/, protections/, antipub/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
@@ -93,6 +93,7 @@ Le `.env` doit **uniquement** contenir :
 
 - le token Discord (`BOT_TOKEN`) ;
 - l'owner principal (`OWNER_ID`) ;
+- le serveur des logs d'erreurs internes (`ERROR_GUILD_ID`) ;
 - des données statiques globales (`CLIENT_ID`, `GUILD_ID`, `PREFIX`,
   `LOCALE`, `MUTED_ROLE_NAME`, `OWNER_ROLE_NAME`) ;
 - la configuration **statique** de l'interface web et de l'authentification
@@ -174,6 +175,16 @@ Les logs doivent rester :
 Ajouter une catégorie (rare, volontairement fermé) = une entrée dans
 `logCategories.js` + le routage des appels concernés ; le panneau, la
 persistance et la création automatique des salons suivent.
+
+**Logs d'erreurs internes du bot** (distinct des logs de serveur) :
+`services/errors/errorLogService.js` journalise les erreurs techniques du bot
+(erreurs de commandes, `unhandledRejection`, `uncaughtException`, erreurs API
+Discord, WebSocket, base de données, synchronisation) dans le salon privé
+`#bot-errors` d'un **unique** serveur défini par `ERROR_GUILD_ID`. La catégorie
+et le salon sont créés automatiquement au démarrage (`events/errors/ready.js`).
+Aucun autre serveur n'y a accès ; la journalisation échoue silencieusement.
+Pour signaler une erreur ailleurs dans le code :
+`errorLogService.report({ type, error, guild, channel, user, command, module })`.
 
 # Multi-serveurs
 

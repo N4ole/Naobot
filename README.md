@@ -80,6 +80,7 @@ public multi-serveurs.
 |---|---|---|
 | `BOT_TOKEN` | ✅ | Jeton du bot (`DISCORD_TOKEN` reste accepté) |
 | `OWNER_ID` | ✅ | Identifiant Discord de l'**owner principal** du bot (tous les privilèges, non supprimable par commande) |
+| `ERROR_GUILD_ID` | — | Serveur privé recevant les logs d'erreurs internes du bot (salon `#bot-errors` créé automatiquement). Aucun autre serveur n'y a accès. |
 | `CLIENT_ID` | — | Identifiant de l'application (lien d'invitation) |
 | `GUILD_ID` | — | Si défini, les commandes slash sont enregistrées sur ce serveur uniquement (instantané, idéal en développement). Sinon, enregistrement global (~1 h de propagation). |
 | `PREFIX` | — | Préfixe des commandes textuelles (défaut : `!`) |
@@ -149,22 +150,9 @@ palier 1 est toujours un simple avertissement.
 - La persistance (`database/data/warns.json`, `warnConfig.json`) porte tout
   le nécessaire aux futures statistiques (modérateurs les plus actifs,
   utilisateurs les plus sanctionnés, sanctions les plus fréquentes).
-
-**Rôles automatiques par palier** (`setwarnrole`) : chaque palier de warn
-peut être associé à un rôle, pour n'importe quel nombre de niveaux.
-
-- `setwarnrole` (liste), `setwarnrole <palier> <rôle>` (associe / modifie),
-  `setwarnrole <palier>` (supprime l'association), `setwarnrole sync`
-  (resynchronise immédiatement).
-- À chaque variation du nombre de warns (ajout, `unwarn`, `clearwarns`), le
-  membre voit ses rôles recalculés : retrait des anciens rôles de warn,
-  attribution du rôle du **plus haut palier atteint** (plafond). À zéro warn,
-  tous les rôles de warn sont retirés.
-- Une **tâche de cohérence** périodique (`services/warnings/warnRoleService`)
-  réconcilie automatiquement les rôles et le nombre réel de warns (corrige les
-  écarts, redémarrages…).
-- Chaque attribution / retrait / changement automatique est journalisé dans la
-  catégorie `sanctions` (persistance : `database/data/warnRoles.json`).
+- Le système de warns **n'attribue aucun rôle** : il se limite à enregistrer
+  les sanctions, appliquer la sanction configurée, conserver l'historique et
+  mettre à jour la **réputation globale** de l'utilisateur.
 
 ### ⚙️ Administration
 
@@ -176,7 +164,6 @@ peut être associé à un rôle, pour n'importe quel nombre de niveaux.
 | `logs enable <catégories…\|tout>` | Active une, plusieurs ou toutes les catégories (crée les salons manquants) | Gérer le serveur | `!logs enable sanctions moderation` |
 | `logs disable <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs disable tout` |
 | `setwarnsanction [reset]` | Configure l'échelle des sanctions progressives des warns (panneau interactif : menus + boutons + modal ; `reset` restaure les valeurs par défaut) | Gérer le serveur | `!setwarnsanction` |
-| `setwarnrole [palier] [rôle]` (alias `warnrole`) | Associe un rôle automatique à un palier de warn (sans argument : liste ; palier seul : supprime ; `sync` : resynchronise) | Gérer le serveur | `!setwarnrole 3 @Warn 3` |
 | `say <message>` | Fait relayer un message par le bot (texte, mentions, emojis, liens, pièces jointes) ; supprime la commande d'origine, neutralise @everyone/@here, journalise l'auteur | Admin / propriétaire / owner du bot | `!say Bienvenue à tous !` |
 
 ### 🛡️ Protections automatiques
@@ -522,7 +509,7 @@ leurs rôles eux-mêmes via boutons ou menu déroulant.
 
 | Commande | Description | Exemple |
 |---|---|---|
-| `help [commande]` (alias `aide`) | Aide dynamique paginée : une page par catégorie, navigation par **boutons** (🏠 ◀️ ▶️, désactivés aux extrémités, réservés au demandeur, retirés après 5 min), permissions affichées, total de commandes et version en pied de page — mise à jour automatique à chaque nouvelle commande | `!help ban` |
+| `help [commande]` (alias `aide`) | Aide dynamique : embed d'accueil (statistiques) + **menu déroulant** de catégories ; la sélection affiche les commandes de la catégorie (description, permissions, exemples), **paginées** par boutons ◀️/▶️ si nécessaire, réservées au demandeur, retirées après 5 min — mise à jour automatique à chaque nouvelle commande | `!help ban` |
 | `ping` | Latence du bot | `!ping` |
 | `botinfo` (alias `stats`) | Serveurs, utilisateurs, commandes, uptime, mémoire, versions | `!botinfo` |
 | `uptime` | Durée de fonctionnement du bot | `!uptime` |
@@ -745,10 +732,15 @@ actifs, propriétaires et statistiques survivent aux redémarrages.
   `{displayname}`, `{counter}`, extensibles dans
   `utils/constants/tempVoiceVariables.js`). Exemples : `Salon de {user}`,
   `🔊 {username}`, `Squad de {displayname}`.
-- **Propriétaire** : peut **renommer** son salon via `renamevoice` (arbitré
-  par le bot). Il **ne peut pas** modifier les permissions, déplacer les
-  membres, supprimer le salon ni changer la catégorie — le propriétaire ne
-  reçoit aucune permission de gestion Discord (renommage arbitré côté bot).
+- **Permissions synchronisées** : le salon temporaire **hérite intégralement
+  des permissions de sa catégorie** Discord (synchronisation native via
+  `lockPermissions`) — aucune permission n'est copiée manuellement et le salon
+  reste aligné sur sa catégorie.
+- **Propriétaire** : sa seule capacité est de **renommer** son salon via
+  `renamevoice` (arbitré par le bot). Il **ne peut pas** modifier les
+  permissions, changer la catégorie, supprimer le salon, déplacer des membres
+  ni modifier d'autres paramètres — il ne reçoit aucune permission de gestion
+  Discord. Le système reste compatible avec de futures extensions.
 - **Sécurité** : anti-doublon (un seul salon actif par membre et par
   générateur — sinon le membre est déplacé vers l'existant), pas de boucle de
   création (un salon temporaire n'est jamais un générateur), configuration
@@ -814,9 +806,9 @@ possible de créer d'autres catégories sans modifier le code.
 | Clé | Contenu | Salon |
 |---|---|---|
 | `moderation` | Kick, ban, unban, mute, unmute, timeout, retrait de timeout, suppressions massives, renommage de salons, commandes de modération | `#moderation-logs` |
-| `sanctions` | Warns, retrait/remise à zéro, rôles de warn automatiques, évolution de la réputation globale, sanctions automatiques | `#sanctions-logs` |
+| `sanctions` | Warns, retrait/remise à zéro, évolution de la réputation globale, sanctions automatiques | `#sanctions-logs` |
 | `members` | Arrivée, départ volontaire, expulsion, bannissement, validation et échec du captcha (pseudo, ID, création du compte, ancienneté, nombre de membres) | `#members-logs` |
-| `roles` | Ajout/retrait de rôle, rôles réactions, rôles automatiques, rôles de niveaux, rôles de sanctions | `#roles-logs` |
+| `roles` | Ajout/retrait de rôle, rôles réactions, rôles automatiques | `#roles-logs` |
 | `tickets` | Ouverture, fermeture, suppression, transfert, attribution, renommage, transcript | `#tickets-logs` |
 | `watch` | Surveillance : lancement, arrêt, expiration automatique, reprise, statistiques | `#watch-logs` |
 | `protections` | Détection de spam/raid/liens/bots, mode urgence, événements captcha, actions automatiques | `#protection-logs` |
@@ -853,6 +845,27 @@ modification explicite du code.
 2. Router les événements concernés via `logService.log(guild, '<clé>', embed)`
    (embed construit avec `logEventEmbed`). Les anciennes clés sont routées vers
    les sept catégories par `LEGACY_ALIASES`.
+
+## Logs d'erreurs internes du bot
+
+Système **distinct** des logs de serveur : il journalise les erreurs internes
+du bot (fonctionnement technique), et non l'activité d'un serveur.
+
+- **Accès restreint** : les logs ne sont envoyés que sur un **unique serveur
+  privé**, identifié par `ERROR_GUILD_ID` (`.env`). Aucun autre serveur n'y a
+  accès et aucune commande ne les expose.
+- **Démarrage automatique** : au lancement, le bot récupère le serveur
+  `ERROR_GUILD_ID`, crée si besoin une **catégorie dédiée** et le salon
+  **`#bot-errors`** (réutilise l'existant), puis y publie les erreurs.
+- **Erreurs capturées** : erreurs de commandes, promesses rejetées non gérées
+  (`unhandledRejection`), exceptions non capturées (`uncaughtException`),
+  erreurs de l'API Discord (`error`), erreurs WebSocket (`shardError`) — les
+  erreurs de base de données et de synchronisation remontent via ces
+  gestionnaires globaux.
+- **Contenu de chaque log** (embed lisible) : type d'erreur, date, serveur,
+  salon, utilisateur, commande, module responsable et pile d'erreurs.
+- **Robustesse** : la journalisation échoue silencieusement et ne peut jamais
+  provoquer d'erreur en cascade (`services/errors/errorLogService`).
 
 ## Permissions et sécurité
 
@@ -942,6 +955,7 @@ OAuth2 est complète.
 ├── events/              # Écouteurs d'événements Discord
 │   ├── client/          #   ready (enregistrement des commandes slash)
 │   ├── logs/            #   ready (migration auto vers les 7 catégories)
+│   ├── errors/          #   ready (init des logs d'erreurs internes du bot)
 │   ├── guild/           #   logs des salons et du serveur
 │   ├── interaction/     #   interactionCreate (slash + composants interactifs)
 │   ├── member/          #   logs des arrivées/départs et des rôles
@@ -959,7 +973,6 @@ OAuth2 est complète.
 │   ├── tickets/         #   ready (planificateur), activity (anti-inactivité)
 │   ├── captcha/         #   memberJoin (envoi du captcha) + ready (expiration)
 │   ├── reputation/      #   guildBan (capture des bans → réputation globale)
-│   ├── warnings/        #   ready (cohérence des rôles de warn)
 │   ├── web/             #   ready (démarre l'interface web si activée)
 │   └── temporaryVoice/  #   voiceStateUpdate (create/delete) + ready (nettoyage)
 ├── services/            # Logique métier, partagée par slash et préfixe
@@ -974,7 +987,8 @@ OAuth2 est complète.
 │   ├── ticketCategories/#   ticketCategoryService + ticketCategoryWizard (catégories)
 │   ├── ticketPanels/    #   ticketPanelService + ticketPanelWizard (panneaux)
 │   ├── watch/           #   watchService (surveillance de modération, 7 j max)
-│   ├── warnings/        #   warnService + sanctionService + warnRoleService (rôles auto)
+│   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
+│   ├── errors/          #   errorLogService (logs d'erreurs internes → #bot-errors)
 │   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
 │   ├── contact/         #   contactService (communication owners ↔ propriétaires)
 │   ├── protections/     #   protectionService (état, stats, logs partagés)

@@ -66,10 +66,6 @@ module.exports = {
     user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
-  setwarnrole: {
-    user: [PermissionFlagsBits.ManageGuild],
-    bot: [PermissionFlagsBits.ManageRoles],
-  },
   reactionrole: {
     user: [PermissionFlagsBits.ManageRoles],
     bot: [PermissionFlagsBits.ManageRoles],

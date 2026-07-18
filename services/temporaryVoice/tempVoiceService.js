@@ -7,16 +7,22 @@
  *
  * Sécurité : un seul salon temporaire actif par (générateur, membre) — pas de
  * doublon ; les salons temporaires ne sont jamais traités comme des
- * générateurs — pas de boucle ; le propriétaire ne reçoit AUCUNE permission de
- * gestion Discord (renommage uniquement via la commande renamevoice, arbitrée
- * par le bot), ce qui empêche suppression, changement de permissions,
- * déplacement de membres et changement de catégorie.
+ * générateurs — pas de boucle.
+ *
+ * Permissions : le salon temporaire **hérite intégralement des permissions de
+ * sa catégorie Discord** (synchronisation native via `lockPermissions`) —
+ * aucune permission n'est copiée manuellement, et le salon reste aligné sur sa
+ * catégorie. Le propriétaire ne reçoit AUCUNE permission de gestion Discord :
+ * sa seule capacité est de **renommer** son salon via la commande renamevoice
+ * (arbitrée par le bot). Il ne peut donc ni modifier les permissions, ni
+ * changer la catégorie, ni supprimer le salon, ni déplacer des membres, ni
+ * modifier d'autres paramètres.
  *
  * Extensible sans refonte : salons privés, mots de passe, limite ajustable,
  * verrouillage, transfert de propriété, salons permanents… (le schéma des
  * générateurs/temps accepte de nouveaux champs).
  */
-const { ChannelType, PermissionFlagsBits } = require('discord.js');
+const { ChannelType } = require('discord.js');
 const repository = require('../../database/tempVoiceRepository');
 const logService = require('../logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
@@ -34,27 +40,6 @@ async function logVoice(guild, action, fields = [], color) {
       fields,
     }),
   ).catch(() => null);
-}
-
-/** Overwrites du salon temporaire : le propriétaire peut voir/parler, pas gérer. */
-function tempOverwrites(guild, member, generator) {
-  const overwrites = [
-    {
-      id: member.id,
-      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak, PermissionFlagsBits.Stream],
-    },
-    {
-      id: guild.members.me.id,
-      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.MoveMembers],
-    },
-  ];
-  // Permissions supplémentaires : rôles autorisés à voir/rejoindre.
-  for (const roleId of generator.extraRoleIds ?? []) {
-    if (guild.roles.cache.has(roleId)) {
-      overwrites.push({ id: roleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] });
-    }
-  }
-  return overwrites;
 }
 
 /**
@@ -87,7 +72,6 @@ async function createTempChannel(guild, member, generator) {
       type: ChannelType.GuildVoice,
       parent,
       userLimit: generator.userLimit > 0 ? generator.userLimit : undefined,
-      permissionOverwrites: tempOverwrites(guild, member, generator),
       reason: `Salon vocal temporaire de ${member.user.tag}`,
     })
     .catch(() => null);
@@ -95,6 +79,11 @@ async function createTempChannel(guild, member, generator) {
     await logVoice(guild, 'error', [{ name: t('tempVoice.field.owner'), value: `${member.user.tag}`, inline: true }], COLORS.ERROR);
     return { ok: false, code: 'createFailed' };
   }
+
+  // Synchronise les permissions du salon sur celles de sa catégorie : le salon
+  // en hérite intégralement et aucune permission n'est copiée manuellement. Le
+  // propriétaire ne reçoit aucune permission de gestion (renommage via commande).
+  if (channel.parentId) await channel.lockPermissions().catch(() => null);
 
   const moved = await member.voice.setChannel(channel).then(() => true).catch(() => false);
   // Si le déplacement échoue (le membre a déjà quitté), on nettoie aussitôt.

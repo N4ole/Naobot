@@ -359,29 +359,21 @@
       "removed": "Avertissement supprimé",
       "cleared": "Avertissements remis à zéro",
       "autoSanction": "Sanction automatique appliquée",
-      "rulesChanged": "Règles de sanction modifiées",
-      "roleAssigned": "Rôle de warn attribué",
-      "roleRemoved": "Rôle de warn retiré",
-      "roleConfig": "Rôles de warn configurés",
-      "roleAdded": "Rôle attribué",
-      "roleRemovedField": "Rôle retiré"
-    },
-    "roles": {
-      "title": "🎭 Rôles automatiques de warn",
-      "description": "Chaque palier de warn peut attribuer automatiquement un rôle. Le membre reçoit le rôle du plus haut palier atteint (les anciens sont retirés). À zéro warn, tous les rôles de warn sont retirés.",
-      "line": "**Warn {level}** → {role}",
-      "empty": "Aucune association. Utilisez `setwarnrole <palier> <rôle>`.",
-      "set": "✅ Palier **{level}** associé au rôle {role}.",
-      "removed": "Association du palier **{level}** supprimée.",
-      "notSet": "Le palier **{level}** n'a aucun rôle associé.",
-      "invalidLevel": "Palier invalide. Indiquez un entier ≥ 1.",
-      "invalidRole": "Ce rôle ne peut pas être utilisé (rôle géré ou @everyone).",
-      "roleTooHigh": "Le rôle {role} est trop haut dans la hiérarchie : placez-le sous le rôle du bot.",
-      "botMissingPerm": "Il me manque la permission **Gérer les rôles**.",
-      "synced": "Cohérence des rôles de warn vérifiée : **{count}** membre(s) corrigé(s).",
-      "auditReason": "Synchronisation des rôles de warn",
-      "logSet": "Palier {level} → rôle {role}",
-      "logRemoved": "Palier {level} : association supprimée"
+      "rulesChanged": "Règles de sanction modifiées"
+    }
+  },
+  "errorLog": {
+    "title": "Erreur interne — {type}",
+    "unknownType": "inconnu",
+    "noStack": "(aucune pile d'erreurs disponible)",
+    "field": {
+      "type": "Type d'erreur",
+      "module": "Module",
+      "guild": "Serveur",
+      "channel": "Salon",
+      "user": "Utilisateur",
+      "command": "Commande",
+      "stack": "Pile d'erreurs"
     }
   },
   "say": {
@@ -1587,11 +1579,20 @@
   },
   "help": {
     "title": "Aide de {bot}",
-    "homeDescription": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nNaviguez entre les pages avec les boutons ci-dessous, ou utilisez `{prefix}help <commande>` pour le détail d'une commande.",
-    "homeCategory": "{emoji} **{label}** — {count} commande(s) · page {page}",
-    "footer": "Page {page}/{pages} • {commands} commandes • v{version}",
+    "mainDescription": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nChoisissez une catégorie dans le menu déroulant ci-dessous, ou utilisez `{prefix}help <commande>` pour le détail d'une commande.",
+    "homeCategory": "{emoji} **{label}** — {count} commande(s)",
+    "mainFooter": "NaoBot • v{version}",
+    "stats": {
+      "servers": "Serveurs",
+      "commands": "Commandes",
+      "categories": "Catégories"
+    },
+    "selectPlaceholder": "📚 Choisir une catégorie…",
+    "homeOptionDescription": "Revenir à l'accueil et aux statistiques",
+    "categoryOption": "{count} commande(s)",
+    "categoryFooter": "Page {page}/{pages} • {count} commande(s) dans cette catégorie",
     "home": "Accueil",
-    "notYourSession": "Ces boutons appartiennent à la personne qui a demandé l'aide. Lancez `{prefix}help` vous-même.",
+    "notYourSession": "Ce menu appartient à la personne qui a demandé l'aide. Lancez `{prefix}help` vous-même.",
     "unknownCommand": "Commande inconnue : `{command}`.",
     "usage": "Utilisation",
     "aliases": "Alias",

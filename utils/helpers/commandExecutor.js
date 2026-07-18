@@ -9,6 +9,7 @@ const { checkCommandPermissions } = require('../../middlewares/permissions/check
 const { checkCooldown } = require('../../middlewares/cooldowns/cooldowns');
 const serverBanRepository = require('../../database/serverBanRepository');
 const logService = require('../../services/logs/logService');
+const errorLogService = require('../../services/errors/errorLogService');
 const statsService = require('../../services/tracking/guildStatsService');
 const { errorEmbed, logEventEmbed } = require('../embeds/embeds');
 const COLORS = require('../constants/colors');
@@ -63,6 +64,16 @@ async function executeCommand(ctx, command) {
     );
   } catch (error) {
     console.error(`[commands] Erreur dans "${command.name}" :`, error);
+    // Journalisation interne (serveur privé #bot-errors), avec contexte complet.
+    errorLogService.report({
+      type: 'commandError',
+      error,
+      guild: ctx.guild,
+      channel: ctx.channel,
+      user: ctx.user,
+      command: command.name,
+      module: 'commandExecutor',
+    });
     await logService
       .log(
         ctx.guild,

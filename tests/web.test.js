@@ -3,25 +3,7 @@ const assert = require('node:assert/strict');
 
 // Secret de session déterministe AVANT de charger webAuth.
 const config = require('../config/config');
-config.web.sessionSecret = 'test-secret-warnroles-web';
-
-// --- Warns → rôles : palier cible (comportement plafond) ---
-const warnRoleService = require('../services/warnings/warnRoleService');
-const warnRoleRepository = require('../database/warnRoleRepository');
-
-test('warnRoleService.targetLevel : plus haut palier configuré ≤ total', () => {
-  const mapping = { 1: 'r1', 2: 'r2', 4: 'r4' };
-  assert.equal(warnRoleService.targetLevel(mapping, 0), null);
-  assert.equal(warnRoleService.targetLevel(mapping, 1), 1);
-  assert.equal(warnRoleService.targetLevel(mapping, 3), 2); // pas de palier 3 → palier 2
-  assert.equal(warnRoleService.targetLevel(mapping, 4), 4);
-  assert.equal(warnRoleService.targetLevel(mapping, 9), 4); // plafond
-});
-
-test('warnRoleRepository.sortedLevels : niveaux valides triés', () => {
-  assert.deepEqual(warnRoleRepository.sortedLevels({ 3: 'c', 1: 'a', 2: 'b' }), [1, 2, 3]);
-  assert.deepEqual(warnRoleRepository.sortedLevels({ 0: 'x', '-1': 'y', 2: 'b' }), [2]);
-});
+config.web.sessionSecret = 'test-secret-web';
 
 // --- Web : permissions Discord ---
 const webAuth = require('../services/web/webAuth');
