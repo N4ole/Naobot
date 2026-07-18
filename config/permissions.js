@@ -201,4 +201,10 @@ module.exports = {
     user: [],
     bot: [PermissionFlagsBits.ManageChannels],
   },
+  // Captcha à l'arrivée : configuration réservée aux administrateurs. Le bot
+  // attribue les rôles, restreint l'accès au salon et expulse les échecs.
+  captcha: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers, PermissionFlagsBits.ManageChannels],
+  },
 };

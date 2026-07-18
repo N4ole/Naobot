@@ -399,6 +399,77 @@
       "detail": "Détail"
     }
   },
+  "captcha": {
+    "title": "🛂 Vérification",
+    "modalTitle": "Vérification captcha",
+    "modalLabel": "Votre réponse",
+    "done": "✅ Vérification réussie — accès débloqué.",
+    "success": "✅ Bienvenue ! Votre accès au serveur est débloqué.",
+    "retry": "❌ Réponse incorrecte. Il vous reste **{remaining}** tentative(s).",
+    "kicked": "❌ Vérification échouée. Vous avez été expulsé du serveur.",
+    "noPending": "Aucune vérification en attente pour vous.",
+    "notYours": "Cette vérification ne vous est pas destinée.",
+    "enabled": "🛂 Captcha activé : les nouveaux membres devront se vérifier.",
+    "disabled": "Captcha désactivé.",
+    "expiredMessage": "Vérification expirée.",
+    "button": {
+      "verify": "Je ne suis pas un robot",
+      "solve": "Résoudre le captcha"
+    },
+    "field": {
+      "channel": "Salon du captcha",
+      "tempRole": "Rôle temporaire",
+      "verifiedRole": "Rôle après validation",
+      "type": "Type de captcha",
+      "timeout": "Délai maximal",
+      "attempts": "Tentatives",
+      "message": "Message affiché",
+      "code": "Recopiez ce code",
+      "math": "Combien font"
+    },
+    "status": {
+      "title": "🛂 État du captcha",
+      "enabled": "🟢 Activé",
+      "disabled": "🔴 Désactivé",
+      "stats": "Statistiques",
+      "statsValue": "{passed} validé(s) • {kicked} expulsé(s) • {pending} en attente"
+    },
+    "wizard": {
+      "title": "🛂 Configuration du captcha",
+      "help": "Configurez le salon, les rôles, le type et le message, puis enregistrez. Activez ensuite avec `captcha enable`.",
+      "notSet": "Non défini",
+      "none": "Aucun",
+      "minutes": "{count} min",
+      "noTimeout": "Illimité",
+      "pickChannel": "Salon du captcha…",
+      "pickTempRole": "Rôle temporaire (non vérifiés)…",
+      "pickVerifiedRole": "Rôle attribué après validation…",
+      "pickType": "Type de captcha…",
+      "options": "Message & options",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "optionsTitle": "Message, délai et tentatives",
+      "timeoutLabel": "Délai maximal en minutes (0 = illimité)",
+      "attemptsLabel": "Tentatives avant expulsion (1-10)",
+      "expired": "Cette session de configuration a expiré. Relancez `captcha setup`.",
+      "incomplete": "Renseignez au moins le salon et le rôle après validation.",
+      "cancelledTitle": "Configuration annulée",
+      "cancelled": "La configuration du captcha a été annulée.",
+      "saved": "✅ Configuration enregistrée.",
+      "savedDisabled": "✅ Configuration enregistrée. Activez le captcha avec `captcha enable`."
+    },
+    "errors": {
+      "notConfigured": "Configurez d'abord le salon et le rôle après validation avec `captcha setup`.",
+      "noPermission": "Seuls les administrateurs peuvent configurer le captcha."
+    },
+    "logs": {
+      "sent": "Captcha envoyé",
+      "passed": "Captcha validé",
+      "failed": "Captcha échoué (expulsion)",
+      "expired": "Captcha expiré (expulsion)",
+      "config": "Configuration du captcha modifiée"
+    }
+  },
   "tempVoice": {
     "field": {
       "generator": "Salon générateur",

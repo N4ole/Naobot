@@ -72,6 +72,7 @@ function route(req, res, { client, session, pathname }) {
     if (section === 'moderation') return void json(res, 200, webService.moderation(guildId)) || true;
     if (section === 'tickets') return void json(res, 200, webService.tickets(guildId)) || true;
     if (section === 'tempvoice') return void json(res, 200, webService.tempVoice(guildId)) || true;
+    if (section === 'captcha') return void json(res, 200, webService.captcha(guildId)) || true;
     if (section === 'profile' && parts[4]) return void json(res, 200, webService.profile(client, guildId, parts[4])) || true;
   }
 

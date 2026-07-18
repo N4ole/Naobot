@@ -170,4 +170,10 @@ module.exports = {
     channelName: 'logs-vocaux',
     emoji: '🔊',
   },
+  captcha: {
+    label: 'Captcha',
+    description: 'Vérification à l\'arrivée : envoi, validation, échec, expiration/expulsion, configuration',
+    channelName: 'logs-captcha',
+    emoji: '🛂',
+  },
 };

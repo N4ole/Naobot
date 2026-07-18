@@ -95,6 +95,8 @@ async function loadGuildOverview(id) {
       ['Membres', o.members], ['Salons', o.channels], ['Rôles', o.roles],
       ['Tickets ouverts', o.tickets.open], ['Tickets fermés', o.tickets.closed], ['Catégories tickets', o.tickets.categories],
       ['Rôles réactions', o.reactionRoles], ['Formulaires', o.forms], ['Sauvegardes', o.backups],
+      ['Vocaux (générateurs)', o.tempVoice?.generators ?? 0], ['Vocaux actifs', o.tempVoice?.active ?? 0],
+      ['Captcha', o.captcha?.enabled ? `activé (${o.captcha.type})` : 'désactivé'],
       ['Réputation', o.reputation?.level ?? o.reputation?.score ?? '—'],
     ]));
   } catch (e) {
