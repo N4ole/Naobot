@@ -13,6 +13,7 @@
  */
 const { PermissionFlagsBits } = require('discord.js');
 const ownerService = require('../../services/owners/ownerService');
+const antipubService = require('../../services/antipub/antipubService');
 const logService = require('../../services/logs/logService');
 const { successEmbed, errorEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
@@ -47,6 +48,12 @@ module.exports = {
     const attachments = ctx.message ? [...ctx.message.attachments.values()] : [];
     if (!text && attachments.length === 0) {
       return ctx.reply({ embeds: [errorEmbed(t('say.empty'))], ephemeral: true });
+    }
+
+    // Anti-publicité : le relais ne doit pas servir à diffuser une invitation
+    // Discord dans un salon non exempté lorsque la protection est active.
+    if (antipubService.checkOutgoing(ctx.guild, ctx.channel, text)) {
+      return ctx.reply({ embeds: [errorEmbed(t('antipub.sayBlocked'))], ephemeral: true });
     }
 
     const payload = {

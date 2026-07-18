@@ -6,6 +6,7 @@
  */
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, PermissionFlagsBits } = require('discord.js');
 const protectionService = require('../../services/protections/protectionService');
+const antipubService = require('../../services/antipub/antipubService');
 const protectionTypes = require('../../utils/constants/protectionTypes');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
 const { t } = require('../../utils/helpers/i18n');
@@ -27,6 +28,18 @@ function buildPayload(guild) {
       stat,
     });
   });
+
+  // Anti-publicité : protection dédiée et indépendante (service séparé).
+  const antipub = antipubService.getConfig(guild.id);
+  lines.push(
+    t('protections.command.line', {
+      indicator: indicator(antipub.enabled),
+      emoji: '📢',
+      label: t('antipub.label'),
+      state: protectionService.stateLabel(antipub.enabled),
+      stat: antipub.stats.detections ?? 0,
+    }),
+  );
 
   const embed = infoEmbed(t('protections.command.title', { guild: guild.name }), lines.join('\n')).addFields(
     {
