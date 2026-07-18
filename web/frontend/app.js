@@ -149,6 +149,31 @@ async function loadTickets(id) {
   }
 }
 
+async function loadTempVoice(id) {
+  const box = $('#voice-detail');
+  if (!id) return (box.innerHTML = '<p class="muted">Sélectionnez un serveur.</p>');
+  box.innerHTML = '<p class="muted">Chargement…</p>';
+  try {
+    const v = await api(`/api/guilds/${id}/tempvoice`);
+    box.innerHTML = '';
+    box.append(kv([['Générateurs', v.generators.length], ['Salons actifs', v.active.length], ['Créés', v.stats.created ?? 0], ['Supprimés', v.stats.deleted ?? 0]]));
+    if (v.generators.length) {
+      const table = el('table');
+      table.append(el('tr', {}, [el('th', {}, 'Générateur'), el('th', {}, 'Format'), el('th', {}, 'Limite'), el('th', {}, 'Créés')]));
+      for (const g of v.generators) table.append(el('tr', {}, [el('td', {}, `#${g.channelId}`), el('td', {}, g.nameFormat), el('td', {}, g.userLimit > 0 ? String(g.userLimit) : '∞'), el('td', {}, String(g.counter ?? 0))]));
+      box.append(el('h2', {}, 'Générateurs'), table);
+    }
+    if (v.active.length) {
+      const table = el('table');
+      table.append(el('tr', {}, [el('th', {}, 'Salon'), el('th', {}, 'Propriétaire'), el('th', {}, 'Créé')]));
+      for (const a of v.active) table.append(el('tr', {}, [el('td', {}, a.name), el('td', {}, `${a.ownerId}`), el('td', {}, new Date(a.createdAt).toLocaleString('fr-FR'))]));
+      box.append(el('h2', {}, 'Salons actifs'), table);
+    }
+  } catch (e) {
+    box.innerHTML = `<p class="muted">Erreur (${e}).</p>`;
+  }
+}
+
 async function loadProfile(guildId, userId) {
   const box = $('#profile-detail');
   if (!guildId || !userId) return (box.innerHTML = '<p class="muted">Choisissez un serveur et un identifiant utilisateur.</p>');
@@ -213,7 +238,7 @@ async function init() {
   $('#dash-view').classList.remove('hidden');
   renderUser(me);
   renderGuildList();
-  for (const sel of ['#mod-guild', '#tickets-guild', '#profile-guild']) fillGuildSelect($(sel));
+  for (const sel of ['#mod-guild', '#tickets-guild', '#voice-guild', '#profile-guild']) fillGuildSelect($(sel));
   setupTabs();
 
   try {
@@ -225,6 +250,7 @@ async function init() {
 
   $('#mod-guild').addEventListener('change', (e) => loadModeration(e.target.value));
   $('#tickets-guild').addEventListener('change', (e) => loadTickets(e.target.value));
+  $('#voice-guild').addEventListener('change', (e) => loadTempVoice(e.target.value));
   $('#profile-load').addEventListener('click', () => loadProfile($('#profile-guild').value, $('#profile-user').value.trim()));
 }
 

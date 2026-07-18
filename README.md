@@ -33,6 +33,10 @@ modulaire stricte pensée pour être maintenue et étendue facilement.
   (choix multiples, quatre modes de vote — classique, multiple, anonyme,
   public), avec durée, fermeture automatique ou anticipée, résultats détaillés
   (pourcentages, gagnants, égalités, participants) et persistance.
+- **Salons vocaux temporaires** : des salons « générateurs » créent
+  automatiquement un salon vocal à l'arrivée d'un membre (nom personnalisable),
+  l'y déplacent, et le suppriment dès qu'il est vide ; le propriétaire peut le
+  renommer via `renamevoice`. Configurable par serveur, persistant.
 - **Textes centralisés** dans `locales/fr.json` (traduction facile).
 
 ## Installation
@@ -648,6 +652,44 @@ départ, et administrable via `rep` (détail, recalcul, score manuel,
 classements). Un score fixé via `rep set` prime jusqu'au prochain
 `rep recalc`.
 
+## Salons vocaux temporaires
+
+Système « Join to Create » **configurable par serveur** et persistant
+(`database/data/tempVoice.json`) : générateurs, paramètres, salons temporaires
+actifs, propriétaires et statistiques survivent aux redémarrages.
+
+| Commande | Description | Permission | Exemple |
+|---|---|---|---|
+| `voicecreate` (alias `voiceadd`) | Assistant : salon générateur, catégorie de création, format du nom, limite d'utilisateurs, rôles supplémentaires | Administrateur | `!voicecreate` |
+| `voiceedit <salon>` | Modifie un générateur (même assistant) | Administrateur | `!voiceedit #Créer un salon` |
+| `voicelist` | Liste les générateurs, salons actifs et statistiques | Administrateur | `!voicelist` |
+| `voicedelete <salon>` (alias `voiceremove`) | Supprime un générateur (confirmation) | Administrateur | `!voicedelete #Créer un salon` |
+| `renamevoice <nom>` (alias `vcrename`) | Renomme **votre** salon temporaire (propriétaire uniquement) | — | `!renamevoice 🎮 Détente` |
+
+- **Fonctionnement** : un administrateur configure un **salon générateur**
+  (ex. « ➕ Créer un salon vocal »). Quand un membre le rejoint, le bot crée un
+  salon vocal (nom personnalisable), y **déplace** le membre, et le marque
+  temporaire. Dès que le salon est **vide**, il est supprimé automatiquement,
+  les données nettoyées et l'événement journalisé.
+- **Format du nom** personnalisable via variables (`{user}`, `{username}`,
+  `{displayname}`, `{counter}`, extensibles dans
+  `utils/constants/tempVoiceVariables.js`). Exemples : `Salon de {user}`,
+  `🔊 {username}`, `Squad de {displayname}`.
+- **Propriétaire** : peut **renommer** son salon via `renamevoice` (arbitré
+  par le bot). Il **ne peut pas** modifier les permissions, déplacer les
+  membres, supprimer le salon ni changer la catégorie — le propriétaire ne
+  reçoit aucune permission de gestion Discord (renommage arbitré côté bot).
+- **Sécurité** : anti-doublon (un seul salon actif par membre et par
+  générateur — sinon le membre est déplacé vers l'existant), pas de boucle de
+  création (un salon temporaire n'est jamais un générateur), configuration
+  réservée aux administrateurs, suppression automatique des salons vides.
+- **Logs** : catégorie dédiée `vocaux` (création, suppression, renommage,
+  configuration, erreurs). **Interface web** : section « Vocaux » (générateurs,
+  salons actifs, statistiques).
+- **Extensible sans refonte** : salons privés, mots de passe, limite
+  ajustable, verrouillage, transfert de propriété, salons permanents…
+  (services/temporaryVoice, schéma des générateurs/temps ouvert).
+
 ## Système de logs
 
 Le système de logs est organisé en **catégories indépendantes**, persistées
@@ -680,6 +722,7 @@ par serveur (`database/data/logSettings.json`) :
 | `rappels` | Rappels personnels : création, modification, suppression, exécution | `#logs-rappels` |
 | `sondages` | Sondages : création, fermeture, consultation des résultats | `#logs-sondages` |
 | `web` | Interface web : connexions, authentifications, modifications via le site, erreurs | `#logs-web` |
+| `vocaux` | Salons vocaux temporaires : création, suppression, renommage, configuration, erreurs | `#logs-vocaux` |
 
 À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
@@ -724,8 +767,9 @@ OAuth2 est complète.
 - **Sections** : tableau de bord (serveurs, utilisateurs, tickets, bumps, état
   du bot), serveurs (protections, tickets, rôles réactions, formulaires,
   sauvegardes, réputation…), modération (warns, statistiques), tickets
-  (ouverts / fermés / catégories), profils (réputation, warns, historique ;
-  badges et succès à venir). Interface **responsive**.
+  (ouverts / fermés / catégories), vocaux temporaires (générateurs, salons
+  actifs, statistiques), profils (réputation, warns, historique ; badges et
+  succès à venir). Interface **responsive**.
 - **Temps réel** : flux **SSE** (équivalent WebSocket) — statistiques
   poussées en continu et journal web en direct (owners).
 - **Authentification Discord OAuth2** (scopes `identify`, `guilds`) : bouton
@@ -772,6 +816,7 @@ OAuth2 est complète.
 │   ├── forms/           #   form (create/edit/delete/list + remplissage)
 │   ├── reminders/       #   remind, remindlist+reminddelete+remindedit
 │   ├── polls/           #   poll (assistant + vote), pollclose+pollresults+polllist
+│   ├── temporaryVoice/  #   voicecreate+voiceedit+voicelist+voicedelete, renamevoice
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
@@ -791,7 +836,8 @@ OAuth2 est complète.
 │   ├── polls/           #   ready (fermeture des sondages expirés)
 │   ├── tickets/         #   ready (planificateur), activity (anti-inactivité)
 │   ├── warnings/        #   ready (cohérence des rôles de warn)
-│   └── web/             #   ready (démarre l'interface web si activée)
+│   ├── web/             #   ready (démarre l'interface web si activée)
+│   └── temporaryVoice/  #   voiceStateUpdate (create/delete) + ready (nettoyage)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
 │   ├── logging/         #   logService (logs par catégories), modLogService
@@ -817,7 +863,8 @@ OAuth2 est complète.
 │   ├── forms/           #   formService + formWizard (questions, soumissions)
 │   ├── reminders/       #   reminderService (planificateur, envoi en MP)
 │   ├── polls/           #   pollService + pollWizard (votes, modes, résultats)
-│   └── web/             #   webService (données) + webAuth (OAuth2) + webLog
+│   ├── web/             #   webService (données) + webAuth (OAuth2) + webLog
+│   └── temporaryVoice/  #   tempVoiceService (cycle de vie) + tempVoiceWizard
 ├── web/                 # Interface web (séparée de la logique Discord)
 │   ├── frontend/        #   dashboard statique responsive (HTML/CSS/JS)
 │   ├── backend/         #   serveur HTTP natif + tunnel OAuth2
@@ -836,7 +883,8 @@ OAuth2 est complète.
 │   ├── backup/          # Accès sauvegardes (administrateur)
 │   ├── forms/           # Gestion (Gérer le serveur) + accès au remplissage
 │   ├── reminders/       # Appartenance d'un rappel (auteur uniquement)
-│   └── polls/           # Gestion des sondages (créateur ou gestionnaire)
+│   ├── polls/           # Gestion des sondages (créateur ou gestionnaire)
+│   └── temporaryVoice/  # Admin (config) + propriétaire d'un salon temporaire
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…

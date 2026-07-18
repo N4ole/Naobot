@@ -164,4 +164,10 @@ module.exports = {
     channelName: 'logs-web',
     emoji: '🌐',
   },
+  vocaux: {
+    label: 'Vocaux temporaires',
+    description: 'Salons vocaux temporaires : création, suppression, changement de nom, configuration, erreurs',
+    channelName: 'logs-vocaux',
+    emoji: '🔊',
+  },
 };
