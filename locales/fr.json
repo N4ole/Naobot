@@ -1018,6 +1018,56 @@
       "error": "Erreur de protection"
     }
   },
+  "antipub": {
+    "label": "Anti-publicité",
+    "on": "activée",
+    "off": "désactivée",
+    "notify": "📢 {user}, la publicité (invitations Discord) n'est pas autorisée ici. Votre message a été supprimé.",
+    "noPermission": "Vous devez être **administrateur** pour configurer l'anti-publicité.",
+    "sayBlocked": "🚫 Impossible de relayer ce message : il contient une invitation Discord et l'anti-publicité est active dans ce salon.",
+    "command": {
+      "enabled": "📢 Protection **anti-publicité activée** : les invitations Discord seront supprimées.",
+      "disabled": "📢 Protection **anti-publicité désactivée**."
+    },
+    "status": {
+      "title": "📢 Anti-publicité — {guild}",
+      "state": "{indicator} Protection **{state}**",
+      "exemptCount": "Salons exemptés",
+      "stats": "Statistiques",
+      "statsValue": "{detections} détection(s) · {deleted} supprimé(s) · {errors} erreur(s)",
+      "lastModified": "Dernière modification",
+      "never": "Jamais",
+      "channels": "Salons exemptés (page {page}/{pages})",
+      "noChannels": "Aucun salon exempté."
+    },
+    "button": {
+      "enable": "Activer",
+      "disable": "Désactiver",
+      "refresh": "Actualiser",
+      "prev": "◀ Précédent",
+      "next": "Suivant ▶"
+    },
+    "whitelist": {
+      "listTitle": "📢 Salons exemptés d'anti-publicité",
+      "needChannel": "Indiquez un salon (mention ou identifiant).",
+      "added": "✅ {channel} est désormais exempté : les invitations Discord y sont autorisées.",
+      "alreadyAdded": "ℹ️ {channel} est déjà exempté.",
+      "removed": "✅ {channel} n'est plus exempté : les invitations Discord y seront supprimées.",
+      "notFound": "ℹ️ {channel} n'était pas dans la liste des salons exemptés."
+    },
+    "field": {
+      "invite": "Invitation",
+      "deleted": "Message supprimé",
+      "error": "Suppression impossible (permissions insuffisantes)"
+    },
+    "logs": {
+      "enabled": "Anti-publicité activée",
+      "disabled": "Anti-publicité désactivée",
+      "whitelistAdd": "Salon exempté ajouté",
+      "whitelistRemove": "Salon exempté retiré",
+      "detection": "Invitation Discord supprimée"
+    }
+  },
   "contact": {
     "command": {
       "sent": "✉️ Votre message a été transmis aux owners du bot (**{count}** notifié(s)). Référence : **{id}**. Conservez cette référence pour le suivi.",

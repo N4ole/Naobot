@@ -33,10 +33,10 @@ les modules (loaders) et se connecte — rien d'autre.
 Respecter l'organisation :
 
 ```
-commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/, watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, logs/, watch/, reactionRoles/, contact/, protections/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, warnings/, web/, temporaryVoice/, captcha/, reputation/)
-services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/, reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
-middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, reactionRoles/, contact/, protections/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
+commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/, watch/, owner/, administration/)
+events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, logs/, watch/, reactionRoles/, contact/, protections/, antipub/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, warnings/, web/, temporaryVoice/, captcha/, reputation/)
+services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/, reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
+middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, reactionRoles/, contact/, protections/, antipub/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
 config/        # config.js (env), permissions.js (permissions par commande)

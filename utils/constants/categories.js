@@ -14,5 +14,6 @@ module.exports = {
   reminders: { label: 'Rappels', emoji: '⏰' },
   polls: { label: 'Sondages', emoji: '📊' },
   watch: { label: 'Surveillance', emoji: '👁️' },
+  antipub: { label: 'Anti-publicité', emoji: '📢' },
   owner: { label: 'Owner', emoji: '👑' },
 };

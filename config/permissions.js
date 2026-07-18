@@ -144,6 +144,12 @@ module.exports = {
     user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
+  // Anti-publicité (invitations Discord) : configuration réservée aux
+  // administrateurs. Le bot supprime les messages contenant des invitations.
+  antipub: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [PermissionFlagsBits.ManageMessages],
+  },
   // Accès (admin OU propriétaire OU owner) contrôlé dans la commande ;
   // seule la permission du bot est vérifiée par le pipeline.
   urgence: {

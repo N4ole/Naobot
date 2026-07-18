@@ -187,6 +187,11 @@ peut être associé à un rôle, pour n'importe quel nombre de niveaux.
 | `antilink <on\|off>` | Active/désactive l'anti-link | Gérer le serveur | `!antilink on` |
 | `antibot <on\|off>` | Active/désactive l'anti-bot | Gérer le serveur | `!antibot on` |
 | `protections` (alias `protection`) | Tableau de bord de l'état des protections (indicateurs, dernière modification, bouton d'actualisation) | Gérer le serveur | `!protections` |
+| `antipub <on\|off>` | Active/désactive l'anti-publicité (invitations Discord) | Administrateur | `!antipub on` |
+| `antipub status` | État, salons exemptés (paginés), statistiques, boutons | Administrateur | `!antipub status` |
+| `antipub whitelist add <salon>` | Exempte un salon (invitations autorisées) | Administrateur | `!antipub whitelist add #partenariats` |
+| `antipub whitelist remove <salon>` | Retire un salon des exemptions | Administrateur | `!antipub whitelist remove #partenariats` |
+| `antipub whitelist list` | Liste les salons exemptés | Administrateur | `!antipub whitelist list` |
 
 Protections indépendantes, **désactivées par défaut**, configurées par
 serveur et persistantes (`database/data/protections.json`).
@@ -211,6 +216,31 @@ serveur et persistantes (`database/data/protections.json`).
   vérifie ses propres permissions avant d'agir.
 - **Logs** : catégorie dédiée `protections` (activation, désactivation,
   spam, lien supprimé, arrivée de bot, raid, erreurs).
+
+#### 📢 Anti-publicité (invitations Discord)
+
+Protection **dédiée et indépendante** des autres protections, activable
+séparément, **désactivée par défaut**, persistante par serveur
+(`database/data/antipub.json`).
+
+- **Détection** : invitations Discord (`discord.gg`, `discord.com/invite`,
+  `discordapp.com/invite`, sous-domaines `canary`/`ptb`, raccourcisseurs
+  `dsc.gg`/`invite.gg`, redirecteurs vanity `discord.me`/`.io`/`.li`/`.st`),
+  y compris **dissimulées** dans le texte (espaces, « (dot) », caractères
+  invisibles) et présentes dans un **embed**. S'applique aux messages
+  classiques, **modifiés**, aux réponses et aux commandes de type `say`.
+- **Réaction** : suppression du message, **notification discrète** de
+  l'utilisateur (auto-supprimée), journalisation (`protections`) et
+  incrément des statistiques (détections, suppressions, erreurs). Sanctions
+  automatiques prévues (extension future).
+- **Salons exemptés** : liste persistante, éditable et consultable
+  (`whitelist add`/`remove`/`list`) — les invitations y sont autorisées
+  (ex. `#partenariats`, `#publicité`, `#recrutement`).
+- **Exceptions futures** : l'architecture (repository + middleware) prévoit
+  déjà rôles exemptés, utilisateurs exemptés et serveurs autorisés.
+- **Sécurité** : les membres exemptés (bots, *Gérer les messages* /
+  administrateurs, rang ≥ au bot) ne sont jamais visés ; le bot vérifie ses
+  permissions avant d'agir.
 
 #### 🚨 Mode urgence
 
@@ -851,8 +881,9 @@ OAuth2 est complète.
   du bot), serveurs (protections, tickets, rôles réactions, formulaires,
   sauvegardes, réputation…), modération (warns, statistiques), tickets
   (ouverts / fermés / catégories), vocaux temporaires (générateurs, salons
-  actifs, statistiques), captcha (état, statistiques), réputation globale
-  (score, statistiques, historique ; pondérations pour les owners), profils
+  actifs, statistiques), captcha (état, statistiques), **anti-publicité**
+  (état, salons exemptés, statistiques, dernières détections), réputation
+  globale (score, statistiques, historique ; pondérations pour les owners), profils
   (réputation, warns, historique ; badges et succès à venir). Interface
   **responsive**.
 - **Temps réel** : flux **SSE** (équivalent WebSocket) — statistiques
@@ -896,6 +927,7 @@ OAuth2 est complète.
 │   ├── reactionRoles/   #   reactionrole (assistant + composants live)
 │   ├── contact/         #   contactowner, respond, contactlist+contactinfo
 │   ├── protections/     #   antispam+antilink+antibot, protections (tableau de bord)
+│   ├── antipub/         #   antipub (on/off/status/whitelist — invitations Discord)
 │   ├── emergency/       #   urgence (verrouillage on/off/status)
 │   ├── welcome/         #   setwelcome, welcomestatus+welcomepreview
 │   ├── backup/          #   backup (create/load/delete/list)
@@ -917,6 +949,7 @@ OAuth2 est complète.
 │   ├── reactionRoles/   #   ready (panneaux persistés opérationnels)
 │   ├── contact/         #   ready (conversations de contact persistées)
 │   ├── protections/     #   messageProtection (spam/link), botJoinProtection
+│   ├── antipub/         #   messageAntipub (création + modification de messages)
 │   ├── emergency/       #   channelLock (verrouillage des nouveaux salons)
 │   ├── welcome/         #   memberJoin (carte, rôles auto, MP, questions)
 │   ├── backup/          #   ready (sauvegardes disponibles)
@@ -948,6 +981,7 @@ OAuth2 est complète.
 │   ├── antispam/        #   antispamService (moteur de détection)
 │   ├── antilink/        #   antilinkService (moteur de détection)
 │   ├── antibot/         #   antibotService (arrivées de bots, raids)
+│   ├── antipub/         #   antipubService (invitations Discord, indépendant)
 │   ├── emergency/       #   emergencyService (verrouillage/restauration)
 │   ├── welcome/         #   welcomeService + welcomeCardService (modèles)
 │   ├── backup/          #   backupService + botConfigBackup (structure + config)
@@ -972,6 +1006,7 @@ OAuth2 est complète.
 │   ├── reactionRoles/   # Sécurité d'attribution des rôles (hiérarchie du bot)
 │   ├── contact/         # Accès au contact (propriétaire du serveur)
 │   ├── protections/     # Exemptions (bot, admin, hiérarchie) + permissions bot
+│   ├── antipub/         # Accès config (admin) + exemptions (salons/rôles/membres)
 │   ├── emergency/       # Accès mode urgence (admin / propriétaire / owner)
 │   ├── backup/          # Accès sauvegardes (administrateur)
 │   ├── forms/           # Gestion (Gérer le serveur) + accès au remplissage

@@ -20,6 +20,7 @@ const backupRepository = require('../../database/backupRepository');
 const logService = require('../logs/logService');
 const tempVoiceRepository = require('../../database/tempVoiceRepository');
 const captchaRepository = require('../../database/captchaRepository');
+const antipubRepository = require('../../database/antipubRepository');
 const globalReputationService = require('../reputation/globalReputationService');
 
 function safe(fn, fallback) {
@@ -93,8 +94,28 @@ function guildOverview(client, guildId) {
     tickets: ticketSummary(guildId),
     tempVoice: safe(() => ({ generators: tempVoiceRepository.listGenerators(guildId).length, active: tempVoiceRepository.listTemps(guildId).length }), { generators: 0, active: 0 }),
     captcha: captcha(guildId),
+    antipub: safe(() => { const c = antipubRepository.getConfig(guildId); return { enabled: c.enabled, exemptChannels: c.exemptChannels.length, stats: c.stats }; }, { enabled: false, exemptChannels: 0, stats: { detections: 0, deleted: 0, errors: 0 } }),
     stats: safe(() => guildStatsRepository.getStats(guildId), {}),
   };
+}
+
+/** Anti-publicité d'un serveur (section dédiée) : état, salons exemptés,
+ * statistiques et dernières détections. */
+function antipub(guildId) {
+  return safe(
+    () => {
+      const c = antipubRepository.getConfig(guildId);
+      return {
+        enabled: c.enabled,
+        exemptChannels: c.exemptChannels,
+        stats: c.stats,
+        lastModifiedAt: c.lastModifiedAt,
+        lastModifiedBy: c.lastModifiedBy,
+        recentDetections: c.recentDetections,
+      };
+    },
+    { enabled: false, exemptChannels: [], stats: { detections: 0, deleted: 0, errors: 0 }, lastModifiedAt: null, lastModifiedBy: null, recentDetections: [] },
+  );
 }
 
 /** Résumé du captcha d'un serveur (sans jamais exposer les réponses). */
@@ -206,4 +227,4 @@ function reputationOverview() {
   return safe(() => ({ stats: globalReputationService.globalStats(), config: globalReputationService.getConfig() }), null);
 }
 
-module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };
+module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };
