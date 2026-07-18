@@ -3,7 +3,7 @@
  * changements de nom / d'icône, émojis créés ou supprimés.
  */
 const { Events } = require('discord.js');
-const logService = require('../../services/logging/logService');
+const logService = require('../../services/logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');

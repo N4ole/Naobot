@@ -97,6 +97,7 @@ async function loadGuildOverview(id) {
       ['Rôles réactions', o.reactionRoles], ['Formulaires', o.forms], ['Sauvegardes', o.backups],
       ['Vocaux (générateurs)', o.tempVoice?.generators ?? 0], ['Vocaux actifs', o.tempVoice?.active ?? 0],
       ['Captcha', o.captcha?.enabled ? `activé (${o.captcha.type})` : 'désactivé'],
+      ['Logs actifs', `${Object.values(o.logs || {}).filter((l) => l && l.enabled).length}/7`],
       ['Réputation', o.reputation?.level ?? o.reputation?.score ?? '—'],
     ]));
   } catch (e) {

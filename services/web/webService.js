@@ -17,7 +17,7 @@ const protectionRepository = require('../../database/protectionRepository');
 const reactionRoleRepository = require('../../database/reactionRoleRepository');
 const formRepository = require('../../database/formRepository');
 const backupRepository = require('../../database/backupRepository');
-const logSettingsRepository = require('../../database/logSettingsRepository');
+const logService = require('../logs/logService');
 const tempVoiceRepository = require('../../database/tempVoiceRepository');
 const captchaRepository = require('../../database/captchaRepository');
 const globalReputationService = require('../reputation/globalReputationService');
@@ -88,7 +88,7 @@ function guildOverview(client, guildId) {
     reactionRoles: safe(() => Object.keys(reactionRoleRepository.getGuildPanels(guildId)).length, 0),
     forms: safe(() => formRepository.getForms(guildId).length, 0),
     backups: safe(() => backupRepository.getBackups(guildId).length, 0),
-    logs: safe(() => logSettingsRepository.getSettings(guildId), {}),
+    logs: safe(() => logService.getStatus(guildId), {}),
     reputation: safe(() => reputationService.getEffective(guild), null),
     tickets: ticketSummary(guildId),
     tempVoice: safe(() => ({ generators: tempVoiceRepository.listGenerators(guildId).length, active: tempVoiceRepository.listTemps(guildId).length }), { generators: 0, active: 0 }),

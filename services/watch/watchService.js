@@ -19,7 +19,7 @@
  */
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const repository = require('../../database/watchRepository');
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const { infoEmbed, errorEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { formatDuration } = require('../../utils/helpers/durationParser');

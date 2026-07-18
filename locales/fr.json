@@ -109,7 +109,10 @@
       "noPermission": "Vous devez posséder la permission **Gérer le serveur** pour utiliser ce panneau.",
       "selectPlaceholder": "Catégories de logs à activer…",
       "enableAll": "Tout activer",
-      "disableAll": "Tout désactiver"
+      "disableAll": "Tout désactiver",
+      "setupSuccess": "Système de logs configuré : catégorie **Logs** et salons créés (ou réutilisés), toutes les catégories activées.",
+      "modified": "Modifié <t:{date}:R> par {user}",
+      "never": "Jamais configuré"
     },
     "events": {
       "messageDeleted": "Message supprimé",

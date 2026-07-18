@@ -18,7 +18,7 @@
 const repository = require('../../database/globalReputationRepository');
 const historyRepository = require('../../database/moderationHistoryRepository');
 const configRepository = require('../../database/reputationConfigRepository');
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const {

@@ -3,7 +3,7 @@
  * slash et préfixées. S'appuie sur le système de bans natif de Discord.
  */
 const { checkTargetHierarchy } = require('../../middlewares/permissions/checkPermissions');
-const { logModAction } = require('../logging/modLogService');
+const { logModAction } = require('../logs/modLogService');
 const { modLogEmbed } = require('../../utils/embeds/embeds');
 const { auditReason, dmUser } = require('../../utils/helpers/discordUtils');
 const { t } = require('../../utils/helpers/i18n');

@@ -1,185 +1,58 @@
 /**
- * Catégories du système de logs.
+ * Catégories de logs — **sept catégories fixes**, réellement utiles à la
+ * modération et à l'administration. Le système n'autorise PAS la création de
+ * nouvelles catégories : en ajouter une nécessite une modification explicite
+ * de ce fichier (et, si besoin, de la table d'alias de services/logs/logService).
  *
- * Chaque entrée définit une catégorie activable/désactivable indépendamment :
- * - `label` / `description` : affichage (panneau, statut, menus) ;
- * - `channelName` : salon créé/réutilisé automatiquement à l'activation
- *   (deux catégories peuvent partager un même salon, ex. : messages
- *   supprimés et modifiés) ;
- * - `emoji` : icône dans les interfaces.
+ * Les anciennes clés de logs (warns, surveillance, urgence, arrivees-departs,
+ * roles-reactions, captcha, repglobale, messages-*, salons, serveur…) sont
+ * fusionnées ou supprimées : la correspondance vit dans LEGACY_ALIASES
+ * (services/logs/logService), qui route chaque ancienne clé vers l'une de ces
+ * sept catégories (ou l'ignore).
  *
- * Ajouter une catégorie = ajouter une entrée ici puis appeler
- * logService.log(guild, '<clé>', embed) depuis le code concerné.
- * Le reste (commande logs, panneau, persistance, création de salon)
- * la prend en compte automatiquement.
+ * Chaque catégorie : { label, description, channelName, emoji }.
  */
 module.exports = {
   moderation: {
     label: 'Modération',
-    description: 'Actions de modération générales (purge…)',
-    channelName: 'logs-moderation',
-    emoji: '🛡️',
+    description: 'Kick, ban, unban, mute, unmute, timeout, retrait de timeout, suppressions massives, renommage de salons, commandes de modération',
+    channelName: 'moderation-logs',
+    emoji: '🛠️',
   },
   sanctions: {
     label: 'Sanctions',
-    description: 'Sanctions appliquées via le bot (ban, kick, mute, timeout, warn…)',
-    channelName: 'logs-sanctions',
-    emoji: '⚖️',
+    description: 'Warns, retrait/remise à zéro des warns, rôles de warn automatiques, évolution de la réputation globale, sanctions automatiques',
+    channelName: 'sanctions-logs',
+    emoji: '📛',
   },
-  'messages-supprimes': {
-    label: 'Messages supprimés',
-    description: 'Suppressions de messages (unitaires et en masse)',
-    channelName: 'logs-messages',
-    emoji: '🗑️',
-  },
-  'messages-modifies': {
-    label: 'Messages modifiés',
-    description: 'Modifications de messages (avant / après)',
-    channelName: 'logs-messages',
-    emoji: '✏️',
-  },
-  'arrivees-departs': {
+  members: {
     label: 'Arrivées et départs',
-    description: 'Arrivées et départs de membres',
-    channelName: 'logs-arrivees-departs',
+    description: 'Arrivée, départ volontaire, expulsion, bannissement, validation et échec du captcha',
+    channelName: 'members-logs',
     emoji: '🚪',
   },
   roles: {
-    label: 'Changements de rôles',
-    description: 'Rôles ajoutés ou retirés aux membres',
-    channelName: 'logs-roles',
+    label: 'Rôles',
+    description: 'Ajout/retrait de rôle, rôles réactions, rôles automatiques, rôles de niveaux, rôles de sanctions',
+    channelName: 'roles-logs',
     emoji: '🎭',
-  },
-  salons: {
-    label: 'Salons',
-    description: 'Salons créés, modifiés ou supprimés',
-    channelName: 'logs-salons',
-    emoji: '📺',
-  },
-  serveur: {
-    label: 'Serveur',
-    description: 'Événements liés au serveur (nom, icône, émojis…)',
-    channelName: 'logs-serveur',
-    emoji: '🏠',
-  },
-  commandes: {
-    label: 'Commandes exécutées',
-    description: 'Commandes du bot exécutées par les membres',
-    channelName: 'logs-commandes',
-    emoji: '⌨️',
-  },
-  erreurs: {
-    label: 'Erreurs du bot',
-    description: 'Erreurs survenues pendant l’exécution des commandes',
-    channelName: 'logs-erreurs',
-    emoji: '🐞',
-  },
-  bumps: {
-    label: 'Bumps',
-    description: 'Système de bump : activation, salon, bumps envoyés, erreurs, invitations',
-    channelName: 'logs-bumps',
-    emoji: '📣',
-  },
-  'gestion-serveurs': {
-    label: 'Gestion globale des serveurs',
-    description: 'Actions globales du bot : départs manuels, liste noire, départs automatiques',
-    channelName: 'logs-gestion-serveurs',
-    emoji: '🌐',
   },
   tickets: {
     label: 'Tickets',
-    description: 'Système de tickets : ouverture, fermeture, réouverture, suppression, renommage, assignation, transfert, membres, erreurs',
-    channelName: 'logs-tickets',
+    description: 'Ouverture, fermeture, suppression, transfert, attribution, renommage, transcript',
+    channelName: 'tickets-logs',
     emoji: '🎫',
   },
-  surveillance: {
+  watch: {
     label: 'Surveillance',
-    description: 'Système de surveillance : démarrage, arrêt, reprise, expiration automatique, erreurs',
-    channelName: 'logs-surveillance',
+    description: 'Lancement, arrêt, expiration automatique, reprise, statistiques',
+    channelName: 'watch-logs',
     emoji: '👁️',
-  },
-  warns: {
-    label: 'Avertissements',
-    description: 'Système de warns : ajout, suppression, remise à zéro, sanction automatique, règles',
-    channelName: 'logs-warns',
-    emoji: '📛',
-  },
-  'roles-reactions': {
-    label: 'Rôles réactions',
-    description: 'Panneaux de rôles réactions : création, modification, suppression, rôles, mode, erreurs',
-    channelName: 'logs-roles-reactions',
-    emoji: '📌',
-  },
-  contact: {
-    label: 'Contact owners',
-    description: 'Communication propriétaires ↔ owners : ouverture, réponse, statut, fermeture, erreurs',
-    channelName: 'logs-contact',
-    emoji: '✉️',
   },
   protections: {
     label: 'Protections',
-    description: 'Protections automatiques : activation, détection de spam, lien supprimé, bot, raid, erreurs',
-    channelName: 'logs-protections',
+    description: 'Détection de spam/raid/liens/bots, mode urgence, événements captcha, actions automatiques des protections',
+    channelName: 'protection-logs',
     emoji: '🛡️',
-  },
-  urgence: {
-    label: 'Mode urgence',
-    description: 'Verrouillage d’urgence : activation, désactivation, restauration, erreurs',
-    channelName: 'logs-urgence',
-    emoji: '🚨',
-  },
-  bienvenue: {
-    label: 'Bienvenue',
-    description: 'Système de bienvenue : arrivées, rôles automatiques, réponses aux questions, erreurs',
-    channelName: 'logs-bienvenue',
-    emoji: '👋',
-  },
-  sauvegardes: {
-    label: 'Sauvegardes',
-    description: 'Sauvegardes du serveur : création, restauration, suppression, erreurs',
-    channelName: 'logs-sauvegardes',
-    emoji: '💾',
-  },
-  formulaires: {
-    label: 'Formulaires',
-    description: 'Formulaires : création, modification, suppression, soumission, traitement, erreurs',
-    channelName: 'logs-formulaires',
-    emoji: '📝',
-  },
-  rappels: {
-    label: 'Rappels',
-    description: 'Rappels personnels : création, modification, suppression, exécution',
-    channelName: 'logs-rappels',
-    emoji: '⏰',
-  },
-  sondages: {
-    label: 'Sondages',
-    description: 'Sondages : création, fermeture, résultats, erreurs',
-    channelName: 'logs-sondages',
-    emoji: '📊',
-  },
-  web: {
-    label: 'Interface web',
-    description: 'Tableau de bord web : connexions, authentifications, modifications via le site, erreurs',
-    channelName: 'logs-web',
-    emoji: '🌐',
-  },
-  vocaux: {
-    label: 'Vocaux temporaires',
-    description: 'Salons vocaux temporaires : création, suppression, changement de nom, configuration, erreurs',
-    channelName: 'logs-vocaux',
-    emoji: '🔊',
-  },
-  captcha: {
-    label: 'Captcha',
-    description: 'Vérification à l\'arrivée : envoi, validation, échec, expiration/expulsion, configuration',
-    channelName: 'logs-captcha',
-    emoji: '🛂',
-  },
-  repglobale: {
-    label: 'Réputation globale',
-    description: 'Réputation globale : ajout de sanction, recalcul du score, consultation sensible, limites anti-abus',
-    channelName: 'logs-reputation-globale',
-    emoji: '🌐',
   },
 };

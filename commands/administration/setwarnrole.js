@@ -11,7 +11,7 @@
  */
 const { PermissionFlagsBits } = require('discord.js');
 const warnRoleService = require('../../services/warnings/warnRoleService');
-const logService = require('../../services/logging/logService');
+const logService = require('../../services/logs/logService');
 const { successEmbed, errorEmbed, infoEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');

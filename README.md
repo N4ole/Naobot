@@ -145,7 +145,7 @@ palier 1 est toujours un simple avertissement.
   appliquée, total, prochaine sanction) — échec silencieux si MP fermés.
 - `unwarn` / `clearwarns` recalculent le total ; toutes les actions (ajout,
   suppression, remise à zéro, sanction automatique, modification des
-  règles) sont journalisées dans la catégorie de logs `warns`.
+  règles) sont journalisées dans la catégorie de logs `sanctions`.
 - La persistance (`database/data/warns.json`, `warnConfig.json`) porte tout
   le nécessaire aux futures statistiques (modérateurs les plus actifs,
   utilisateurs les plus sanctionnés, sanctions les plus fréquentes).
@@ -164,16 +164,17 @@ peut être associé à un rôle, pour n'importe quel nombre de niveaux.
   réconcilie automatiquement les rôles et le nombre réel de warns (corrige les
   écarts, redémarrages…).
 - Chaque attribution / retrait / changement automatique est journalisé dans la
-  catégorie `warns` (persistance : `database/data/warnRoles.json`).
+  catégorie `sanctions` (persistance : `database/data/warnRoles.json`).
 
 ### ⚙️ Administration
 
 | Commande | Description | Permission requise (auteur) | Exemple |
 |---|---|---|---|
-| `logs` | Panneau interactif de configuration des logs (menu de catégories + boutons « Tout activer » / « Tout désactiver ») | Gérer le serveur | `!logs` |
-| `logs statut` | État des catégories de logs | Gérer le serveur | `!logs statut` |
-| `logs activer <catégories…\|tout>` | Active une, plusieurs ou toutes les catégories (crée les salons manquants) | Gérer le serveur | `!logs activer sanctions moderation` |
-| `logs desactiver <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs desactiver tout` |
+| `logs` | Panneau interactif de configuration des logs (7 catégories : menu + boutons) | Gérer le serveur | `!logs` |
+| `logs setup` | Crée la catégorie « Logs » et les sept salons, active tout | Gérer le serveur | `!logs setup` |
+| `logs status` | État détaillé (catégorie, état, salon, date et auteur de la dernière modification) | Gérer le serveur | `!logs status` |
+| `logs enable <catégories…\|tout>` | Active une, plusieurs ou toutes les catégories (crée les salons manquants) | Gérer le serveur | `!logs enable sanctions moderation` |
+| `logs disable <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs disable tout` |
 | `setwarnsanction [reset]` | Configure l'échelle des sanctions progressives des warns (panneau interactif : menus + boutons + modal ; `reset` restaure les valeurs par défaut) | Gérer le serveur | `!setwarnsanction` |
 | `setwarnrole [palier] [rôle]` (alias `warnrole`) | Associe un rôle automatique à un palier de warn (sans argument : liste ; palier seul : supprime ; `sync` : resynchronise) | Gérer le serveur | `!setwarnrole 3 @Warn 3` |
 | `say <message>` | Fait relayer un message par le bot (texte, mentions, emojis, liens, pièces jointes) ; supprime la commande d'origine, neutralise @everyone/@here, journalise l'auteur | Admin / propriétaire / owner du bot | `!say Bienvenue à tous !` |
@@ -320,7 +321,7 @@ aucun compte Discord d'owner n'est jamais exposé.
 - **Historique persistant** (`database/data/contact.json`) : identifiant,
   serveur, propriétaire, owners ayant répondu, messages échangés et dates
   — survit aux redémarrages.
-- **Logs** : catégorie dédiée `contact` (ouverture, réponse, changement de
+- **Logs** : journalisation (fusionnée dans les 7 catégories de logs) (ouverture, réponse, changement de
   statut, fermeture, erreurs d'envoi).
 - **Extensible** (pièces jointes, catégories, priorités, notes privées,
   assignation…) : le schéma d'une conversation accepte de nouveaux champs.
@@ -448,7 +449,7 @@ et persistant (`database/data/watch.json`).
 - **Arrêt automatique** après 7 jours (vérifié en continu, même après un
   redémarrage) : embed « La durée maximale de surveillance a été atteinte.
   Une nouvelle activation manuelle est nécessaire. »
-- **Logs** : catégorie dédiée `surveillance` (démarrage, arrêt, reprise,
+- **Logs** : catégorie `watch` (démarrage, arrêt, reprise,
   expiration, erreurs).
 - **Statistiques owner** : `watchtimeuser` et `watchserveurs` (classements
   paginés par boutons). Extensible (export d'historique, tableaux de bord,
@@ -481,7 +482,7 @@ leurs rôles eux-mêmes via boutons ou menu déroulant.
 - **Modification** : met à jour automatiquement le message existant (ou le
   republie si le salon change). **Suppression** : confirmation + option de
   suppression du message Discord.
-- **Logs** : catégorie dédiée `roles-reactions` (création, modification,
+- **Logs** : catégorie `roles` (création, modification,
   suppression, mode, erreurs d'attribution).
 - **Extensible** (rôles temporaires/conditionnels, statistiques d'usage…) :
   le schéma d'un panneau accepte de nouveaux champs (compteurs `stats` déjà
@@ -569,7 +570,7 @@ silencieusement.
 - **Cooldown** : 6 h **par serveur** (pas par utilisateur), persistant.
 - **Persistance** (`database/data/bumps.json`) : activation, salon,
   compteurs serveur et par utilisateur, dates, historique des bumps.
-- **Logs** : catégorie dédiée `bumps` (activation, désactivation,
+- **Logs** : journalisation (fusionnée dans les 7 catégories de logs) (activation, désactivation,
   changement de salon, bump effectué avec succès/échecs, erreurs,
   invitations avec expiration).
 - **Extensible** : la sélection des destinataires (`collectTargets`) et le
@@ -688,7 +689,7 @@ configuré par serveur, persistant (`database/data/captcha.json`).
   (vérifications en attente persistées, planificateur au démarrage).
 - **Sécurité** : seul le membre concerné peut résoudre son captcha ; nombre de
   tentatives limité ; configuration réservée aux administrateurs.
-- **Logs** : catégorie dédiée `captcha` (envoi, validation, échec, expiration,
+- **Logs** : catégorie `members` (envoi, validation, échec, expiration,
   configuration). **Interface web** : état et statistiques dans la vue serveur.
 
 ## Salons vocaux temporaires
@@ -722,7 +723,7 @@ actifs, propriétaires et statistiques survivent aux redémarrages.
   générateur — sinon le membre est déplacé vers l'existant), pas de boucle de
   création (un salon temporaire n'est jamais un générateur), configuration
   réservée aux administrateurs, suppression automatique des salons vides.
-- **Logs** : catégorie dédiée `vocaux` (création, suppression, renommage,
+- **Logs** : journalisation (fusionnée dans les 7 catégories de logs) (création, suppression, renommage,
   configuration, erreurs). **Interface web** : section « Vocaux » (générateurs,
   salons actifs, statistiques).
 - **Extensible sans refonte** : salons privés, mots de passe, limite
@@ -770,61 +771,58 @@ fondé sur les actions observées par NaoBot. Persistant
   **owners**. Toute consultation d'un tiers est journalisée.
 - **Interface web** : section « Réputation » (score, statistiques, historique ;
   pondérations pour les owners).
-- **Catégorie de logs dédiée** `repglobale`. Distinct de la réputation des
-  **serveurs** (`rep`).
+- **Logs** : l'évolution de la réputation globale est journalisée dans la
+  catégorie `sanctions`. Distinct de la réputation des **serveurs** (`rep`).
 
 ## Système de logs
 
-Le système de logs est organisé en **catégories indépendantes**, persistées
-par serveur (`database/data/logSettings.json`) :
+Le système de logs se limite à **sept catégories fixes**, réellement utiles à
+la modération et à l'administration, activables/désactivables indépendamment et
+persistées par serveur (`database/data/logSettings.json`). Il n'est **pas**
+possible de créer d'autres catégories sans modifier le code.
 
 | Clé | Contenu | Salon |
 |---|---|---|
-| `moderation` | Actions de modération générales (purge…) | `#logs-moderation` |
-| `sanctions` | Sanctions via le bot (ban, kick, mute, timeout, warn…) | `#logs-sanctions` |
-| `messages-supprimes` | Messages supprimés (unitaires et en masse) | `#logs-messages` |
-| `messages-modifies` | Messages modifiés (avant / après) | `#logs-messages` |
-| `arrivees-departs` | Arrivées et départs de membres | `#logs-arrivees-departs` |
-| `roles` | Rôles ajoutés / retirés aux membres | `#logs-roles` |
-| `salons` | Salons créés, modifiés, supprimés | `#logs-salons` |
-| `serveur` | Événements du serveur (nom, icône, émojis…) | `#logs-serveur` |
-| `commandes` | Commandes du bot exécutées | `#logs-commandes` |
-| `erreurs` | Erreurs du bot pendant les commandes | `#logs-erreurs` |
-| `bumps` | Système de bump (activation, salon, bumps, erreurs, invitations) | `#logs-bumps` |
-| `gestion-serveurs` | Actions globales du bot : départs manuels, liste noire, départs automatiques | `#logs-gestion-serveurs` |
-| `tickets` | Système de tickets : ouverture, fermeture, réouverture, suppression, renommage, assignation, transfert, membres, erreurs | `#logs-tickets` |
-| `surveillance` | Système de surveillance : démarrage, arrêt, reprise, expiration, erreurs | `#logs-surveillance` |
-| `warns` | Sanctions progressives : ajout, suppression, remise à zéro, sanction automatique, règles, rôles automatiques attribués/retirés | `#logs-warns` |
-| `roles-reactions` | Panneaux de rôles réactions : création, modification, suppression, rôles, mode, erreurs | `#logs-roles-reactions` |
-| `contact` | Contact owners : ouverture, réponse, changement de statut, fermeture, erreurs | `#logs-contact` |
-| `protections` | Protections automatiques : activation, spam, lien supprimé, arrivée de bot, raid, erreurs | `#logs-protections` |
-| `urgence` | Mode urgence : activation, désactivation, restauration, erreurs | `#logs-urgence` |
-| `bienvenue` | Bienvenue : arrivées, rôles automatiques, réponses aux questions, erreurs | `#logs-bienvenue` |
-| `sauvegardes` | Sauvegardes : création, restauration, suppression, erreurs | `#logs-sauvegardes` |
-| `formulaires` | Formulaires : création, modification, suppression, soumission, traitement, erreurs | `#logs-formulaires` |
-| `rappels` | Rappels personnels : création, modification, suppression, exécution | `#logs-rappels` |
-| `sondages` | Sondages : création, fermeture, consultation des résultats | `#logs-sondages` |
-| `web` | Interface web : connexions, authentifications, modifications via le site, erreurs | `#logs-web` |
-| `vocaux` | Salons vocaux temporaires : création, suppression, renommage, configuration, erreurs | `#logs-vocaux` |
-| `captcha` | Captcha à l'arrivée : envoi, validation, échec, expiration/expulsion, configuration | `#logs-captcha` |
-| `repglobale` | Réputation globale : sanction enregistrée, recalcul, consultation sensible, limite anti-abus | `#logs-reputation-globale` |
+| `moderation` | Kick, ban, unban, mute, unmute, timeout, retrait de timeout, suppressions massives, renommage de salons, commandes de modération | `#moderation-logs` |
+| `sanctions` | Warns, retrait/remise à zéro, rôles de warn automatiques, évolution de la réputation globale, sanctions automatiques | `#sanctions-logs` |
+| `members` | Arrivée, départ volontaire, expulsion, bannissement, validation et échec du captcha (pseudo, ID, création du compte, ancienneté, nombre de membres) | `#members-logs` |
+| `roles` | Ajout/retrait de rôle, rôles réactions, rôles automatiques, rôles de niveaux, rôles de sanctions | `#roles-logs` |
+| `tickets` | Ouverture, fermeture, suppression, transfert, attribution, renommage, transcript | `#tickets-logs` |
+| `watch` | Surveillance : lancement, arrêt, expiration automatique, reprise, statistiques | `#watch-logs` |
+| `protections` | Détection de spam/raid/liens/bots, mode urgence, événements captcha, actions automatiques | `#protection-logs` |
 
-À l'activation d'une catégorie, le bot **crée automatiquement** la catégorie
+**Commandes** (Gérer le serveur) :
+
+| Commande | Rôle |
+|---|---|
+| `logs` | Panneau interactif (menu de catégories + boutons) |
+| `logs setup` | Crée la catégorie « Logs » et les sept salons (réutilise l'existant), active tout |
+| `logs status` | État détaillé : catégorie, état, salon, **date et auteur** de la dernière modification |
+| `logs enable <catégories\|tout>` | Active une, plusieurs, ou toutes les catégories |
+| `logs disable <catégories\|tout>` | Désactive une, plusieurs, ou toutes les catégories |
+
+À l'activation (ou `logs setup`), le bot **crée automatiquement** la catégorie
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
 `@everyone`) ; les salons existants sont **réutilisés** — jamais de doublon.
 La désactivation conserve les salons.
 
+**Migration automatique** : au démarrage, les serveurs configurés avec l'ancien
+système (nombreuses catégories) sont migrés vers ces sept catégories
+(`services/logs/logMigration`) — les anciennes clés sont fusionnées vers leur
+nouvelle catégorie (table `LEGACY_ALIASES` de `services/logs/logService`), les
+catégories obsolètes supprimées, l'état et les salons conservés. Opération
+idempotente.
+
 ### Ajouter une catégorie de logs
+
+Le système est volontairement **fermé** : ajouter une catégorie impose une
+modification explicite du code.
 
 1. Ajouter une entrée dans `utils/constants/logCategories.js` (label,
    description, nom de salon, émoji).
-2. Appeler `logService.log(guild, '<clé>', embed)` depuis l'événement ou le
-   service concerné (embed construit avec `logEventEmbed` pour respecter la
-   charte graphique).
-
-Rien d'autre à modifier : la commande `logs`, le panneau interactif, la
-persistance et la création de salons prennent la nouvelle catégorie en
-compte automatiquement.
+2. Router les événements concernés via `logService.log(guild, '<clé>', embed)`
+   (embed construit avec `logEventEmbed`). Les anciennes clés sont routées vers
+   les sept catégories par `LEGACY_ALIASES`.
 
 ## Permissions et sécurité
 
@@ -889,6 +887,7 @@ OAuth2 est complète.
 /
 ├── commands/            # Définition des commandes (1 fichier = 1 fonctionnalité,
 │   ├── administration/  # les familles proches partagent un fichier : ban+unban…)
+│   ├── logs/            #   logs (enable/disable/setup/status + panneau — 7 catégories)
 │   ├── bump/            #   bumpenable, bump, bumpcount+bumpunicount
 │   ├── fun/             #   8ball, coinflip, dice, rps
 │   ├── moderation/
@@ -910,6 +909,7 @@ OAuth2 est complète.
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
 │   ├── client/          #   ready (enregistrement des commandes slash)
+│   ├── logs/            #   ready (migration auto vers les 7 catégories)
 │   ├── guild/           #   logs des salons et du serveur
 │   ├── interaction/     #   interactionCreate (slash + composants interactifs)
 │   ├── member/          #   logs des arrivées/départs et des rôles
@@ -931,7 +931,7 @@ OAuth2 est complète.
 │   └── temporaryVoice/  #   voiceStateUpdate (create/delete) + ready (nettoyage)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
-│   ├── logging/         #   logService (logs par catégories), modLogService
+│   ├── logs/            #   logService (7 catégories + alias) + modLogService + logMigration
 │   ├── owners/          #   ownerService (owners globaux + rôle décoratif)
 │   ├── reputation/      #   reputationService (serveurs) + globalReputationService (utilisateurs, inter-serveurs)
 │   ├── tracking/        #   guildStatsService, ownerNotifier (arrivées/départs)
@@ -964,6 +964,7 @@ OAuth2 est complète.
 │   └── websocket/       #   hub temps réel SSE (équivalent WebSocket)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners
+│   ├── logs/            # Accès à la configuration des logs (Gérer le serveur)
 │   ├── cooldowns/       # Anti-spam par utilisateur et par commande
 │   ├── moderation/      # Garde des warns (cible valide + hiérarchie)
 │   ├── tickets/         # Admin (config) + accès ticket (créateur / assigné / équipe)

@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const logService = require('../services/logging/logService');
+const logService = require('../services/logs/logService');
 logService.log = async () => {};
 
 const constants = require('../utils/constants/globalReputation');

@@ -10,7 +10,7 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const repository = require('../../database/formRepository');
 const formQuestionTypes = require('../../utils/constants/formQuestionTypes');
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const { infoEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');

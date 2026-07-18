@@ -11,7 +11,7 @@
  * Séparé de la logique Discord : ce module ne dépend que du logService
  * (catégories) et n'importe aucun client.
  */
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');

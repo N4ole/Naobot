@@ -10,7 +10,7 @@
 const { PermissionFlagsBits } = require('discord.js');
 const config = require('../../config/config');
 const { checkTargetHierarchy } = require('../../middlewares/permissions/checkPermissions');
-const { logModAction } = require('../logging/modLogService');
+const { logModAction } = require('../logs/modLogService');
 const globalReputationService = require('../reputation/globalReputationService');
 const { modLogEmbed } = require('../../utils/embeds/embeds');
 const { auditReason, dmUser } = require('../../utils/helpers/discordUtils');

@@ -9,7 +9,7 @@
  */
 const repository = require('../../database/protectionRepository');
 const protectionTypes = require('../../utils/constants/protectionTypes');
-const logService = require('../logging/logService');
+const logService = require('../logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');
