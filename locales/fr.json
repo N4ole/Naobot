@@ -399,6 +399,151 @@
       "detail": "Détail"
     }
   },
+  "captcha": {
+    "title": "🛂 Vérification",
+    "modalTitle": "Vérification captcha",
+    "modalLabel": "Votre réponse",
+    "done": "✅ Vérification réussie — accès débloqué.",
+    "success": "✅ Bienvenue ! Votre accès au serveur est débloqué.",
+    "retry": "❌ Réponse incorrecte. Il vous reste **{remaining}** tentative(s).",
+    "kicked": "❌ Vérification échouée. Vous avez été expulsé du serveur.",
+    "noPending": "Aucune vérification en attente pour vous.",
+    "notYours": "Cette vérification ne vous est pas destinée.",
+    "enabled": "🛂 Captcha activé : les nouveaux membres devront se vérifier.",
+    "disabled": "Captcha désactivé.",
+    "expiredMessage": "Vérification expirée.",
+    "button": {
+      "verify": "Je ne suis pas un robot",
+      "solve": "Résoudre le captcha"
+    },
+    "field": {
+      "channel": "Salon du captcha",
+      "tempRole": "Rôle temporaire",
+      "verifiedRole": "Rôle après validation",
+      "type": "Type de captcha",
+      "timeout": "Délai maximal",
+      "attempts": "Tentatives",
+      "message": "Message affiché",
+      "code": "Recopiez ce code",
+      "math": "Combien font"
+    },
+    "status": {
+      "title": "🛂 État du captcha",
+      "enabled": "🟢 Activé",
+      "disabled": "🔴 Désactivé",
+      "stats": "Statistiques",
+      "statsValue": "{passed} validé(s) • {kicked} expulsé(s) • {pending} en attente"
+    },
+    "wizard": {
+      "title": "🛂 Configuration du captcha",
+      "help": "Configurez le salon, les rôles, le type et le message, puis enregistrez. Activez ensuite avec `captcha enable`.",
+      "notSet": "Non défini",
+      "none": "Aucun",
+      "minutes": "{count} min",
+      "noTimeout": "Illimité",
+      "pickChannel": "Salon du captcha…",
+      "pickTempRole": "Rôle temporaire (non vérifiés)…",
+      "pickVerifiedRole": "Rôle attribué après validation…",
+      "pickType": "Type de captcha…",
+      "options": "Message & options",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "optionsTitle": "Message, délai et tentatives",
+      "timeoutLabel": "Délai maximal en minutes (0 = illimité)",
+      "attemptsLabel": "Tentatives avant expulsion (1-10)",
+      "expired": "Cette session de configuration a expiré. Relancez `captcha setup`.",
+      "incomplete": "Renseignez au moins le salon et le rôle après validation.",
+      "cancelledTitle": "Configuration annulée",
+      "cancelled": "La configuration du captcha a été annulée.",
+      "saved": "✅ Configuration enregistrée.",
+      "savedDisabled": "✅ Configuration enregistrée. Activez le captcha avec `captcha enable`."
+    },
+    "errors": {
+      "notConfigured": "Configurez d'abord le salon et le rôle après validation avec `captcha setup`.",
+      "noPermission": "Seuls les administrateurs peuvent configurer le captcha."
+    },
+    "logs": {
+      "sent": "Captcha envoyé",
+      "passed": "Captcha validé",
+      "failed": "Captcha échoué (expulsion)",
+      "expired": "Captcha expiré (expulsion)",
+      "config": "Configuration du captcha modifiée"
+    }
+  },
+  "tempVoice": {
+    "field": {
+      "generator": "Salon générateur",
+      "category": "Catégorie",
+      "channel": "Salon",
+      "owner": "Propriétaire",
+      "limit": "Limite d'utilisateurs",
+      "format": "Format du nom",
+      "extraRoles": "Rôles supplémentaires"
+    },
+    "wizard": {
+      "createTitle": "🔊 Nouveau générateur de salons vocaux",
+      "editTitle": "🔊 Modifier le générateur",
+      "help": "Choisissez le salon vocal générateur, la catégorie de création, le format du nom et la limite, puis enregistrez. Variables : {user}, {username}, {displayname}, {counter}.",
+      "notSet": "Non défini",
+      "sameAsGenerator": "Celle du générateur",
+      "unlimited": "Illimitée",
+      "none": "Aucun",
+      "pickGenerator": "Salon vocal générateur…",
+      "pickCategory": "Catégorie de création (facultatif)…",
+      "pickRoles": "Rôles ayant accès (facultatif)…",
+      "format": "Format & limite",
+      "save": "Enregistrer",
+      "create": "Créer",
+      "cancel": "Annuler",
+      "formatTitle": "Format du nom & limite",
+      "formatLabel": "Format du nom (variables {user}…)",
+      "limitLabel": "Limite d'utilisateurs (0 = illimité)",
+      "needChannel": "Choisissez un salon vocal générateur.",
+      "expired": "Cette session de configuration a expiré. Relancez `voicecreate`.",
+      "cancelledTitle": "Configuration annulée",
+      "cancelled": "La configuration du générateur a été annulée.",
+      "created": "🔊 Générateur créé sur {channel}. Rejoignez-le pour créer un salon temporaire.",
+      "saved": "🔊 Générateur {channel} mis à jour."
+    },
+    "list": {
+      "title": "🔊 Salons vocaux temporaires",
+      "empty": "Aucun générateur. Créez-en un avec `voicecreate`.",
+      "entry": "**Générateur** {channel}\n> Catégorie : {category} • Format : `{format}` • Limite : {limit} • Actifs : {active}",
+      "active": "Salons actifs",
+      "stats": "Statistiques",
+      "statsValue": "{created} créé(s) • {deleted} supprimé(s)"
+    },
+    "delete": {
+      "title": "🗑️ Supprimer un générateur",
+      "confirm": "Supprimer le générateur {channel} ? Les salons temporaires déjà créés resteront jusqu'à ce qu'ils soient vides.",
+      "confirmButton": "Supprimer",
+      "cancelButton": "Annuler",
+      "cancelled": "Suppression annulée.",
+      "done": "Générateur supprimé."
+    },
+    "rename": {
+      "done": "✅ Salon renommé en **{name}**.",
+      "notInVoice": "Vous devez être connecté à votre salon vocal temporaire.",
+      "notTemp": "Ce salon n'est pas un salon vocal temporaire.",
+      "notOwner": "Seul le propriétaire du salon peut le renommer.",
+      "invalidName": "Nom invalide.",
+      "failed": "Impossible de renommer le salon (limite Discord atteinte ? réessayez dans quelques minutes)."
+    },
+    "errors": {
+      "noPermission": "Seuls les administrateurs peuvent configurer les salons vocaux temporaires.",
+      "notYourSession": "Cette action ne vous est pas destinée.",
+      "notGenerator": "Ce salon n'est pas un générateur de salons vocaux temporaires.",
+      "notVoice": "Le salon générateur doit être un salon vocal.",
+      "channelIsTemp": "Ce salon est un salon temporaire : il ne peut pas servir de générateur."
+    },
+    "logs": {
+      "created": "Salon vocal temporaire créé",
+      "deleted": "Salon vocal temporaire supprimé",
+      "renamed": "Salon vocal temporaire renommé",
+      "config": "Configuration des salons vocaux modifiée",
+      "error": "Erreur de salon vocal temporaire"
+    }
+  },
   "reminders": {
     "command": {
       "created": "⏰ Rappel `{id}` créé pour {when} ({relative})."

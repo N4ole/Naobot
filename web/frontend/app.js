@@ -95,6 +95,8 @@ async function loadGuildOverview(id) {
       ['Membres', o.members], ['Salons', o.channels], ['Rôles', o.roles],
       ['Tickets ouverts', o.tickets.open], ['Tickets fermés', o.tickets.closed], ['Catégories tickets', o.tickets.categories],
       ['Rôles réactions', o.reactionRoles], ['Formulaires', o.forms], ['Sauvegardes', o.backups],
+      ['Vocaux (générateurs)', o.tempVoice?.generators ?? 0], ['Vocaux actifs', o.tempVoice?.active ?? 0],
+      ['Captcha', o.captcha?.enabled ? `activé (${o.captcha.type})` : 'désactivé'],
       ['Réputation', o.reputation?.level ?? o.reputation?.score ?? '—'],
     ]));
   } catch (e) {
@@ -143,6 +145,31 @@ async function loadTickets(id) {
       table.append(el('tr', {}, [el('th', {}, 'Catégorie'), el('th', {}, 'Compteur')]));
       for (const c of tk.categories) table.append(el('tr', {}, [el('td', {}, `${c.emoji || '🎫'} ${c.name}`), el('td', {}, String(c.counter))]));
       box.append(el('h2', {}, 'Catégories'), table);
+    }
+  } catch (e) {
+    box.innerHTML = `<p class="muted">Erreur (${e}).</p>`;
+  }
+}
+
+async function loadTempVoice(id) {
+  const box = $('#voice-detail');
+  if (!id) return (box.innerHTML = '<p class="muted">Sélectionnez un serveur.</p>');
+  box.innerHTML = '<p class="muted">Chargement…</p>';
+  try {
+    const v = await api(`/api/guilds/${id}/tempvoice`);
+    box.innerHTML = '';
+    box.append(kv([['Générateurs', v.generators.length], ['Salons actifs', v.active.length], ['Créés', v.stats.created ?? 0], ['Supprimés', v.stats.deleted ?? 0]]));
+    if (v.generators.length) {
+      const table = el('table');
+      table.append(el('tr', {}, [el('th', {}, 'Générateur'), el('th', {}, 'Format'), el('th', {}, 'Limite'), el('th', {}, 'Créés')]));
+      for (const g of v.generators) table.append(el('tr', {}, [el('td', {}, `#${g.channelId}`), el('td', {}, g.nameFormat), el('td', {}, g.userLimit > 0 ? String(g.userLimit) : '∞'), el('td', {}, String(g.counter ?? 0))]));
+      box.append(el('h2', {}, 'Générateurs'), table);
+    }
+    if (v.active.length) {
+      const table = el('table');
+      table.append(el('tr', {}, [el('th', {}, 'Salon'), el('th', {}, 'Propriétaire'), el('th', {}, 'Créé')]));
+      for (const a of v.active) table.append(el('tr', {}, [el('td', {}, a.name), el('td', {}, `${a.ownerId}`), el('td', {}, new Date(a.createdAt).toLocaleString('fr-FR'))]));
+      box.append(el('h2', {}, 'Salons actifs'), table);
     }
   } catch (e) {
     box.innerHTML = `<p class="muted">Erreur (${e}).</p>`;
@@ -213,7 +240,7 @@ async function init() {
   $('#dash-view').classList.remove('hidden');
   renderUser(me);
   renderGuildList();
-  for (const sel of ['#mod-guild', '#tickets-guild', '#profile-guild']) fillGuildSelect($(sel));
+  for (const sel of ['#mod-guild', '#tickets-guild', '#voice-guild', '#profile-guild']) fillGuildSelect($(sel));
   setupTabs();
 
   try {
@@ -225,6 +252,7 @@ async function init() {
 
   $('#mod-guild').addEventListener('change', (e) => loadModeration(e.target.value));
   $('#tickets-guild').addEventListener('change', (e) => loadTickets(e.target.value));
+  $('#voice-guild').addEventListener('change', (e) => loadTempVoice(e.target.value));
   $('#profile-load').addEventListener('click', () => loadProfile($('#profile-guild').value, $('#profile-user').value.trim()));
 }
 

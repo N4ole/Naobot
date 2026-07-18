@@ -164,4 +164,16 @@ module.exports = {
     channelName: 'logs-web',
     emoji: '🌐',
   },
+  vocaux: {
+    label: 'Vocaux temporaires',
+    description: 'Salons vocaux temporaires : création, suppression, changement de nom, configuration, erreurs',
+    channelName: 'logs-vocaux',
+    emoji: '🔊',
+  },
+  captcha: {
+    label: 'Captcha',
+    description: 'Vérification à l\'arrivée : envoi, validation, échec, expiration/expulsion, configuration',
+    channelName: 'logs-captcha',
+    emoji: '🛂',
+  },
 };

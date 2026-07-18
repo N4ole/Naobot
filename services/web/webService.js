@@ -18,6 +18,8 @@ const reactionRoleRepository = require('../../database/reactionRoleRepository');
 const formRepository = require('../../database/formRepository');
 const backupRepository = require('../../database/backupRepository');
 const logSettingsRepository = require('../../database/logSettingsRepository');
+const tempVoiceRepository = require('../../database/tempVoiceRepository');
+const captchaRepository = require('../../database/captchaRepository');
 
 function safe(fn, fallback) {
   try {
@@ -88,8 +90,41 @@ function guildOverview(client, guildId) {
     logs: safe(() => logSettingsRepository.getSettings(guildId), {}),
     reputation: safe(() => reputationService.getEffective(guild), null),
     tickets: ticketSummary(guildId),
+    tempVoice: safe(() => ({ generators: tempVoiceRepository.listGenerators(guildId).length, active: tempVoiceRepository.listTemps(guildId).length }), { generators: 0, active: 0 }),
+    captcha: captcha(guildId),
     stats: safe(() => guildStatsRepository.getStats(guildId), {}),
   };
+}
+
+/** Résumé du captcha d'un serveur (sans jamais exposer les réponses). */
+function captcha(guildId) {
+  return safe(
+    () => {
+      const c = captchaRepository.getConfig(guildId);
+      return {
+        enabled: c.enabled,
+        type: c.type,
+        channelId: c.channelId,
+        verifiedRoleId: c.verifiedRoleId,
+        timeoutMinutes: c.timeoutMinutes,
+        pending: Object.keys(c.pending ?? {}).length,
+        stats: c.stats ?? { passed: 0, kicked: 0 },
+      };
+    },
+    { enabled: false, type: 'button', pending: 0, stats: { passed: 0, kicked: 0 } },
+  );
+}
+
+/** Salons vocaux temporaires d'un serveur (section dédiée). */
+function tempVoice(guildId) {
+  return safe(
+    () => ({
+      generators: tempVoiceRepository.listGenerators(guildId).map((g) => ({ channelId: g.channelId, categoryId: g.categoryId, nameFormat: g.nameFormat, userLimit: g.userLimit, counter: g.counter })),
+      active: tempVoiceRepository.listTemps(guildId).map((t) => ({ channelId: t.channelId, ownerId: t.ownerId, name: t.name, createdAt: t.createdAt })),
+      stats: tempVoiceRepository.getStats(guildId),
+    }),
+    { generators: [], active: [], stats: { created: 0, deleted: 0 } },
+  );
 }
 
 /** Résumé des tickets d'un serveur. */
@@ -160,4 +195,4 @@ function profile(client, guildId, userId) {
   };
 }
 
-module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, moderation, profile, totalBumps, totalTickets };
+module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, moderation, profile, totalBumps, totalTickets };

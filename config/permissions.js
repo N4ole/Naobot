@@ -177,4 +177,34 @@ module.exports = {
     user: [PermissionFlagsBits.ManageMessages],
     bot: [],
   },
+  // Configuration des salons vocaux temporaires : administrateurs. Le bot crée
+  // les salons et déplace les membres.
+  voicecreate: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.MoveMembers],
+  },
+  voiceedit: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [PermissionFlagsBits.ManageChannels],
+  },
+  voicelist: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [],
+  },
+  voicedelete: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [PermissionFlagsBits.ManageChannels],
+  },
+  // renamevoice : accès (propriétaire du salon temporaire) vérifié dans la
+  // commande ; seule la permission du bot (renommage) est requise.
+  renamevoice: {
+    user: [],
+    bot: [PermissionFlagsBits.ManageChannels],
+  },
+  // Captcha à l'arrivée : configuration réservée aux administrateurs. Le bot
+  // attribue les rôles, restreint l'accès au salon et expulse les échecs.
+  captcha: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers, PermissionFlagsBits.ManageChannels],
+  },
 };
