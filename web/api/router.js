@@ -30,6 +30,13 @@ function route(req, res, { client, session, pathname }) {
     json(res, 401, { error: 'unauthenticated' });
     return true;
   }
+  // Accès réservé aux owners du bot : toutes les routes backend sont protégées
+  // (empêche l'accès direct aux routes, le contournement du frontend et les
+  // appels API non autorisés).
+  if (!ownerService.isOwner(session.userId)) {
+    json(res, 403, { error: 'forbidden' });
+    return true;
+  }
 
   const parts = pathname.split('/').filter(Boolean); // ['api', ...]
 
@@ -93,6 +100,7 @@ function route(req, res, { client, session, pathname }) {
     if (section === 'captcha') return void json(res, 200, webService.captcha(guildId)) || true;
     if (section === 'antipub') return void json(res, 200, webService.antipub(guildId)) || true;
     if (section === 'snipe') return void json(res, 200, webService.snipe(guildId)) || true;
+    if (section === 'antisensitive') return void json(res, 200, webService.antisensitive(guildId)) || true;
     if (section === 'profile' && parts[4]) return void json(res, 200, webService.profile(client, guildId, parts[4])) || true;
   }
 

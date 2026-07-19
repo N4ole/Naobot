@@ -17,6 +17,7 @@ const realtime = require('../websocket/realtime');
 const webAuth = require('../../services/web/webAuth');
 const webService = require('../../services/web/webService');
 const webLog = require('../../services/web/webLog');
+const ownerService = require('../../services/owners/ownerService');
 
 const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
 const SESSION_COOKIE = 'nao_session';
@@ -88,11 +89,21 @@ async function handleCallback(req, res, url, cookies, client) {
   try {
     const token = await webAuth.exchangeCode(code);
     const user = await webAuth.fetchUser(token.access_token);
+    const tag = user.global_name || user.username;
+
+    // Accès réservé aux owners du bot : toute autre connexion est refusée
+    // (aucune session créée).
+    if (!ownerService.isOwner(user.id)) {
+      setCookie(res, STATE_COOKIE, '', { clear: true });
+      webLog.authentication(tag, false);
+      webLog.error(`Accès web refusé (non-owner) : ${tag} (${user.id})`);
+      return redirect(res, '/?denied=1');
+    }
+
     const guilds = await webAuth.fetchUserGuilds(token.access_token).catch(() => []);
     const cookie = webAuth.createSession(user, guilds, token.access_token);
     setCookie(res, SESSION_COOKIE, cookie, { maxAge: Math.floor(webAuth.SESSION_TTL_MS / 1000) });
     setCookie(res, STATE_COOKIE, '', { clear: true });
-    const tag = user.global_name || user.username;
     webLog.connection(tag);
     webLog.authentication(tag, true);
     return redirect(res, '/');
@@ -126,9 +137,10 @@ function createServer(client) {
         return redirect(res, '/');
       }
 
-      // --- Temps réel (SSE) ---
+      // --- Temps réel (SSE) : réservé aux owners du bot ---
       if (pathname === '/events') {
         if (!session) return res.writeHead(401).end();
+        if (!webAuth.isBotOwner(session)) return res.writeHead(403).end();
         return realtime.addClient(res);
       }
 

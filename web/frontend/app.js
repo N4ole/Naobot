@@ -19,7 +19,12 @@ let state = { me: null, guilds: [] };
 function showLogin() {
   $('#login-view').classList.remove('hidden');
   $('#dash-view').classList.add('hidden');
-  const err = new URLSearchParams(location.search).get('error');
+  const params = new URLSearchParams(location.search);
+  if (params.get('denied') === '1') {
+    $('#login-error').textContent = "Accès refusé : le tableau de bord est réservé aux owners du bot.";
+    return;
+  }
+  const err = params.get('error');
   if (err) $('#login-error').textContent = err === 'auth' ? 'Échec de l’authentification Discord.' : 'Session invalide, réessayez.';
 }
 
@@ -99,6 +104,7 @@ async function loadGuildOverview(id) {
       ['Vocaux (générateurs)', o.tempVoice?.generators ?? 0], ['Vocaux actifs', o.tempVoice?.active ?? 0],
       ['Captcha', o.captcha?.enabled ? `activé (${o.captcha.type})` : 'désactivé'],
       ['Anti-pub', o.antipub?.enabled ? `activé (${o.antipub.exemptChannels} salon(s) exempté(s))` : 'désactivé'],
+      ['Anti-sensible', o.antisensitive?.enabled ? `activé (${o.antisensitive.stats?.detections ?? 0} détection(s))` : 'désactivé'],
       ['Logs actifs', `${Object.values(o.logs || {}).filter((l) => l && l.enabled).length}/7`],
       ['Réputation', o.reputation?.level ?? o.reputation?.score ?? '—'],
     ]));

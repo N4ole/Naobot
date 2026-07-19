@@ -322,6 +322,7 @@
       "listTitle": "📛 Avertissements de {user} ({count})",
       "entry": "`{id}` • <t:{timestamp}:d> • par <@{moderatorId}>\nRaison : {reason}\nSanction : {sanction}",
       "countTitle": "📛 Avertissements de {user}",
+      "removedTag": "*↳ avertissement retiré (conservé dans l'historique)*",
       "never": "Jamais",
       "clearTitle": "🧹 Effacer les avertissements",
       "clearConfirm": "Supprimer **tous** les avertissements de **{user}** ({count}) ? Cette action est irréversible.",
@@ -374,6 +375,57 @@
       "user": "Utilisateur",
       "command": "Commande",
       "stack": "Pile d'erreurs"
+    }
+  },
+  "antisensitive": {
+    "label": "Anti-contenus sensibles",
+    "on": "activée",
+    "off": "désactivée",
+    "notify": "🔞 {user}, les liens vers des sites sensibles (adultes, violents, choquants) ne sont pas autorisés ici. Votre message a été supprimé.",
+    "noPermission": "Vous devez être **administrateur** pour configurer l'anti-contenus sensibles.",
+    "sayBlocked": "🚫 Impossible de relayer ce message : il contient un lien vers un site sensible et l'anti-contenus sensibles est actif dans ce salon.",
+    "command": {
+      "enabled": "🔞 Protection **anti-contenus sensibles activée** : les liens vers des sites sensibles seront supprimés.",
+      "disabled": "🔞 Protection **anti-contenus sensibles désactivée**."
+    },
+    "status": {
+      "title": "🔞 Anti-contenus sensibles — {guild}",
+      "state": "{indicator} Protection **{state}**",
+      "exemptCount": "Salons exemptés",
+      "stats": "Statistiques",
+      "statsValue": "{detections} détection(s) · {deleted} supprimé(s) · {errors} erreur(s)",
+      "lastModified": "Dernière modification",
+      "never": "Jamais",
+      "channels": "Salons exemptés (page {page}/{pages})",
+      "noChannels": "Aucun salon exempté."
+    },
+    "button": {
+      "enable": "Activer",
+      "disable": "Désactiver",
+      "refresh": "Actualiser",
+      "prev": "◀ Précédent",
+      "next": "Suivant ▶"
+    },
+    "whitelist": {
+      "listTitle": "🔞 Salons exemptés d'anti-contenus sensibles",
+      "needChannel": "Indiquez un salon (mention ou identifiant).",
+      "added": "✅ {channel} est désormais exempté : les liens sensibles y sont tolérés.",
+      "alreadyAdded": "ℹ️ {channel} est déjà exempté.",
+      "removed": "✅ {channel} n'est plus exempté : les liens sensibles y seront supprimés.",
+      "notFound": "ℹ️ {channel} n'était pas dans la liste des salons exemptés."
+    },
+    "field": {
+      "category": "Catégorie",
+      "domain": "Domaine",
+      "deleted": "Message supprimé",
+      "error": "Suppression impossible (permissions insuffisantes)"
+    },
+    "logs": {
+      "enabled": "Anti-contenus sensibles activé",
+      "disabled": "Anti-contenus sensibles désactivé",
+      "whitelistAdd": "Salon exempté ajouté",
+      "whitelistRemove": "Salon exempté retiré",
+      "detection": "Lien sensible supprimé"
     }
   },
   "dm": {

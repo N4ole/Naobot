@@ -123,9 +123,12 @@ async function addWarn(guild, member, moderator, reason) {
  * @returns {{ ok: boolean, total?: number }}
  */
 async function removeWarn(guild, targetUser, warnId, moderator) {
-  const result = warnRepository.removeWarn(guild.id, targetUser.id, warnId);
+  // Soft-delete : le warn est conservé dans l'historique, mais le total actif
+  // (et donc la sanction associée / la prochaine) est recalculé.
+  const result = warnRepository.removeWarn(guild.id, targetUser.id, warnId, moderator?.id ?? null);
   if (!result.ok) return { ok: false };
 
+  const nextLabel = sanctionService.describeSanction(sanctionService.nextSanction(guild.id, result.total)?.sanction ?? null);
   await logWarnEvent(guild, 'removed', {
     target: targetUser,
     moderator,
@@ -133,9 +136,10 @@ async function removeWarn(guild, targetUser, warnId, moderator) {
     extraFields: [
       { name: t('warns.field.id'), value: `\`${warnId}\``, inline: true },
       { name: t('warns.field.total'), value: String(result.total), inline: true },
+      { name: t('warns.field.next'), value: nextLabel, inline: true },
     ],
   });
-  return { ok: true, total: result.total };
+  return { ok: true, total: result.total, nextLabel };
 }
 
 /**

@@ -10,6 +10,7 @@ module.exports = {
   moderation: { label: 'Modération', emoji: '🛡️' },
   protections: { label: 'Protections', emoji: '🚧' },
   antipub: { label: 'Anti-publicité', emoji: '📢' },
+  antisensitive: { label: 'Anti-contenus sensibles', emoji: '🔞' },
   captcha: { label: 'Captcha', emoji: '🤖' },
   tickets: { label: 'Tickets', emoji: '🎫' },
   watch: { label: 'Surveillance', emoji: '👁️' },

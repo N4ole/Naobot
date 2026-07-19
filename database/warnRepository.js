@@ -2,11 +2,13 @@
  * Persistance des avertissements (database/data/warns.json).
  * Structure : { [guildId]: { [userId]: Warn[] } }
  * Warn = { id, moderatorId, reason, createdAt,
- *          sanction: { type, durationMs?, level, applied } | null }
+ *          sanction: { type, durationMs?, level, applied } | null,
+ *          removedAt?, removedBy? }
  *
- * Les warns « actifs » sont simplement les warns présents (une suppression
- * retire l'entrée). La configuration des sanctions vit séparément dans
- * database/warnConfigRepository.
+ * Un warn retiré par `unwarn` est **conservé dans l'historique** (soft-delete :
+ * `removedAt`/`removedBy` renseignés) mais n'est plus « actif » : il ne compte
+ * plus dans le total ni dans la résolution de la sanction. La configuration des
+ * sanctions vit séparément dans database/warnConfigRepository.
  */
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -50,29 +52,39 @@ function updateWarnSanction(guildId, userId, warnId, sanction) {
   store.set(guildId, guildWarns);
 }
 
-/** @returns {object[]} warns de l'utilisateur (du plus ancien au plus récent) */
+function isActive(warn) {
+  return !warn.removedAt;
+}
+
+/** @returns {object[]} tout l'historique des warns (actifs + retirés). */
 function getWarns(guildId, userId) {
   return store.get(guildId, {})[userId] ?? [];
 }
 
+/** @returns {object[]} warns actifs uniquement (hors retirés). */
+function getActiveWarns(guildId, userId) {
+  return getWarns(guildId, userId).filter(isActive);
+}
+
+/** Nombre de warns **actifs** (base de la sanction progressive). */
 function countWarns(guildId, userId) {
-  return getWarns(guildId, userId).length;
+  return getActiveWarns(guildId, userId).length;
 }
 
 /**
- * Supprime un warn par son identifiant.
- * @returns {{ ok: boolean, total: number }}
+ * Retire un warn par son identifiant (soft-delete : conservé dans l'historique).
+ * @returns {{ ok: boolean, total: number }} total = nombre de warns actifs restants
  */
-function removeWarn(guildId, userId, warnId) {
+function removeWarn(guildId, userId, warnId, byUserId = null) {
   const guildWarns = store.get(guildId, {});
   const userWarns = guildWarns[userId] ?? [];
-  const filtered = userWarns.filter((entry) => entry.id !== warnId);
-  if (filtered.length === userWarns.length) return { ok: false, total: userWarns.length };
+  const warn = userWarns.find((entry) => entry.id === warnId && isActive(entry));
+  if (!warn) return { ok: false, total: userWarns.filter(isActive).length };
 
-  if (filtered.length === 0) delete guildWarns[userId];
-  else guildWarns[userId] = filtered;
+  warn.removedAt = new Date().toISOString();
+  warn.removedBy = byUserId;
   store.set(guildId, guildWarns);
-  return { ok: true, total: filtered.length };
+  return { ok: true, total: userWarns.filter(isActive).length };
 }
 
 /**
@@ -89,12 +101,12 @@ function clearWarns(guildId, userId) {
   return count;
 }
 
-/** Tous les warns d'un serveur, aplatis avec userId (base des statistiques). */
+/** Warns **actifs** d'un serveur, aplatis avec userId (base des statistiques). */
 function getAllWarns(guildId) {
   const guildWarns = store.get(guildId, {});
   const result = [];
   for (const [userId, warns] of Object.entries(guildWarns)) {
-    for (const warn of warns) result.push({ userId, ...warn });
+    for (const warn of warns) if (isActive(warn)) result.push({ userId, ...warn });
   }
   return result;
 }
@@ -103,6 +115,7 @@ module.exports = {
   addWarn,
   updateWarnSanction,
   getWarns,
+  getActiveWarns,
   countWarns,
   removeWarn,
   clearWarns,

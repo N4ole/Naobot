@@ -23,17 +23,20 @@ const { DEFAULT_LADDER } = require('../utils/constants/warnSanctions');
 
 const GUILD = 'test-guild-sanction';
 
-test('resolveSanction : échelle par défaut (palier 1 = avertissement)', () => {
+test('resolveSanction : échelle par défaut (7 paliers, palier 1 = avertissement)', () => {
   const first = sanctionService.resolveSanction(GUILD, 1);
   assert.equal(first.sanction.type, 'warn');
+  // Paliers 2 à 6 : timeouts de durée croissante ; palier 7 : ban.
   assert.equal(sanctionService.resolveSanction(GUILD, 2).sanction.type, 'timeout');
-  assert.equal(sanctionService.resolveSanction(GUILD, 5).sanction.type, 'kick');
-  assert.equal(sanctionService.resolveSanction(GUILD, 6).sanction.type, 'ban');
+  assert.equal(sanctionService.resolveSanction(GUILD, 2).sanction.durationMs, 5 * 60 * 1000);
+  assert.equal(sanctionService.resolveSanction(GUILD, 6).sanction.type, 'timeout');
+  assert.equal(sanctionService.resolveSanction(GUILD, 6).sanction.durationMs, 7 * 24 * 60 * 60 * 1000);
+  assert.equal(sanctionService.resolveSanction(GUILD, 7).sanction.type, 'ban');
 });
 
 test('resolveSanction : au-delà du dernier palier = plafond (ban)', () => {
   assert.equal(sanctionService.resolveSanction(GUILD, 99).sanction.type, 'ban');
-  assert.equal(sanctionService.resolveSanction(GUILD, 99).level, 6);
+  assert.equal(sanctionService.resolveSanction(GUILD, 99).level, 7);
 });
 
 test('resolveSanction : 0 ou négatif = aucune sanction', () => {

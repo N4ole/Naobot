@@ -130,20 +130,28 @@ palier 1 est toujours un simple avertissement.
 
 | Warns | Sanction par défaut |
 |---|---|
-| 1 | Avertissement |
-| 2 | Timeout 1 heure |
-| 3 | Timeout 1 jour |
-| 4 | Mute (rôle) |
-| 5 | Kick |
-| 6 | Ban |
+| 1 | Avertissement simple |
+| 2 | Timeout 5 minutes |
+| 3 | Timeout 15 minutes |
+| 4 | Timeout 1 heure |
+| 5 | Timeout 1 jour |
+| 6 | Timeout 1 semaine |
+| 7 | Bannissement définitif |
 
 - L'échelle se configure via `setwarnsanction` (panneau interactif : menu
   des paliers, menu des types de sanction, modal de durée pour les
   timeouts, désactivation d'un palier, `reset`). Ajouter un palier ou un
   type de sanction est trivial (`utils/constants/warnSanctions.js`).
 - Au-delà du dernier palier, le dernier palier s'applique (plafond).
-- À chaque warn, le membre reçoit un **MP** (raison, modérateur, sanction
-  appliquée, total, prochaine sanction) — échec silencieux si MP fermés.
+- Chaque sanction enregistre l'utilisateur, le modérateur, la raison, la durée
+  et la date ; à chaque warn, le membre reçoit un **MP** (raison, modérateur,
+  sanction appliquée, total, prochaine sanction) — échec silencieux si MP fermés.
+- `warnings` (alias `warns`) affiche le **total actif**, la **sanction
+  actuellement associée** et la **prochaine sanction**.
+- **Retrait d'un warn** (`unwarn`) : soft-delete — le warn est **conservé dans
+  l'historique** (marqué comme retiré) mais n'est plus actif ; le total et la
+  sanction associée sont **recalculés automatiquement**. La réputation globale
+  conserve l'événement (signal de confiance inter-serveurs, non réversible).
 - `unwarn` / `clearwarns` recalculent le total ; toutes les actions (ajout,
   suppression, remise à zéro, sanction automatique, modification des
   règles) sont journalisées dans la catégorie de logs `sanctions`.
@@ -192,6 +200,9 @@ préfixes par serveur** dans une future mise à jour.
 | `antipub whitelist add <salon>` | Exempte un salon (invitations autorisées) | Administrateur | `!antipub whitelist add #partenariats` |
 | `antipub whitelist remove <salon>` | Retire un salon des exemptions | Administrateur | `!antipub whitelist remove #partenariats` |
 | `antipub whitelist list` | Liste les salons exemptés | Administrateur | `!antipub whitelist list` |
+| `antisensitive <on\|off>` | Active/désactive l'anti-contenus sensibles (sites adultes/violents) | Administrateur | `!antisensitive on` |
+| `antisensitive status` | État, salons exemptés (paginés), statistiques, boutons | Administrateur | `!antisensitive status` |
+| `antisensitive whitelist add\|remove\|list <salon>` | Gère les salons exemptés | Administrateur | `!antisensitive whitelist add #nsfw` |
 
 Protections indépendantes, **désactivées par défaut**, configurées par
 serveur et persistantes (`database/data/protections.json`).
@@ -241,6 +252,35 @@ séparément, **désactivée par défaut**, persistante par serveur
 - **Sécurité** : les membres exemptés (bots, *Gérer les messages* /
   administrateurs, rang ≥ au bot) ne sont jamais visés ; le bot vérifie ses
   permissions avant d'agir.
+
+#### 🔞 Anti-contenus sensibles (sites adultes / violents)
+
+Protection **dédiée et indépendante**, activable séparément, **désactivée par
+défaut**, persistante par serveur (`database/data/antisensitive.json`).
+
+- **Détection** : liens vers des sites pour **adultes**, **violents/gore** ou
+  **choquants** (listes fermées par catégorie dans
+  `utils/constants/sensitiveDomains.js`), par **domaine et sous-domaine**, y
+  compris **dissimulés** (espaces, « (dot) », caractères invisibles) et dans un
+  **embed**. S'applique aux messages classiques, **modifiés**, aux réponses et
+  aux commandes de type `say`. **Domaines configurables** par serveur
+  (`blockedDomains`) et **domaines autorisés** (`allowedDomains`).
+- **Extensible** : `analyze` applique une chaîne de matchers ; l'architecture
+  prévoit l'ajout d'**API de réputation**, de **listes noires externes**, de
+  **modèles d'analyse** et la résolution des **liens raccourcis / redirections**.
+- **Réaction** : suppression du message, **notification discrète** de
+  l'utilisateur (auto-supprimée), journalisation (`protections`) et
+  statistiques (détections, suppressions, erreurs). Warns/sanctions automatiques
+  et notifications aux modérateurs prévus (extensions).
+- **Salons exemptés** : liste persistante, éditable et consultable
+  (`whitelist add`/`remove`/`list`).
+- **Exceptions futures** : rôles et utilisateurs exemptés prévus (repository +
+  middleware).
+- **Status** : `antisensitive status` — état, salons exemptés (paginés),
+  statistiques et date de dernière modification (embed + boutons).
+- **Intégration** : l'état apparaît dans le tableau de bord `protections`
+  (anti-spam, anti-link, anti-bot, anti-publicité, anti-contenus sensibles).
+  **Interface web** : `/api/guilds/:id/antisensitive`.
 
 #### 🚨 Mode urgence
 
@@ -987,12 +1027,16 @@ OAuth2 est complète.
 - **Authentification Discord OAuth2** (scopes `identify`, `guilds`) : bouton
   « Se connecter avec Discord » → `/login` (redirection vers Discord avec un
   `state` anti-CSRF) → retour sur l'URI de redirection → échange du code contre
-  un jeton (`fetch`) → récupération du profil et des serveurs → **session
-  signée** (cookie HMAC, en mémoire, TTL 24 h) ; `/logout` détruit la session.
-  L'accès à un serveur est réservé aux **administrateurs du serveur**, à son
-  **propriétaire** et aux **owners du bot** ; les endpoints d'administration
-  (écriture) sont structurés mais non exposés dans cette itération (lecture
-  seule).
+  un jeton (`fetch`) → **vérification que le compte est un owner du bot** →
+  **session signée** (cookie HMAC, en mémoire, TTL 24 h) ; `/logout` détruit la
+  session.
+- **Accès strictement réservé aux owners du bot** : l'owner principal (`.env`)
+  et les owners secondaires (base de données). Toute autre connexion est
+  **refusée** dès le callback (aucune session créée, page d'**accès refusé**).
+  **Toutes** les routes backend le vérifient — API REST, flux temps réel (SSE)
+  et frontend : impossible de contourner le frontend, d'appeler l'API ou le
+  WebSocket sans être owner. Les administrateurs de serveurs n'ont plus accès.
+  Les endpoints d'administration (écriture) restent non exposés (lecture seule).
 - **Modules** : `web/frontend` (dashboard statique), `web/backend` (serveur
   HTTP + tunnel OAuth2), `web/api` (API REST), `web/websocket` (hub SSE),
   `services/web` (`webService` = pont de données, `webAuth` = OAuth2 +
@@ -1024,6 +1068,7 @@ OAuth2 est complète.
 │   ├── contact/         #   contactowner, respond, contactlist+contactinfo
 │   ├── protections/     #   antispam+antilink+antibot, protections (tableau de bord)
 │   ├── antipub/         #   antipub (on/off/status/whitelist — invitations Discord)
+│   ├── antisensitive/   #   antisensitive (on/off/status/whitelist — sites sensibles)
 │   ├── emergency/       #   urgence (verrouillage on/off/status)
 │   ├── welcome/         #   setwelcome, welcomestatus+welcomepreview
 │   ├── backup/          #   backup (create/load/delete/list)
@@ -1050,6 +1095,7 @@ OAuth2 est complète.
 │   ├── contact/         #   ready (conversations de contact persistées)
 │   ├── protections/     #   messageProtection (spam/link), botJoinProtection
 │   ├── antipub/         #   messageAntipub (création + modification de messages)
+│   ├── antisensitive/   #   messageAntisensitive (création + modification)
 │   ├── emergency/       #   channelLock (verrouillage des nouveaux salons)
 │   ├── welcome/         #   memberJoin (carte, rôles auto, MP, questions)
 │   ├── backup/          #   ready (sauvegardes disponibles)
@@ -1086,6 +1132,7 @@ OAuth2 est complète.
 │   ├── antilink/        #   antilinkService (moteur de détection)
 │   ├── antibot/         #   antibotService (arrivées de bots, raids)
 │   ├── antipub/         #   antipubService (invitations Discord, indépendant)
+│   ├── antisensitive/   #   antisensitiveService (sites sensibles, indépendant)
 │   ├── emergency/       #   emergencyService (verrouillage/restauration)
 │   ├── welcome/         #   welcomeService + welcomeCardService (modèles)
 │   ├── backup/          #   backupService + botConfigBackup (structure + config)
@@ -1113,6 +1160,7 @@ OAuth2 est complète.
 │   ├── contact/         # Accès au contact (propriétaire du serveur)
 │   ├── protections/     # Exemptions (bot, admin, hiérarchie) + permissions bot
 │   ├── antipub/         # Accès config (admin) + exemptions (salons/rôles/membres)
+│   ├── antisensitive/   # Accès config (admin) + exemptions (salons/rôles/membres)
 │   ├── emergency/       # Accès mode urgence (admin / propriétaire / owner)
 │   ├── backup/          # Accès sauvegardes (administrateur)
 │   ├── forms/           # Gestion (Gérer le serveur) + accès au remplissage

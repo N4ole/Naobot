@@ -7,6 +7,7 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, PermissionFlagsBits } = require('discord.js');
 const protectionService = require('../../services/protections/protectionService');
 const antipubService = require('../../services/antipub/antipubService');
+const antisensitiveService = require('../../services/antisensitive/antisensitiveService');
 const protectionTypes = require('../../utils/constants/protectionTypes');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
 const { t } = require('../../utils/helpers/i18n');
@@ -38,6 +39,18 @@ function buildPayload(guild) {
       label: t('antipub.label'),
       state: protectionService.stateLabel(antipub.enabled),
       stat: antipub.stats.detections ?? 0,
+    }),
+  );
+
+  // Anti-contenus sensibles : protection dédiée et indépendante (service séparé).
+  const antisensitive = antisensitiveService.getConfig(guild.id);
+  lines.push(
+    t('protections.command.line', {
+      indicator: indicator(antisensitive.enabled),
+      emoji: '🔞',
+      label: t('antisensitive.label'),
+      state: protectionService.stateLabel(antisensitive.enabled),
+      stat: antisensitive.stats.detections ?? 0,
     }),
   );
 

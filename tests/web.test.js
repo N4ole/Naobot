@@ -30,16 +30,26 @@ test('webAuth : session signée valide, falsifiée rejetée', () => {
   assert.equal(webAuth.getSession('nimportequoi'), null, 'valeur invalide → null');
 });
 
-// --- Web : contrôle d'accès par serveur ---
-test('webAuth.canAccessGuild : admin autorisé, non-membre du bot refusé', () => {
+// --- Web : accès réservé aux owners du bot ---
+test('webAuth.canAccessGuild / isBotOwner : owners uniquement', () => {
+  const previousOwner = config.ownerId;
+  config.ownerId = 'ownerBot';
   const client = { guilds: { cache: new Map([['g1', {}]]) } };
-  const adminSession = { userId: 'u1', guilds: [{ id: 'g1', owner: false, permissions: '8' }] };
-  const memberSession = { userId: 'u2', guilds: [{ id: 'g1', owner: false, permissions: '1024' }] };
+  const ownerSession = { userId: 'ownerBot', guilds: [] };
+  const adminSession = { userId: 'u1', guilds: [{ id: 'g1', owner: true, permissions: '8' }] };
 
-  assert.equal(webAuth.canAccessGuild(adminSession, 'g1', client), true);
-  assert.equal(webAuth.canAccessGuild(memberSession, 'g1', client), false); // pas admin
-  assert.equal(webAuth.canAccessGuild(adminSession, 'gX', client), false); // bot absent
+  assert.equal(webAuth.isBotOwner(ownerSession), true);
+  assert.equal(webAuth.isBotOwner(adminSession), false);
+  // Owner du bot : accès à tout serveur où le bot est présent.
+  assert.equal(webAuth.canAccessGuild(ownerSession, 'g1', client), true);
+  assert.equal(webAuth.canAccessGuild(ownerSession, 'gX', client), false); // bot absent
+  // Admin de serveur (non-owner du bot) : accès refusé.
+  assert.equal(webAuth.canAccessGuild(adminSession, 'g1', client), false);
   assert.equal(webAuth.canAccessGuild(null, 'g1', client), false);
+  // Serveurs accessibles : tous pour l'owner, aucun pour l'admin.
+  assert.equal(webAuth.accessibleGuilds(ownerSession, client).length, 1);
+  assert.equal(webAuth.accessibleGuilds(adminSession, client).length, 0);
+  config.ownerId = previousOwner;
 });
 
 // --- Web : statistiques globales (structure) ---

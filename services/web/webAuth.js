@@ -3,9 +3,9 @@
  * dépendance), sessions signées (cookie HMAC → session en mémoire) et contrôle
  * d'accès par serveur.
  *
- * Accès à un serveur autorisé : administrateur du serveur (ADMINISTRATOR ou
- * MANAGE_GUILD), propriétaire du serveur, ou owner du bot — et le bot doit
- * être présent sur le serveur. Séparé de la logique Discord.
+ * Accès **réservé aux owners du bot** (owner principal du `.env` + owners
+ * secondaires en base). Les administrateurs de serveurs n'ont plus accès : toute
+ * connexion d'un non-owner est refusée. Séparé de la logique Discord.
  */
 const crypto = require('node:crypto');
 const config = require('../../config/config');
@@ -137,21 +137,24 @@ function hasAdminPermission(permissionsString) {
   return (bits & PERM_ADMINISTRATOR) === PERM_ADMINISTRATOR || (bits & PERM_MANAGE_GUILD) === PERM_MANAGE_GUILD;
 }
 
-/** La session peut-elle administrer ce serveur ? (et le bot y est-il présent) */
-function canAccessGuild(session, guildId, client) {
-  if (!session) return false;
-  if (!client?.guilds?.cache?.has(guildId)) return false; // le bot doit y être
-  if (ownerService.isOwner(session.userId)) return true; // owner du bot
-  const entry = session.guilds.find((g) => g.id === guildId);
-  if (!entry) return false;
-  return entry.owner || hasAdminPermission(entry.permissions);
+/** true si la session appartient à un owner du bot (seul accès autorisé). */
+function isBotOwner(session) {
+  return Boolean(session) && ownerService.isOwner(session.userId);
 }
 
-/** Serveurs (où le bot est présent) que la session peut administrer. */
+/**
+ * Accès à un serveur : réservé aux **owners du bot**, et le bot doit être
+ * présent sur le serveur. Les administrateurs de serveurs n'ont plus accès.
+ */
+function canAccessGuild(session, guildId, client) {
+  if (!isBotOwner(session)) return false;
+  return Boolean(client?.guilds?.cache?.has(guildId)); // le bot doit y être
+}
+
+/** Serveurs où le bot est présent (réservés aux owners du bot). */
 function accessibleGuilds(session, client) {
-  if (!session || !client?.guilds?.cache) return [];
+  if (!isBotOwner(session) || !client?.guilds?.cache) return [];
   return [...client.guilds.cache.values()]
-    .filter((guild) => canAccessGuild(session, guild.id, client))
     .map((guild) => ({ id: guild.id, name: guild.name, icon: guild.iconURL?.({ size: 64 }) ?? null, members: guild.memberCount ?? 0 }));
 }
 
@@ -166,6 +169,7 @@ module.exports = {
   createSession,
   getSession,
   destroySession,
+  isBotOwner,
   canAccessGuild,
   accessibleGuilds,
   hasAdminPermission,

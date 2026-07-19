@@ -21,6 +21,7 @@ const logService = require('../logs/logService');
 const tempVoiceRepository = require('../../database/tempVoiceRepository');
 const captchaRepository = require('../../database/captchaRepository');
 const antipubRepository = require('../../database/antipubRepository');
+const antisensitiveRepository = require('../../database/antisensitiveRepository');
 const prefixService = require('../prefix/prefixService');
 const snipeService = require('../snipe/snipeService');
 const snipeCategories = require('../../utils/constants/snipeCategories');
@@ -100,8 +101,29 @@ function guildOverview(client, guildId) {
     captcha: captcha(guildId),
     antipub: safe(() => { const c = antipubRepository.getConfig(guildId); return { enabled: c.enabled, exemptChannels: c.exemptChannels.length, stats: c.stats }; }, { enabled: false, exemptChannels: 0, stats: { detections: 0, deleted: 0, errors: 0 } }),
     snipe: safe(() => Object.fromEntries(Object.keys(snipeCategories).map((key) => [key, snipeService.query(guildId, key).length])), {}),
+    antisensitive: safe(() => { const c = antisensitiveRepository.getConfig(guildId); return { enabled: c.enabled, exemptChannels: c.exemptChannels.length, stats: c.stats }; }, { enabled: false, exemptChannels: 0, stats: { detections: 0, deleted: 0, errors: 0 } }),
     stats: safe(() => guildStatsRepository.getStats(guildId), {}),
   };
+}
+
+/** Anti-contenus sensibles d'un serveur (section dédiée, lecture seule). */
+function antisensitive(guildId) {
+  return safe(
+    () => {
+      const c = antisensitiveRepository.getConfig(guildId);
+      return {
+        enabled: c.enabled,
+        exemptChannels: c.exemptChannels,
+        blockedDomains: c.blockedDomains,
+        allowedDomains: c.allowedDomains,
+        stats: c.stats,
+        lastModifiedAt: c.lastModifiedAt,
+        lastModifiedBy: c.lastModifiedBy,
+        recentDetections: c.recentDetections,
+      };
+    },
+    { enabled: false, exemptChannels: [], stats: { detections: 0, deleted: 0, errors: 0 }, recentDetections: [] },
+  );
 }
 
 /** Snipe d'un serveur : nombre d'événements récents par catégorie (lecture seule). */
@@ -249,4 +271,4 @@ function reputationOverview() {
   return safe(() => ({ stats: globalReputationService.globalStats(), config: globalReputationService.getConfig() }), null);
 }
 
-module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, snipe, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };
+module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, antisensitive, snipe, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };
