@@ -10,6 +10,7 @@
 const repository = require('../../database/protectionRepository');
 const protectionTypes = require('../../utils/constants/protectionTypes');
 const logService = require('../logs/logService');
+const snipeService = require('../snipe/snipeService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');
@@ -50,6 +51,13 @@ function bumpStat(guildId, statKey, amount = 1) {
  * @param {object} [options] - { color, user, fields }
  */
 function logProtection(guild, action, { color = COLORS.LOG_NEUTRAL, user = null, fields = [] } = {}) {
+  // Snipe : mémorise l'événement de protection (consultable via protectionsnipe).
+  snipeService.record(guild, 'protections', {
+    type: action,
+    userId: user?.id ?? null,
+    userTag: user?.tag ?? null,
+    newContent: t(`protections.logs.${action}`),
+  });
   return logService.log(
     guild,
     'protections',

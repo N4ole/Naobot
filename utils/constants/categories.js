@@ -13,6 +13,7 @@ module.exports = {
   captcha: { label: 'Captcha', emoji: '🤖' },
   tickets: { label: 'Tickets', emoji: '🎫' },
   watch: { label: 'Surveillance', emoji: '👁️' },
+  snipe: { label: 'Snipe', emoji: '🔍' },
   reactionRoles: { label: 'Rôles réactions', emoji: '📌' },
   reputation: { label: 'Réputation', emoji: '🌐' },
   temporaryVoice: { label: 'Salons vocaux', emoji: '🔊' },

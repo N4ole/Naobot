@@ -92,6 +92,7 @@ function route(req, res, { client, session, pathname }) {
     if (section === 'tempvoice') return void json(res, 200, webService.tempVoice(guildId)) || true;
     if (section === 'captcha') return void json(res, 200, webService.captcha(guildId)) || true;
     if (section === 'antipub') return void json(res, 200, webService.antipub(guildId)) || true;
+    if (section === 'snipe') return void json(res, 200, webService.snipe(guildId)) || true;
     if (section === 'profile' && parts[4]) return void json(res, 200, webService.profile(client, guildId, parts[4])) || true;
   }
 

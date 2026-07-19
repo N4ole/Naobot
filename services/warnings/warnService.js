@@ -15,6 +15,7 @@
 const warnRepository = require('../../database/warnRepository');
 const sanctionService = require('./sanctionService');
 const globalReputationService = require('../reputation/globalReputationService');
+const snipeService = require('../snipe/snipeService');
 const logService = require('../logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
@@ -103,6 +104,16 @@ async function addWarn(guild, member, moderator, reason) {
 
   // Réputation globale : contribue au score inter-serveurs.
   globalReputationService.record({ guild, user: member.user, moderator, action: 'warn', reason }).catch(() => null);
+
+  // Snipe : mémorise la sanction (consultable via sanctionsnipe).
+  snipeService.record(guild, 'sanctions', {
+    type: 'warn',
+    userId: member.id,
+    userTag: member.user.tag,
+    moderatorId: moderator.id,
+    newContent: reason,
+    extra: { total, sanction: sanctionLabel },
+  });
 
   return { warn, total, sanction, applied, sanctionLabel, nextLabel };
 }

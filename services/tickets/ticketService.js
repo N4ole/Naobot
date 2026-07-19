@@ -23,6 +23,7 @@ const repository = require('../../database/ticketRepository');
 const categoryRepository = require('../../database/ticketCategoryRepository');
 const transcriptService = require('./transcriptService');
 const logService = require('../logs/logService');
+const snipeService = require('../snipe/snipeService');
 const { infoEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const ticketVariables = require('../../utils/constants/ticketVariables');
@@ -57,6 +58,14 @@ async function deliverLog(guild, category, action, ticket, byUser, extraFields =
     ],
   });
   await logService.log(guild, 'tickets', embed);
+  // Snipe : mémorise l'événement de ticket (consultable via ticketsnipe).
+  snipeService.record(guild, 'tickets', {
+    type: action,
+    userId: ticket.userId ?? null,
+    channelId: ticket.channelId ?? null,
+    moderatorId: byUser?.id ?? null,
+    newContent: ticket.channelName ?? null,
+  });
   // Salon de logs dédié à la catégorie, s'il est configuré.
   if (category?.logChannelId) {
     const channel = guild.channels.cache.get(category.logChannelId);

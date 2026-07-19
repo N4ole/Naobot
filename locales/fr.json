@@ -376,6 +376,36 @@
       "stack": "Pile d'erreurs"
     }
   },
+  "snipe": {
+    "noPermission": "Réservé aux administrateurs, aux modérateurs (Modérer les membres) et aux owners du bot.",
+    "notYourSession": "Cette consultation appartient à la personne qui a lancé la commande.",
+    "empty": "Aucun événement récent pour ces critères.",
+    "footer": "Événement {page}/{total}",
+    "field": {
+      "category": "Catégorie",
+      "type": "Type",
+      "date": "Date",
+      "channel": "Salon",
+      "author": "Auteur",
+      "user": "Utilisateur",
+      "content": "Contenu"
+    },
+    "event": {
+      "before": "Avant",
+      "after": "Après",
+      "rolesAdded": "Rôles ajoutés",
+      "rolesRemoved": "Rôles retirés",
+      "count": "Messages",
+      "total": "Total d'avertissements",
+      "attachments": "Pièces jointes",
+      "images": "Images",
+      "moderator": "Modérateur",
+      "noContent": "*(aucun contenu)*"
+    },
+    "logs": {
+      "consulted": "Consultation du snipe"
+    }
+  },
   "prefix": {
     "noPermission": "Réservé aux administrateurs, au propriétaire du serveur et aux owners du bot.",
     "command": {

@@ -22,6 +22,8 @@ const tempVoiceRepository = require('../../database/tempVoiceRepository');
 const captchaRepository = require('../../database/captchaRepository');
 const antipubRepository = require('../../database/antipubRepository');
 const prefixService = require('../prefix/prefixService');
+const snipeService = require('../snipe/snipeService');
+const snipeCategories = require('../../utils/constants/snipeCategories');
 const globalReputationService = require('../reputation/globalReputationService');
 
 function safe(fn, fallback) {
@@ -97,8 +99,26 @@ function guildOverview(client, guildId) {
     tempVoice: safe(() => ({ generators: tempVoiceRepository.listGenerators(guildId).length, active: tempVoiceRepository.listTemps(guildId).length }), { generators: 0, active: 0 }),
     captcha: captcha(guildId),
     antipub: safe(() => { const c = antipubRepository.getConfig(guildId); return { enabled: c.enabled, exemptChannels: c.exemptChannels.length, stats: c.stats }; }, { enabled: false, exemptChannels: 0, stats: { detections: 0, deleted: 0, errors: 0 } }),
+    snipe: safe(() => Object.fromEntries(Object.keys(snipeCategories).map((key) => [key, snipeService.query(guildId, key).length])), {}),
     stats: safe(() => guildStatsRepository.getStats(guildId), {}),
   };
+}
+
+/** Snipe d'un serveur : nombre d'événements récents par catégorie (lecture seule). */
+function snipe(guildId) {
+  return safe(
+    () => ({
+      config: snipeService.getConfig(guildId),
+      categories: Object.entries(snipeCategories).map(([key, def]) => ({
+        key,
+        label: def.label,
+        emoji: def.emoji,
+        command: def.command,
+        count: snipeService.query(guildId, key).length,
+      })),
+    }),
+    { config: {}, categories: [] },
+  );
 }
 
 /** Anti-publicité d'un serveur (section dédiée) : état, salons exemptés,
@@ -229,4 +249,4 @@ function reputationOverview() {
   return safe(() => ({ stats: globalReputationService.globalStats(), config: globalReputationService.getConfig() }), null);
 }
 
-module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };
+module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, snipe, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };

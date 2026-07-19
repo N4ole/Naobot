@@ -819,6 +819,41 @@ fondé sur les actions observées par NaoBot. Persistant
 - **Logs** : l'évolution de la réputation globale est journalisée dans la
   catégorie `sanctions`. Distinct de la réputation des **serveurs** (`rep`).
 
+## Système de snipe
+
+Consultation des **événements récents** supprimés ou modifiés d'un serveur,
+catégorisés (comme les logs). Persisté par serveur (`database/data/snipe.json`)
+avec limites et **purge automatique**.
+
+| Commande | Catégorie consultée | Exemple |
+|---|---|---|
+| `snipe` | Messages supprimés (unitaires + suppressions massives) | `!snipe #salon` |
+| `editsnipe` | Messages modifiés (avant / après) | `!editsnipe @Membre` |
+| `membersnipe` | Arrivées / départs | `!membersnipe` |
+| `rolesnipe` | Changements de rôles (ajouts / retraits) | `!rolesnipe @Membre` |
+| `sanctionsnipe` | Sanctions (warns, bans, unbans) | `!sanctionsnipe` |
+| `ticketsnipe` | Événements de tickets | `!ticketsnipe` |
+| `protectionsnipe` | Événements de protections | `!protectionsnipe` |
+
+- **Catégories** (`utils/constants/snipeCategories.js`) : messages supprimés,
+  messages modifiés, arrivées/départs, changements de rôles, sanctions,
+  tickets, protections. **Fermé et extensible** : ajouter une catégorie = une
+  entrée + un appel `snipeService.record`.
+- **Données conservées** par événement : utilisateur, salon, serveur, date,
+  type, ancien contenu, nouveau contenu, pièces jointes, images, et modérateur
+  responsable lorsque applicable.
+- **Consultation** : filtres par **utilisateur** et par **salon**, navigation
+  par **boutons** et **pagination** (un événement par page). Chaque résultat est
+  un embed (catégorie, date, salon, auteur, contenu).
+- **Limites** : nombre maximal d'éléments par serveur et **durée de conservation
+  configurables** (`snipeService.setConfig` ; défaut : 50 éléments / catégorie,
+  24 h) ; une **purge automatique** périodique retire les événements expirés.
+- **Permissions** : administrateurs, modérateurs (Modérer les membres) ou owners
+  du bot (`middlewares/snipe`).
+- **Logs** : toute consultation est journalisée dans la catégorie de logs de
+  **surveillance** (`watch`). **Interface web** : nombre d'événements récents par
+  catégorie dans la vue serveur (`/api/guilds/:id/snipe`).
+
 ## Système de logs
 
 Le système de logs se limite à **sept catégories fixes**, réellement utiles à
@@ -975,6 +1010,7 @@ OAuth2 est complète.
 │   ├── captcha/         #   captcha (enable/disable/status/setup + vérification)
 │   ├── reputation/      #   reputation+globalprofile, globalrepstats+userhistory+repconfig
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
+│   ├── snipe/           #   snipe+editsnipe+membersnipe+rolesnipe+sanctionsnipe+ticketsnipe+protectionsnipe
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
 │   ├── client/          #   ready (enregistrement des commandes slash)
@@ -997,6 +1033,7 @@ OAuth2 est complète.
 │   ├── tickets/         #   ready (planificateur), activity (anti-inactivité)
 │   ├── captcha/         #   memberJoin (envoi du captcha) + ready (expiration)
 │   ├── reputation/      #   guildBan (capture des bans → réputation globale)
+│   ├── snipe/           #   messageSnipe + memberSnipe (capture) + ready (purge auto)
 │   ├── web/             #   ready (démarre l'interface web si activée)
 │   └── temporaryVoice/  #   voiceStateUpdate (create/delete) + ready (nettoyage)
 ├── services/            # Logique métier, partagée par slash et préfixe
@@ -1014,6 +1051,7 @@ OAuth2 est complète.
 │   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
 │   ├── errors/          #   errorLogService (logs d'erreurs internes → #bot-errors)
 │   ├── prefix/          #   prefixService (préfixe personnalisable par serveur)
+│   ├── snipe/           #   snipeService (capture, requêtes filtrées, purge auto)
 │   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
 │   ├── contact/         #   contactService (communication owners ↔ propriétaires)
 │   ├── protections/     #   protectionService (état, stats, logs partagés)
@@ -1042,6 +1080,7 @@ OAuth2 est complète.
 │   ├── moderation/      # Garde des warns (cible valide + hiérarchie)
 │   ├── tickets/         # Admin (config) + accès ticket (créateur / assigné / équipe)
 │   ├── watch/           # Accès à la surveillance (admin / modérateur / owner)
+│   ├── snipe/           # Accès au snipe (admin / modérateur / owner)
 │   ├── reactionRoles/   # Sécurité d'attribution des rôles (hiérarchie du bot)
 │   ├── contact/         # Accès au contact (propriétaire du serveur)
 │   ├── protections/     # Exemptions (bot, admin, hiérarchie) + permissions bot
