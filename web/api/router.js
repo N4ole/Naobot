@@ -30,6 +30,13 @@ function route(req, res, { client, session, pathname }) {
     json(res, 401, { error: 'unauthenticated' });
     return true;
   }
+  // Accès réservé aux owners du bot : toutes les routes backend sont protégées
+  // (empêche l'accès direct aux routes, le contournement du frontend et les
+  // appels API non autorisés).
+  if (!ownerService.isOwner(session.userId)) {
+    json(res, 403, { error: 'forbidden' });
+    return true;
+  }
 
   const parts = pathname.split('/').filter(Boolean); // ['api', ...]
 
@@ -69,6 +76,12 @@ function route(req, res, { client, session, pathname }) {
     return void json(res, 200, webService.reputationProfile(targetId) ?? { error: 'not_found' }) || true;
   }
 
+  // /api/files/:userId (dossier membre global — owners du bot uniquement,
+  // déjà garanti par le contrôle d'accès global ci-dessus).
+  if (parts.length === 3 && parts[1] === 'files') {
+    return void json(res, 200, webService.memberFile(parts[2]) ?? { error: 'not_found' }) || true;
+  }
+
   // /api/logs (owner du bot uniquement — journal global sensible)
   if (parts.length === 2 && parts[1] === 'logs') {
     if (!ownerService.isOwner(session.userId)) {
@@ -92,6 +105,9 @@ function route(req, res, { client, session, pathname }) {
     if (section === 'tempvoice') return void json(res, 200, webService.tempVoice(guildId)) || true;
     if (section === 'captcha') return void json(res, 200, webService.captcha(guildId)) || true;
     if (section === 'antipub') return void json(res, 200, webService.antipub(guildId)) || true;
+    if (section === 'snipe') return void json(res, 200, webService.snipe(guildId)) || true;
+    if (section === 'antisensitive') return void json(res, 200, webService.antisensitive(guildId)) || true;
+    if (section === 'levels') return void json(res, 200, webService.levels(guildId)) || true;
     if (section === 'profile' && parts[4]) return void json(res, 200, webService.profile(client, guildId, parts[4])) || true;
   }
 

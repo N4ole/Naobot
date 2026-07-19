@@ -22,6 +22,9 @@ module.exports = {
   // Owner principal du bot : tous les privilèges, non supprimable par commande.
   // Les owners secondaires sont gérés via addowner/rmowner (database/data/owners.json).
   ownerId: process.env.OWNER_ID || null,
+  // Serveur privé recevant les logs d'erreurs internes du bot (#bot-errors).
+  // Donnée statique globale ; aucun autre serveur n'y a accès.
+  errorGuildId: process.env.ERROR_GUILD_ID || null,
   // Nom du rôle décoratif attribué automatiquement aux owners sur les serveurs.
   ownerRoleName: process.env.OWNER_ROLE_NAME || 'Owner NaoBot',
   // Contact affiché aux serveurs bannis pour un éventuel recours

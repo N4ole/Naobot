@@ -21,7 +21,13 @@ const logService = require('../logs/logService');
 const tempVoiceRepository = require('../../database/tempVoiceRepository');
 const captchaRepository = require('../../database/captchaRepository');
 const antipubRepository = require('../../database/antipubRepository');
+const antisensitiveRepository = require('../../database/antisensitiveRepository');
+const prefixService = require('../prefix/prefixService');
+const levelService = require('../levels/levelService');
+const snipeService = require('../snipe/snipeService');
+const snipeCategories = require('../../utils/constants/snipeCategories');
 const globalReputationService = require('../reputation/globalReputationService');
+const memberFileService = require('../memberFiles/memberFileService');
 
 function safe(fn, fallback) {
   try {
@@ -85,6 +91,7 @@ function guildOverview(client, guildId) {
     members: guild.memberCount ?? 0,
     channels: safe(() => guild.channels.cache.size, 0),
     roles: safe(() => guild.roles.cache.size, 0),
+    prefix: safe(() => prefixService.getConfig(guildId), { prefix: '!', default: '!', isCustom: false, updatedBy: null, updatedAt: null }),
     protections: safe(() => protectionRepository.getConfig(guildId), {}),
     reactionRoles: safe(() => Object.keys(reactionRoleRepository.getGuildPanels(guildId)).length, 0),
     forms: safe(() => formRepository.getForms(guildId).length, 0),
@@ -95,8 +102,74 @@ function guildOverview(client, guildId) {
     tempVoice: safe(() => ({ generators: tempVoiceRepository.listGenerators(guildId).length, active: tempVoiceRepository.listTemps(guildId).length }), { generators: 0, active: 0 }),
     captcha: captcha(guildId),
     antipub: safe(() => { const c = antipubRepository.getConfig(guildId); return { enabled: c.enabled, exemptChannels: c.exemptChannels.length, stats: c.stats }; }, { enabled: false, exemptChannels: 0, stats: { detections: 0, deleted: 0, errors: 0 } }),
+    snipe: safe(() => Object.fromEntries(Object.keys(snipeCategories).map((key) => [key, snipeService.query(guildId, key).length])), {}),
+    antisensitive: safe(() => { const c = antisensitiveRepository.getConfig(guildId); return { enabled: c.enabled, exemptChannels: c.exemptChannels.length, stats: c.stats }; }, { enabled: false, exemptChannels: 0, stats: { detections: 0, deleted: 0, errors: 0 } }),
+    levels: safe(() => { const c = levelService.getConfig(guildId); return { enabled: c.enabled, ranked: levelService.leaderboard(guildId).length, rewards: Object.keys(c.rewards).length }; }, { enabled: false, ranked: 0, rewards: 0 }),
     stats: safe(() => guildStatsRepository.getStats(guildId), {}),
   };
+}
+
+/** Système de niveaux d'un serveur (section dédiée) : config, top et récompenses. */
+function levels(guildId) {
+  return safe(
+    () => {
+      const c = levelService.getConfig(guildId);
+      return {
+        config: {
+          enabled: c.enabled,
+          xpPerMessage: c.xpPerMessage,
+          xpPerVoiceMinute: c.xpPerVoiceMinute,
+          messageCooldownMs: c.messageCooldownMs,
+          minMessageLength: c.minMessageLength,
+          excludedChannels: c.excludedChannels,
+          excludedRoles: c.excludedRoles,
+          announceChannelId: c.announceChannelId,
+          curve: c.curve,
+          lastModifiedAt: c.lastModifiedAt,
+        },
+        rewards: Object.entries(c.rewards).map(([level, roleId]) => ({ level: Number(level), roleId })).sort((a, b) => a.level - b.level),
+        leaderboard: levelService.leaderboard(guildId).slice(0, 50),
+      };
+    },
+    { config: { enabled: false }, rewards: [], leaderboard: [] },
+  );
+}
+
+/** Anti-contenus sensibles d'un serveur (section dédiée, lecture seule). */
+function antisensitive(guildId) {
+  return safe(
+    () => {
+      const c = antisensitiveRepository.getConfig(guildId);
+      return {
+        enabled: c.enabled,
+        exemptChannels: c.exemptChannels,
+        blockedDomains: c.blockedDomains,
+        allowedDomains: c.allowedDomains,
+        stats: c.stats,
+        lastModifiedAt: c.lastModifiedAt,
+        lastModifiedBy: c.lastModifiedBy,
+        recentDetections: c.recentDetections,
+      };
+    },
+    { enabled: false, exemptChannels: [], stats: { detections: 0, deleted: 0, errors: 0 }, recentDetections: [] },
+  );
+}
+
+/** Snipe d'un serveur : nombre d'événements récents par catégorie (lecture seule). */
+function snipe(guildId) {
+  return safe(
+    () => ({
+      config: snipeService.getConfig(guildId),
+      categories: Object.entries(snipeCategories).map(([key, def]) => ({
+        key,
+        label: def.label,
+        emoji: def.emoji,
+        command: def.command,
+        count: snipeService.query(guildId, key).length,
+      })),
+    }),
+    { config: {}, categories: [] },
+  );
 }
 
 /** Anti-publicité d'un serveur (section dédiée) : état, salons exemptés,
@@ -219,7 +292,18 @@ function profile(client, guildId, userId) {
 
 /** Profil de réputation globale d'un utilisateur (accès contrôlé côté API). */
 function reputationProfile(userId) {
-  return safe(() => globalReputationService.getProfile(userId), null);
+  return safe(() => {
+    const profile = globalReputationService.getProfile(userId);
+    return { ...profile, files: memberFileService.fileStats(userId) };
+  }, null);
+}
+
+/**
+ * Dossier membre complet (owners du bot uniquement — accès contrôlé côté API).
+ * Données sensibles : réputation + notes globales inter-serveurs.
+ */
+function memberFile(userId) {
+  return safe(() => memberFileService.getDossier(userId), null);
 }
 
 /** Statistiques + pondérations de réputation globale (owners). */
@@ -227,4 +311,4 @@ function reputationOverview() {
   return safe(() => ({ stats: globalReputationService.globalStats(), config: globalReputationService.getConfig() }), null);
 }
 
-module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };
+module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, antisensitive, levels, snipe, moderation, profile, reputationProfile, reputationOverview, memberFile, totalBumps, totalTickets };

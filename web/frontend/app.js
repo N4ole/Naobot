@@ -19,7 +19,12 @@ let state = { me: null, guilds: [] };
 function showLogin() {
   $('#login-view').classList.remove('hidden');
   $('#dash-view').classList.add('hidden');
-  const err = new URLSearchParams(location.search).get('error');
+  const params = new URLSearchParams(location.search);
+  if (params.get('denied') === '1') {
+    $('#login-error').textContent = "Accès refusé : le tableau de bord est réservé aux owners du bot.";
+    return;
+  }
+  const err = params.get('error');
   if (err) $('#login-error').textContent = err === 'auth' ? 'Échec de l’authentification Discord.' : 'Session invalide, réessayez.';
 }
 
@@ -93,11 +98,14 @@ async function loadGuildOverview(id) {
     detail.append(el('h2', {}, o.name));
     detail.append(kv([
       ['Membres', o.members], ['Salons', o.channels], ['Rôles', o.roles],
+      ['Préfixe', `${o.prefix?.prefix ?? '!'}${o.prefix?.isCustom ? '' : ' (défaut)'}`],
       ['Tickets ouverts', o.tickets.open], ['Tickets fermés', o.tickets.closed], ['Catégories tickets', o.tickets.categories],
       ['Rôles réactions', o.reactionRoles], ['Formulaires', o.forms], ['Sauvegardes', o.backups],
       ['Vocaux (générateurs)', o.tempVoice?.generators ?? 0], ['Vocaux actifs', o.tempVoice?.active ?? 0],
       ['Captcha', o.captcha?.enabled ? `activé (${o.captcha.type})` : 'désactivé'],
       ['Anti-pub', o.antipub?.enabled ? `activé (${o.antipub.exemptChannels} salon(s) exempté(s))` : 'désactivé'],
+      ['Anti-sensible', o.antisensitive?.enabled ? `activé (${o.antisensitive.stats?.detections ?? 0} détection(s))` : 'désactivé'],
+      ['Niveaux', o.levels?.enabled ? `activé (${o.levels.ranked} membre(s), ${o.levels.rewards} récompense(s))` : 'désactivé'],
       ['Logs actifs', `${Object.values(o.logs || {}).filter((l) => l && l.enabled).length}/7`],
       ['Réputation', o.reputation?.level ?? o.reputation?.score ?? '—'],
     ]));
@@ -207,6 +215,36 @@ async function loadAntipub(id) {
   }
 }
 
+async function loadLevels(id) {
+  const box = $('#levels-detail');
+  if (!id) return (box.innerHTML = '<p class="muted">Sélectionnez un serveur.</p>');
+  box.innerHTML = '<p class="muted">Chargement…</p>';
+  try {
+    const l = await api(`/api/guilds/${id}/levels`);
+    box.innerHTML = '';
+    const c = l.config || {};
+    box.append(kv([
+      ['État', c.enabled ? '🟢 activé' : '🔴 désactivé'],
+      ['XP / message', c.xpPerMessage ?? '—'], ['XP / min vocale', c.xpPerVoiceMinute ?? '—'],
+      ['Cooldown (ms)', c.messageCooldownMs ?? '—'], ['Longueur min.', c.minMessageLength ?? '—'],
+      ['Membres classés', l.leaderboard.length], ['Récompenses', l.rewards.length],
+    ]));
+    if (l.rewards.length) {
+      box.append(el('h2', {}, 'Récompenses'), el('p', {}, l.rewards.map((r) => `Niv. ${r.level} → ${r.roleId}`).join(', ')));
+    }
+    if (l.leaderboard.length) {
+      const table = el('table');
+      table.append(el('tr', {}, [el('th', {}, '#'), el('th', {}, 'Membre'), el('th', {}, 'Niveau'), el('th', {}, 'XP'), el('th', {}, 'Messages'), el('th', {}, 'Vocal (min)')]));
+      for (const e of l.leaderboard) {
+        table.append(el('tr', {}, [el('td', {}, `${e.rank}`), el('td', {}, `${e.userId}`), el('td', {}, String(e.level)), el('td', {}, String(e.xp)), el('td', {}, String(e.messages)), el('td', {}, String(Math.round((e.voiceMs || 0) / 60000)))]));
+      }
+      box.append(el('h2', {}, 'Classement'), table);
+    }
+  } catch (e) {
+    box.innerHTML = `<p class="muted">Erreur (${e}).</p>`;
+  }
+}
+
 async function loadReputation(userId) {
   const box = $('#rep-detail');
   const target = (userId || state.me?.user?.id || '').trim();
@@ -229,6 +267,46 @@ async function loadReputation(userId) {
     }
   } catch (e) {
     box.innerHTML = e === 403 ? '<p class="muted">Accès refusé : vous ne pouvez consulter que votre propre réputation.</p>' : `<p class="muted">Erreur (${e}).</p>`;
+  }
+}
+
+let filesCache = null;
+
+function renderFiles(box, dossier, filter) {
+  box.innerHTML = '';
+  box.append(kv([
+    ['Utilisateur', dossier.rep?.record?.userId ?? '—'],
+    ['Réputation', `${dossier.rep?.score ?? '—'}/100`],
+    ['Confiance', `${dossier.rep?.level?.emoji ?? ''} ${dossier.rep?.level?.label ?? '—'}`],
+    ['Warns', dossier.totalWarns], ['Sanctions', dossier.totalSanctions],
+    ['Notes', dossier.noteCount], ['Serveurs concernés', dossier.guildsCount],
+  ]));
+  const f = (filter || '').trim().toLowerCase();
+  const notes = f
+    ? dossier.notes.filter((n) => `${n.content} ${n.guildName ?? ''} ${n.authorTag ?? ''}`.toLowerCase().includes(f))
+    : dossier.notes;
+  if (notes.length) {
+    const table = el('table');
+    table.append(el('tr', {}, [el('th', {}, 'ID'), el('th', {}, 'Contenu'), el('th', {}, 'Auteur'), el('th', {}, 'Serveur'), el('th', {}, 'Date')]));
+    for (const n of notes) {
+      table.append(el('tr', {}, [el('td', {}, n.id), el('td', {}, n.content), el('td', {}, n.authorTag || n.authorId), el('td', {}, n.guildName || n.guildId || '—'), el('td', {}, new Date(n.createdAt).toLocaleString('fr-FR'))]));
+    }
+    box.append(el('h2', {}, `Notes (${notes.length})`), table);
+  } else {
+    box.append(el('p', { className: 'muted' }, 'Aucune note.'));
+  }
+}
+
+async function loadMemberFile(userId, filter) {
+  const box = $('#files-detail');
+  const target = (userId || '').trim();
+  if (!target) return (box.innerHTML = '<p class="muted">Indiquez un identifiant utilisateur.</p>');
+  box.innerHTML = '<p class="muted">Chargement…</p>';
+  try {
+    filesCache = await api(`/api/files/${encodeURIComponent(target)}`);
+    renderFiles(box, filesCache, filter);
+  } catch (e) {
+    box.innerHTML = e === 403 ? '<p class="muted">Accès refusé : réservé aux owners du bot.</p>' : `<p class="muted">Erreur (${e}).</p>`;
   }
 }
 
@@ -312,7 +390,7 @@ async function init() {
   $('#dash-view').classList.remove('hidden');
   renderUser(me);
   renderGuildList();
-  for (const sel of ['#mod-guild', '#tickets-guild', '#voice-guild', '#antipub-guild', '#profile-guild']) fillGuildSelect($(sel));
+  for (const sel of ['#mod-guild', '#tickets-guild', '#voice-guild', '#levels-guild', '#antipub-guild', '#profile-guild']) fillGuildSelect($(sel));
   setupTabs();
 
   try {
@@ -325,8 +403,11 @@ async function init() {
   $('#mod-guild').addEventListener('change', (e) => loadModeration(e.target.value));
   $('#tickets-guild').addEventListener('change', (e) => loadTickets(e.target.value));
   $('#voice-guild').addEventListener('change', (e) => loadTempVoice(e.target.value));
+  $('#levels-guild').addEventListener('change', (e) => loadLevels(e.target.value));
   $('#antipub-guild').addEventListener('change', (e) => loadAntipub(e.target.value));
   $('#rep-load').addEventListener('click', () => loadReputation($('#rep-user').value));
+  $('#files-load').addEventListener('click', () => loadMemberFile($('#files-user').value, $('#files-filter').value));
+  $('#files-filter').addEventListener('input', (e) => { if (filesCache) renderFiles($('#files-detail'), filesCache, e.target.value); });
   if (me.user.botOwner) {
     $('#rep-stats').hidden = false;
     $('#rep-stats').addEventListener('click', loadReputationStats);

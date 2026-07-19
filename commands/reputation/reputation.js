@@ -9,6 +9,7 @@
  */
 const { EmbedBuilder } = require('discord.js');
 const globalReputationService = require('../../services/reputation/globalReputationService');
+const memberFileService = require('../../services/memberFiles/memberFileService');
 const { canViewReputation } = require('../../middlewares/reputation/reputationAccess');
 const { errorEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
@@ -91,6 +92,7 @@ const globalprofile = {
   examples: ['globalprofile', 'globalprofile @Membre'],
   aliases: ['gprofile'],
   cooldown: 5,
+  dm: 'direct',
   args: [{ name: 'utilisateur', type: 'user', required: false, description: 'L’utilisateur (par défaut : vous)' }],
   async execute(ctx) {
     const target = ctx.options.utilisateur ?? ctx.user;
@@ -110,6 +112,13 @@ const globalprofile = {
         { name: t('repglobale.field.sanctions'), value: statLine(profile.stats) },
         { name: t('repglobale.field.servers'), value: String(profile.guildsCount), inline: true },
       );
+    // Dossier membre : nombre de notes et de serveurs concernés (accès rapide
+    // via fileinfo). Les notes ne modifient jamais le score de réputation.
+    const fileStats = memberFileService.fileStats(target.id);
+    embed.addFields({
+      name: t('repglobale.field.file'),
+      value: t('repglobale.fileLine', { notes: fileStats.noteCount, guilds: fileStats.guildsCount, id: target.id }),
+    });
     if (profile.history.length) embed.addFields({ name: t('repglobale.field.history'), value: historyLines(profile.history, ctx.client, 8) });
     return ctx.reply({ embeds: [embed] });
   },

@@ -33,10 +33,10 @@ les modules (loaders) et se connecte — rien d'autre.
 Respecter l'organisation :
 
 ```
-commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/, watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, logs/, watch/, reactionRoles/, contact/, protections/, antipub/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, warnings/, web/, temporaryVoice/, captcha/, reputation/)
-services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/, reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
-middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, reactionRoles/, contact/, protections/, antipub/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
+commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, snipe/, dm/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, levels/ [rank+level+leaderboard+levelconfig], reputation/, memberFiles/ [dossiers globaux : file+fileinfo+filelist+filedelete], watch/, owner/, administration/)
+events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, messageActivity/ [XP messages], voiceActivity/ [XP vocal], dm/ [commandes préfixées en DM], interaction/, logs/, errors/, snipe/, memberFiles/, watch/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
+services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [sites sensibles adultes/violents, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
+middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, dm/, levels/, memberFiles/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
 config/        # config.js (env), permissions.js (permissions par commande)
@@ -93,12 +93,18 @@ Le `.env` doit **uniquement** contenir :
 
 - le token Discord (`BOT_TOKEN`) ;
 - l'owner principal (`OWNER_ID`) ;
+- le serveur des logs d'erreurs internes (`ERROR_GUILD_ID`) ;
 - des données statiques globales (`CLIENT_ID`, `GUILD_ID`, `PREFIX`,
   `LOCALE`, `MUTED_ROLE_NAME`, `OWNER_ROLE_NAME`) ;
 - la configuration **statique** de l'interface web et de l'authentification
   OAuth2 (`WEB_ENABLED`, `WEB_PORT`, `WEB_URL`, `DISCORD_CLIENT_ID`,
   `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, `WEB_SESSION_SECRET`) —
   jamais de configuration dynamique de serveur.
+
+L'interface web est **strictement réservée aux owners du bot** (owner principal
+du `.env` + owners secondaires en base) : le callback OAuth2 refuse toute autre
+connexion et **toutes** les routes backend (API, SSE, frontend) vérifient
+`ownerService.isOwner(session.userId)` (`services/web/webAuth.isBotOwner`).
 
 Toutes les données serveur (salons, rôles, options activables,
 statistiques, paramètres utilisateurs) sont stockées **séparément**, par
@@ -109,8 +115,18 @@ serveur, via les repositories (`database/*.js` → `database/data/*.json`,
 
 Toujours :
 
-- supporter **les commandes slash et les commandes préfixées** (`!`) avec
-  la même logique interne (voir le schéma `args` ci-dessus) ;
+- supporter **les commandes slash et les commandes préfixées** avec
+  la même logique interne (voir le schéma `args` ci-dessus). Le préfixe est
+  **personnalisable par serveur** (`services/prefix/prefixService`,
+  `setprefix`/`prefix`) : le défaut vit dans `.env` (`PREFIX`), jamais en base ;
+  le point d'entrée des messages lit `prefixService.getPrefix(guildId)` ;
+- prendre en charge les **messages privés (DM)** : une commande personnelle
+  (sans serveur) déclare `dm: 'direct'` et s'exécute en DM (`ctx.guild` est
+  `null` ; le pipeline ignore alors permissions Discord, statistiques et logs de
+  serveur). Les commandes nécessitant un serveur proposent en DM une **sélection
+  de serveur** (menu déroulant des serveurs partagés) via
+  `services/directMessages`. Points d'entrée : `events/dm/directMessage.js`
+  (préfixe) et la branche DM de `events/interaction/interactionCreate.js` (slash) ;
 - utiliser les fonctionnalités **natives** de Discord (timeout natif,
   bans, bulkDelete, raisons d'audit log, `default_member_permissions`,
   sélecteurs de salons/rôles natifs…) plutôt que réinventer ;
@@ -174,6 +190,16 @@ Les logs doivent rester :
 Ajouter une catégorie (rare, volontairement fermé) = une entrée dans
 `logCategories.js` + le routage des appels concernés ; le panneau, la
 persistance et la création automatique des salons suivent.
+
+**Logs d'erreurs internes du bot** (distinct des logs de serveur) :
+`services/errors/errorLogService.js` journalise les erreurs techniques du bot
+(erreurs de commandes, `unhandledRejection`, `uncaughtException`, erreurs API
+Discord, WebSocket, base de données, synchronisation) dans le salon privé
+`#bot-errors` d'un **unique** serveur défini par `ERROR_GUILD_ID`. La catégorie
+et le salon sont créés automatiquement au démarrage (`events/errors/ready.js`).
+Aucun autre serveur n'y a accès ; la journalisation échoue silencieusement.
+Pour signaler une erreur ailleurs dans le code :
+`errorLogService.report({ type, error, guild, channel, user, command, module })`.
 
 # Multi-serveurs
 

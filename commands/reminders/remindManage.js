@@ -46,6 +46,7 @@ const remindlist = {
   examples: ['remindlist'],
   aliases: ['reminders', 'rappels'],
   cooldown: 3,
+  dm: 'direct',
   args: [],
   async execute(ctx) {
     return ctx.reply({ ...listPayload(ctx.user.id, 0), ephemeral: true });
@@ -66,6 +67,7 @@ const reminddelete = {
   examples: ['reminddelete a1b2c3'],
   aliases: ['remindremove'],
   cooldown: 3,
+  dm: 'direct',
   args: [{ name: 'identifiant', type: 'string', required: true, description: "L'identifiant du rappel" }],
   async execute(ctx) {
     const guard = requireOwnReminder(ctx.options.identifiant.toLowerCase(), ctx.user.id);
@@ -105,6 +107,7 @@ const remindedit = {
   examples: ['remindedit a1b2c3 1h', 'remindedit a1b2c3 garder Nouveau texte', 'remindedit a1b2c3 25/12/2026 09:00 Cadeaux'],
   aliases: [],
   cooldown: 3,
+  dm: 'direct',
   args: [
     { name: 'identifiant', type: 'string', required: true, description: "L'identifiant du rappel" },
     { name: 'echeance', type: 'string', required: true, description: 'Nouvelle échéance (durée/date) ou « garder »' },

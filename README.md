@@ -47,6 +47,11 @@ modulaire stricte pensée pour être maintenue et étendue facilement.
   captcha) sur tous les serveurs. `reputation`, `globalprofile`, plus des
   commandes owner (`globalrepstats`, `userhistory`, `repconfig`). Confidentiel,
   tracé, anti-abus.
+- **Dossiers membres global inter-serveurs** : dossier de modération unique par
+  utilisateur, partagé par tous les serveurs NaoBot, intégré à la réputation.
+  `file`, `fileinfo`, `filelist`, `filedelete` — notes tracées (auteur, serveur
+  d'origine, date, id), accès réservé aux équipes de modération, consultations
+  journalisées.
 - **Textes centralisés** dans `locales/fr.json` (traduction facile).
 
 ## Installation
@@ -80,9 +85,10 @@ public multi-serveurs.
 |---|---|---|
 | `BOT_TOKEN` | ✅ | Jeton du bot (`DISCORD_TOKEN` reste accepté) |
 | `OWNER_ID` | ✅ | Identifiant Discord de l'**owner principal** du bot (tous les privilèges, non supprimable par commande) |
+| `ERROR_GUILD_ID` | — | Serveur privé recevant les logs d'erreurs internes du bot (salon `#bot-errors` créé automatiquement). Aucun autre serveur n'y a accès. |
 | `CLIENT_ID` | — | Identifiant de l'application (lien d'invitation) |
 | `GUILD_ID` | — | Si défini, les commandes slash sont enregistrées sur ce serveur uniquement (instantané, idéal en développement). Sinon, enregistrement global (~1 h de propagation). |
-| `PREFIX` | — | Préfixe des commandes textuelles (défaut : `!`) |
+| `PREFIX` | — | Préfixe **par défaut** des commandes textuelles (défaut : `!`). Chaque serveur peut le remplacer via `setprefix` (persisté séparément). |
 | `LOCALE` | — | Langue des messages (défaut : `fr`) |
 | `MUTED_ROLE_NAME` | — | Nom du rôle de mute (défaut : `Muted`) |
 | `OWNER_ROLE_NAME` | — | Nom du rôle décoratif attribué aux owners (défaut : `Owner NaoBot`) |
@@ -129,42 +135,37 @@ palier 1 est toujours un simple avertissement.
 
 | Warns | Sanction par défaut |
 |---|---|
-| 1 | Avertissement |
-| 2 | Timeout 1 heure |
-| 3 | Timeout 1 jour |
-| 4 | Mute (rôle) |
-| 5 | Kick |
-| 6 | Ban |
+| 1 | Avertissement simple |
+| 2 | Timeout 5 minutes |
+| 3 | Timeout 15 minutes |
+| 4 | Timeout 1 heure |
+| 5 | Timeout 1 jour |
+| 6 | Timeout 1 semaine |
+| 7 | Bannissement définitif |
 
 - L'échelle se configure via `setwarnsanction` (panneau interactif : menu
   des paliers, menu des types de sanction, modal de durée pour les
   timeouts, désactivation d'un palier, `reset`). Ajouter un palier ou un
   type de sanction est trivial (`utils/constants/warnSanctions.js`).
 - Au-delà du dernier palier, le dernier palier s'applique (plafond).
-- À chaque warn, le membre reçoit un **MP** (raison, modérateur, sanction
-  appliquée, total, prochaine sanction) — échec silencieux si MP fermés.
+- Chaque sanction enregistre l'utilisateur, le modérateur, la raison, la durée
+  et la date ; à chaque warn, le membre reçoit un **MP** (raison, modérateur,
+  sanction appliquée, total, prochaine sanction) — échec silencieux si MP fermés.
+- `warnings` (alias `warns`) affiche le **total actif**, la **sanction
+  actuellement associée** et la **prochaine sanction**.
+- **Retrait d'un warn** (`unwarn`) : soft-delete — le warn est **conservé dans
+  l'historique** (marqué comme retiré) mais n'est plus actif ; le total et la
+  sanction associée sont **recalculés automatiquement**. La réputation globale
+  conserve l'événement (signal de confiance inter-serveurs, non réversible).
 - `unwarn` / `clearwarns` recalculent le total ; toutes les actions (ajout,
   suppression, remise à zéro, sanction automatique, modification des
   règles) sont journalisées dans la catégorie de logs `sanctions`.
 - La persistance (`database/data/warns.json`, `warnConfig.json`) porte tout
   le nécessaire aux futures statistiques (modérateurs les plus actifs,
   utilisateurs les plus sanctionnés, sanctions les plus fréquentes).
-
-**Rôles automatiques par palier** (`setwarnrole`) : chaque palier de warn
-peut être associé à un rôle, pour n'importe quel nombre de niveaux.
-
-- `setwarnrole` (liste), `setwarnrole <palier> <rôle>` (associe / modifie),
-  `setwarnrole <palier>` (supprime l'association), `setwarnrole sync`
-  (resynchronise immédiatement).
-- À chaque variation du nombre de warns (ajout, `unwarn`, `clearwarns`), le
-  membre voit ses rôles recalculés : retrait des anciens rôles de warn,
-  attribution du rôle du **plus haut palier atteint** (plafond). À zéro warn,
-  tous les rôles de warn sont retirés.
-- Une **tâche de cohérence** périodique (`services/warnings/warnRoleService`)
-  réconcilie automatiquement les rôles et le nombre réel de warns (corrige les
-  écarts, redémarrages…).
-- Chaque attribution / retrait / changement automatique est journalisé dans la
-  catégorie `sanctions` (persistance : `database/data/warnRoles.json`).
+- Le système de warns **n'attribue aucun rôle** : il se limite à enregistrer
+  les sanctions, appliquer la sanction configurée, conserver l'historique et
+  mettre à jour la **réputation globale** de l'utilisateur.
 
 ### ⚙️ Administration
 
@@ -176,8 +177,20 @@ peut être associé à un rôle, pour n'importe quel nombre de niveaux.
 | `logs enable <catégories…\|tout>` | Active une, plusieurs ou toutes les catégories (crée les salons manquants) | Gérer le serveur | `!logs enable sanctions moderation` |
 | `logs disable <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs disable tout` |
 | `setwarnsanction [reset]` | Configure l'échelle des sanctions progressives des warns (panneau interactif : menus + boutons + modal ; `reset` restaure les valeurs par défaut) | Gérer le serveur | `!setwarnsanction` |
-| `setwarnrole [palier] [rôle]` (alias `warnrole`) | Associe un rôle automatique à un palier de warn (sans argument : liste ; palier seul : supprime ; `sync` : resynchronise) | Gérer le serveur | `!setwarnrole 3 @Warn 3` |
 | `say <message>` | Fait relayer un message par le bot (texte, mentions, emojis, liens, pièces jointes) ; supprime la commande d'origine, neutralise @everyone/@here, journalise l'auteur | Admin / propriétaire / owner du bot | `!say Bienvenue à tous !` |
+| `prefix` (alias `prefixe`) | Affiche le préfixe actuel, le préfixe par défaut, l'auteur et la date de la dernière modification | Tous | `!prefix` |
+| `setprefix <nouveau\|reset>` (alias `changeprefix`) | Change le préfixe des commandes textuelles du serveur (ou `reset` pour revenir au défaut), pris en compte immédiatement | Admin / propriétaire / owner du bot | `!setprefix ?` |
+
+**Préfixe personnalisable par serveur** : le préfixe **par défaut** est défini
+dans le code (`PREFIX` du `.env`) et n'est jamais stocké en base ; chaque
+serveur peut le remplacer via `setprefix`. Le nouveau préfixe est **persistant**
+(`database/data/prefixes.json`), pris en compte **immédiatement** (sans
+redémarrage) et journalisé (catégorie `moderation` : ancien préfixe, nouveau
+préfixe, auteur). Validation : non vide, **5 caractères max**, sans espace ni
+caractères `@ # / \ ` `` ` `` `< >` (évite les conflits avec les mentions, les
+salons et les commandes slash). Les commandes **slash** restent toujours
+disponibles quel que soit le préfixe. Architecture prête pour **plusieurs
+préfixes par serveur** dans une future mise à jour.
 
 ### 🛡️ Protections automatiques
 
@@ -192,6 +205,9 @@ peut être associé à un rôle, pour n'importe quel nombre de niveaux.
 | `antipub whitelist add <salon>` | Exempte un salon (invitations autorisées) | Administrateur | `!antipub whitelist add #partenariats` |
 | `antipub whitelist remove <salon>` | Retire un salon des exemptions | Administrateur | `!antipub whitelist remove #partenariats` |
 | `antipub whitelist list` | Liste les salons exemptés | Administrateur | `!antipub whitelist list` |
+| `antisensitive <on\|off>` | Active/désactive l'anti-contenus sensibles (sites adultes/violents) | Administrateur | `!antisensitive on` |
+| `antisensitive status` | État, salons exemptés (paginés), statistiques, boutons | Administrateur | `!antisensitive status` |
+| `antisensitive whitelist add\|remove\|list <salon>` | Gère les salons exemptés | Administrateur | `!antisensitive whitelist add #nsfw` |
 
 Protections indépendantes, **désactivées par défaut**, configurées par
 serveur et persistantes (`database/data/protections.json`).
@@ -241,6 +257,35 @@ séparément, **désactivée par défaut**, persistante par serveur
 - **Sécurité** : les membres exemptés (bots, *Gérer les messages* /
   administrateurs, rang ≥ au bot) ne sont jamais visés ; le bot vérifie ses
   permissions avant d'agir.
+
+#### 🔞 Anti-contenus sensibles (sites adultes / violents)
+
+Protection **dédiée et indépendante**, activable séparément, **désactivée par
+défaut**, persistante par serveur (`database/data/antisensitive.json`).
+
+- **Détection** : liens vers des sites pour **adultes**, **violents/gore** ou
+  **choquants** (listes fermées par catégorie dans
+  `utils/constants/sensitiveDomains.js`), par **domaine et sous-domaine**, y
+  compris **dissimulés** (espaces, « (dot) », caractères invisibles) et dans un
+  **embed**. S'applique aux messages classiques, **modifiés**, aux réponses et
+  aux commandes de type `say`. **Domaines configurables** par serveur
+  (`blockedDomains`) et **domaines autorisés** (`allowedDomains`).
+- **Extensible** : `analyze` applique une chaîne de matchers ; l'architecture
+  prévoit l'ajout d'**API de réputation**, de **listes noires externes**, de
+  **modèles d'analyse** et la résolution des **liens raccourcis / redirections**.
+- **Réaction** : suppression du message, **notification discrète** de
+  l'utilisateur (auto-supprimée), journalisation (`protections`) et
+  statistiques (détections, suppressions, erreurs). Warns/sanctions automatiques
+  et notifications aux modérateurs prévus (extensions).
+- **Salons exemptés** : liste persistante, éditable et consultable
+  (`whitelist add`/`remove`/`list`).
+- **Exceptions futures** : rôles et utilisateurs exemptés prévus (repository +
+  middleware).
+- **Status** : `antisensitive status` — état, salons exemptés (paginés),
+  statistiques et date de dernière modification (embed + boutons).
+- **Intégration** : l'état apparaît dans le tableau de bord `protections`
+  (anti-spam, anti-link, anti-bot, anti-publicité, anti-contenus sensibles).
+  **Interface web** : `/api/guilds/:id/antisensitive`.
 
 #### 🚨 Mode urgence
 
@@ -522,7 +567,7 @@ leurs rôles eux-mêmes via boutons ou menu déroulant.
 
 | Commande | Description | Exemple |
 |---|---|---|
-| `help [commande]` (alias `aide`) | Aide dynamique paginée : une page par catégorie, navigation par **boutons** (🏠 ◀️ ▶️, désactivés aux extrémités, réservés au demandeur, retirés après 5 min), permissions affichées, total de commandes et version en pied de page — mise à jour automatique à chaque nouvelle commande | `!help ban` |
+| `help [commande]` (alias `aide`) | Aide dynamique : embed d'accueil (statistiques) + **menu déroulant** de catégories ; la sélection affiche les commandes de la catégorie (description, permissions, exemples), **paginées** par boutons ◀️/▶️ si nécessaire, réservées au demandeur, retirées après 5 min — mise à jour automatique à chaque nouvelle commande | `!help ban` |
 | `ping` | Latence du bot | `!ping` |
 | `botinfo` (alias `stats`) | Serveurs, utilisateurs, commandes, uptime, mémoire, versions | `!botinfo` |
 | `uptime` | Durée de fonctionnement du bot | `!uptime` |
@@ -705,6 +750,7 @@ configuré par serveur, persistant (`database/data/captcha.json`).
 | `captcha setup` | Assistant : salon, rôle temporaire, rôle après validation, type, délai, message, tentatives | Administrateur | `!captcha setup` |
 | `captcha enable` | Active la vérification (configuration requise) | Administrateur | `!captcha enable` |
 | `captcha disable` | Désactive la vérification | Administrateur | `!captcha disable` |
+| `captcha delete <secondes\|off>` | Durée avant suppression auto du message de confirmation (défaut 10 s ; `off` conserve le message) | Administrateur | `!captcha delete 15` |
 
 - **Arrivée d'un membre** (si activé) : attribution d'un **rôle temporaire**,
   restriction d'accès (le membre ne voit que le salon de captcha), envoi du
@@ -714,8 +760,13 @@ configuré par serveur, persistant (`database/data/captcha.json`).
   `K7P4X9` via un modal), **calcul** (résoudre une opération). Ajouter un type
   = une entrée + un cas dans `generateChallenge`.
 - **Validation** : le **rôle vérifié** est attribué, le rôle temporaire retiré,
-  l'accès débloqué. **Échec** (trop de tentatives) ou **expiration** (délai
-  dépassé) → **expulsion** automatique (anti-raid), même après un redémarrage
+  l'accès débloqué. Le **message de confirmation** (« Vérification réussie ») est
+  **temporaire** : il est supprimé automatiquement après une durée configurable
+  (défaut **10 s**, réglable via `captcha delete`, ou désactivable). Un échec de
+  suppression n'est jamais critique : il est consigné dans les **logs d'erreurs
+  internes** du bot et le fonctionnement continue normalement.
+- **Échec** (trop de tentatives) ou **expiration** (délai dépassé) →
+  **expulsion** automatique (anti-raid), même après un redémarrage
   (vérifications en attente persistées, planificateur au démarrage).
 - **Sécurité** : seul le membre concerné peut résoudre son captcha ; nombre de
   tentatives limité ; configuration réservée aux administrateurs.
@@ -745,17 +796,32 @@ actifs, propriétaires et statistiques survivent aux redémarrages.
   `{displayname}`, `{counter}`, extensibles dans
   `utils/constants/tempVoiceVariables.js`). Exemples : `Salon de {user}`,
   `🔊 {username}`, `Squad de {displayname}`.
-- **Propriétaire** : peut **renommer** son salon via `renamevoice` (arbitré
-  par le bot). Il **ne peut pas** modifier les permissions, déplacer les
-  membres, supprimer le salon ni changer la catégorie — le propriétaire ne
-  reçoit aucune permission de gestion Discord (renommage arbitré côté bot).
+- **Permissions synchronisées** : le salon temporaire **hérite intégralement
+  des permissions de sa catégorie** Discord (synchronisation native via
+  `lockPermissions`) — aucune permission n'est copiée manuellement et le salon
+  reste aligné sur sa catégorie.
+- **Renommage (`renamevoice <nom>`)** : le **propriétaire** du salon peut le
+  renommer. Vérifications avant modification : l'utilisateur est **connecté**
+  à un salon vocal, le salon est bien un **salon temporaire** géré par le bot,
+  l'utilisateur en est le **propriétaire**, et le nouveau nom respecte les
+  **limites Discord** (100 caractères max). Le salon est renommé immédiatement,
+  la modification persistée (`renamedAt`) et une confirmation envoyée en embed.
+- **Propriétaire** : sa seule capacité est de **renommer** son salon via
+  `renamevoice` (arbitré par le bot). Il **ne peut pas** modifier les
+  permissions, changer la catégorie, supprimer le salon, déplacer des membres
+  ni modifier d'autres paramètres — il ne reçoit aucune permission de gestion
+  Discord. Le système reste compatible avec de futures extensions.
 - **Sécurité** : anti-doublon (un seul salon actif par membre et par
   générateur — sinon le membre est déplacé vers l'existant), pas de boucle de
   création (un salon temporaire n'est jamais un générateur), configuration
   réservée aux administrateurs, suppression automatique des salons vides.
-- **Logs** : journalisation (fusionnée dans les 7 catégories de logs) (création, suppression, renommage,
-  configuration, erreurs). **Interface web** : section « Vocaux » (générateurs,
-  salons actifs, statistiques).
+- **Persistance** : identifiant du salon, propriétaire, date de création et
+  date du dernier renommage survivent aux redémarrages
+  (`database/data/tempVoice.json`).
+- **Logs** : journalisation (fusionnée dans les 7 catégories de logs) : création,
+  suppression, **renommage (ancien nom → nouveau nom, propriétaire, serveur,
+  date)**, configuration, erreurs. **Interface web** : section « Vocaux »
+  (générateurs, salons actifs, statistiques).
 - **Extensible sans refonte** : salons privés, mots de passe, limite
   ajustable, verrouillage, transfert de propriété, salons permanents…
   (services/temporaryVoice, schéma des générateurs/temps ouvert).
@@ -804,6 +870,138 @@ fondé sur les actions observées par NaoBot. Persistant
 - **Logs** : l'évolution de la réputation globale est journalisée dans la
   catégorie `sanctions`. Distinct de la réputation des **serveurs** (`rep`).
 
+## Dossiers membres (global inter-serveurs)
+
+Dossier de modération **global à l'utilisateur** (indépendant du serveur),
+**centralisé au niveau du bot** : chaque utilisateur Discord possède **un
+unique dossier** partagé par tous les serveurs NaoBot, consultable par les
+équipes de modération autorisées. Un dossier regroupe des **notes** (remarques,
+événements, observations, commentaires de modération). Persistant
+(`database/data/memberFiles.json`), **entièrement intégré à la réputation**.
+
+| Commande | Description | Accès | Exemple |
+|---|---|---|---|
+| `file <utilisateur> <texte>` (alias `dossier`, `note`) | Ajoute une note au dossier global de l'utilisateur | Admin / Modérer les membres / owner | `!file @Membre Comportement suspect signalé` |
+| `fileinfo <utilisateur>` (alias `dossierinfo`) | Dossier complet : infos générales (avatar, pseudo, ID, réputation globale, warns/sanctions, nombre de notes et de serveurs) + notes paginées (boutons) | Admin / owner | `!fileinfo @Membre` |
+| `filelist <utilisateur>` (alias `dossierlist`) | Liste allégée des notes (id, auteur, serveur, date) | Admin / owner | `!filelist @Membre` |
+| `filedelete <id>` (alias `dossierdelete`) | Supprime une note après confirmation (trace conservée dans les logs) | Owner, auteur de la note, ou admin du serveur d'origine | `!filedelete a1b2c3d4` |
+
+- **Note** : contenu, auteur (pseudo + ID Discord), **serveur d'origine**, date
+  et **identifiant unique** — chaque champ est persisté et survit aux
+  redémarrages.
+- **Intégration réputation** : le profil de réputation globale
+  (`globalprofile`) affiche le **nombre de notes** et le **nombre de serveurs**
+  ayant contribué au dossier, avec un accès rapide. Les notes **ne modifient
+  jamais automatiquement** le score de réputation.
+- **Confidentialité** : les membres classiques n'ont **aucun accès** ; l'ajout
+  est réservé aux administrateurs / modérateurs / owners, la consultation aux
+  administrateurs et owners. La suppression est restreinte à l'auteur, à l'admin
+  du serveur d'origine de la note ou aux owners. **Toute consultation est
+  journalisée.**
+- **Logs** : création, suppression et consultation d'un dossier sont
+  journalisées dans la catégorie **surveillance** (`watch`).
+- **Interface web** : section « Dossiers membres » (**owners du bot
+  uniquement**) — consultation d'un dossier, recherche d'un utilisateur,
+  filtrage des notes et statistiques ; `/api/files/:userId`.
+- **Architecture évolutive** : pièces jointes, catégories de notes, niveaux de
+  gravité, tags et historique de modification pourront être ajoutés sans refonte.
+
+## Système de niveaux (activité)
+
+Progression basée **uniquement sur l'activité réelle** des membres, propre à
+chaque serveur, persistante (`database/data/levels.json`). **Désactivé par
+défaut** (activation via `levelconfig on`).
+
+| Commande | Description | Permission | Exemple |
+|---|---|---|---|
+| `rank` / `level` [membre] (alias `niveau`) | Profil de progression (niveau, XP, progression, classement, messages, temps vocal) | Tous | `!rank @Membre` |
+| `leaderboard` (alias `classement`, `top`) | Classement paginé des membres (niveau, XP, messages, vocal) | Tous | `!leaderboard` |
+| `levelconfig [on\|off\|set\|reward\|announce\|exclude] …` | Configuration (administrateurs) | Administrateur | `!levelconfig set xpmessage 20` |
+
+- **Sources d'XP** :
+  - **Messages** : XP par message avec **cooldown anti-spam**, **longueur
+    minimale** et **anti-répétition** (message identique ignoré) ; bots, salons
+    et rôles exclus ne rapportent rien.
+  - **Temps vocal** : XP par minute réellement active (salon vocal hors AFK, non
+    sourd), **exclusion des membres seuls** si configuré, **bots exclus**. Les
+    sessions vocales sont **persistées** : le calcul survit aux redémarrages
+    (reprise au démarrage + flush périodique).
+- **Courbe configurable** : XP total requis pour un niveau = `base·niveau² +
+  offset` (défaut `50·L²+50` → **100, 250, 500, 850…**, conforme à l'exemple).
+- **Récompenses** : rôles attribués à certains niveaux (cumulatifs), **message
+  d'annonce** de montée de niveau dans un **salon d'annonce** configurable (ou
+  le salon courant).
+- **Configuration** (`levelconfig`) : activation, XP/message, XP/minute vocale,
+  cooldown, longueur minimale, salons/rôles exclus, bots exclus, récompenses,
+  salon d'annonce.
+- **rank** : embed avec niveau, XP actuelle/nécessaire, **barre de progression**,
+  classement serveur, messages et temps vocal cumulé. L'architecture sépare les
+  **données** (`buildRankData`) de la présentation, pour ajouter plus tard une
+  **carte graphique** de profil.
+- **Logs** : montée de niveau et configuration → catégorie `members` ;
+  attribution d'un rôle de récompense → catégorie `roles`.
+- **Interface web** : section « Niveaux » (statistiques, paramètres, classement,
+  récompenses ; `/api/guilds/:id/levels`).
+
+## Système de snipe
+
+Consultation des **événements récents** supprimés ou modifiés d'un serveur,
+catégorisés (comme les logs). Persisté par serveur (`database/data/snipe.json`)
+avec limites et **purge automatique**.
+
+| Commande | Catégorie consultée | Exemple |
+|---|---|---|
+| `snipe` | Messages supprimés (unitaires + suppressions massives) | `!snipe #salon` |
+| `editsnipe` | Messages modifiés (avant / après) | `!editsnipe @Membre` |
+| `membersnipe` | Arrivées / départs | `!membersnipe` |
+| `rolesnipe` | Changements de rôles (ajouts / retraits) | `!rolesnipe @Membre` |
+| `sanctionsnipe` | Sanctions (warns, bans, unbans) | `!sanctionsnipe` |
+| `ticketsnipe` | Événements de tickets | `!ticketsnipe` |
+| `protectionsnipe` | Événements de protections | `!protectionsnipe` |
+
+- **Catégories** (`utils/constants/snipeCategories.js`) : messages supprimés,
+  messages modifiés, arrivées/départs, changements de rôles, sanctions,
+  tickets, protections. **Fermé et extensible** : ajouter une catégorie = une
+  entrée + un appel `snipeService.record`.
+- **Données conservées** par événement : utilisateur, salon, serveur, date,
+  type, ancien contenu, nouveau contenu, pièces jointes, images, et modérateur
+  responsable lorsque applicable.
+- **Consultation** : filtres par **utilisateur** et par **salon**, navigation
+  par **boutons** et **pagination** (un événement par page). Chaque résultat est
+  un embed (catégorie, date, salon, auteur, contenu).
+- **Limites** : nombre maximal d'éléments par serveur et **durée de conservation
+  configurables** (`snipeService.setConfig` ; défaut : 50 éléments / catégorie,
+  24 h) ; une **purge automatique** périodique retire les événements expirés.
+- **Permissions** : administrateurs, modérateurs (Modérer les membres) ou owners
+  du bot (`middlewares/snipe`).
+- **Logs** : toute consultation est journalisée dans la catégorie de logs de
+  **surveillance** (`watch`). **Interface web** : nombre d'événements récents par
+  catégorie dans la vue serveur (`/api/guilds/:id/snipe`).
+
+## Commandes en messages privés (DM)
+
+Le bot fonctionne aussi en **messages privés**. Les commandes **personnelles**
+(sans contexte serveur) déclarent `dm: 'direct'` et s'utilisent directement en
+DM ; les commandes nécessitant un serveur proposent une **sélection de serveur**.
+
+- **Commandes utilisables en DM** : `help`, `remind` / `remindlist` /
+  `reminddelete` / `remindedit` (rappels personnels), `globalprofile`
+  (réputation globale), `servers` (choix du serveur actif). En DM, le **préfixe
+  par défaut** s'applique (aucun préfixe personnalisé sans serveur).
+- **Sélection de serveur** : `servers` (alias `serveurs`) affiche un **menu
+  déroulant** des serveurs que vous partagez avec le bot et **mémorise** votre
+  serveur actif (`database/data/dmSelections.json`) pour améliorer l'expérience.
+- **Commandes nécessitant un serveur** : lancées en DM, elles **détectent** le
+  contexte, **expliquent** pourquoi un serveur est requis et proposent le menu de
+  sélection de serveur. Les commandes agissant sur un salon/serveur précis
+  (modération directe…) restent réservées à une utilisation **en serveur**.
+- **Pipeline** : en DM, `ctx.guild` est `null` ; le pipeline ignore alors les
+  permissions Discord, les statistiques et les logs de serveur (les commandes
+  DM compatibles sont personnelles). Points d'entrée dédiés :
+  `events/dm/directMessage.js` (préfixe) et la branche DM de
+  `events/interaction/interactionCreate.js` (slash). Intents requis :
+  `DirectMessages` + partiel `Channel`.
+
 ## Système de logs
 
 Le système de logs se limite à **sept catégories fixes**, réellement utiles à
@@ -814,9 +1012,9 @@ possible de créer d'autres catégories sans modifier le code.
 | Clé | Contenu | Salon |
 |---|---|---|
 | `moderation` | Kick, ban, unban, mute, unmute, timeout, retrait de timeout, suppressions massives, renommage de salons, commandes de modération | `#moderation-logs` |
-| `sanctions` | Warns, retrait/remise à zéro, rôles de warn automatiques, évolution de la réputation globale, sanctions automatiques | `#sanctions-logs` |
+| `sanctions` | Warns, retrait/remise à zéro, évolution de la réputation globale, sanctions automatiques | `#sanctions-logs` |
 | `members` | Arrivée, départ volontaire, expulsion, bannissement, validation et échec du captcha (pseudo, ID, création du compte, ancienneté, nombre de membres) | `#members-logs` |
-| `roles` | Ajout/retrait de rôle, rôles réactions, rôles automatiques, rôles de niveaux, rôles de sanctions | `#roles-logs` |
+| `roles` | Ajout/retrait de rôle, rôles réactions, rôles automatiques | `#roles-logs` |
 | `tickets` | Ouverture, fermeture, suppression, transfert, attribution, renommage, transcript | `#tickets-logs` |
 | `watch` | Surveillance : lancement, arrêt, expiration automatique, reprise, statistiques | `#watch-logs` |
 | `protections` | Détection de spam/raid/liens/bots, mode urgence, événements captcha, actions automatiques | `#protection-logs` |
@@ -854,6 +1052,27 @@ modification explicite du code.
    (embed construit avec `logEventEmbed`). Les anciennes clés sont routées vers
    les sept catégories par `LEGACY_ALIASES`.
 
+## Logs d'erreurs internes du bot
+
+Système **distinct** des logs de serveur : il journalise les erreurs internes
+du bot (fonctionnement technique), et non l'activité d'un serveur.
+
+- **Accès restreint** : les logs ne sont envoyés que sur un **unique serveur
+  privé**, identifié par `ERROR_GUILD_ID` (`.env`). Aucun autre serveur n'y a
+  accès et aucune commande ne les expose.
+- **Démarrage automatique** : au lancement, le bot récupère le serveur
+  `ERROR_GUILD_ID`, crée si besoin une **catégorie dédiée** et le salon
+  **`#bot-errors`** (réutilise l'existant), puis y publie les erreurs.
+- **Erreurs capturées** : erreurs de commandes, promesses rejetées non gérées
+  (`unhandledRejection`), exceptions non capturées (`uncaughtException`),
+  erreurs de l'API Discord (`error`), erreurs WebSocket (`shardError`) — les
+  erreurs de base de données et de synchronisation remontent via ces
+  gestionnaires globaux.
+- **Contenu de chaque log** (embed lisible) : type d'erreur, date, serveur,
+  salon, utilisateur, commande, module responsable et pile d'erreurs.
+- **Robustesse** : la journalisation échoue silencieusement et ne peut jamais
+  provoquer d'erreur en cascade (`services/errors/errorLogService`).
+
 ## Permissions et sécurité
 
 Avant chaque commande, le middleware central (`middlewares/permissions`) vérifie :
@@ -878,12 +1097,15 @@ défaut** : elle ne démarre que si `WEB_ENABLED=true` et que la configuration
 OAuth2 est complète.
 
 - **Sections** : tableau de bord (serveurs, utilisateurs, tickets, bumps, état
-  du bot), serveurs (protections, tickets, rôles réactions, formulaires,
-  sauvegardes, réputation…), modération (warns, statistiques), tickets
+  du bot), serveurs (**préfixe du serveur**, protections, tickets, rôles
+  réactions, formulaires, sauvegardes, réputation…), modération (warns,
+  statistiques), tickets
   (ouverts / fermés / catégories), vocaux temporaires (générateurs, salons
   actifs, statistiques), captcha (état, statistiques), **anti-publicité**
   (état, salons exemptés, statistiques, dernières détections), réputation
-  globale (score, statistiques, historique ; pondérations pour les owners), profils
+  globale (score, statistiques, historique ; pondérations pour les owners),
+  **dossiers membres** (consultation, recherche, filtrage des notes,
+  statistiques — owners uniquement), profils
   (réputation, warns, historique ; badges et succès à venir). Interface
   **responsive**.
 - **Temps réel** : flux **SSE** (équivalent WebSocket) — statistiques
@@ -891,12 +1113,16 @@ OAuth2 est complète.
 - **Authentification Discord OAuth2** (scopes `identify`, `guilds`) : bouton
   « Se connecter avec Discord » → `/login` (redirection vers Discord avec un
   `state` anti-CSRF) → retour sur l'URI de redirection → échange du code contre
-  un jeton (`fetch`) → récupération du profil et des serveurs → **session
-  signée** (cookie HMAC, en mémoire, TTL 24 h) ; `/logout` détruit la session.
-  L'accès à un serveur est réservé aux **administrateurs du serveur**, à son
-  **propriétaire** et aux **owners du bot** ; les endpoints d'administration
-  (écriture) sont structurés mais non exposés dans cette itération (lecture
-  seule).
+  un jeton (`fetch`) → **vérification que le compte est un owner du bot** →
+  **session signée** (cookie HMAC, en mémoire, TTL 24 h) ; `/logout` détruit la
+  session.
+- **Accès strictement réservé aux owners du bot** : l'owner principal (`.env`)
+  et les owners secondaires (base de données). Toute autre connexion est
+  **refusée** dès le callback (aucune session créée, page d'**accès refusé**).
+  **Toutes** les routes backend le vérifient — API REST, flux temps réel (SSE)
+  et frontend : impossible de contourner le frontend, d'appeler l'API ou le
+  WebSocket sans être owner. Les administrateurs de serveurs n'ont plus accès.
+  Les endpoints d'administration (écriture) restent non exposés (lecture seule).
 - **Modules** : `web/frontend` (dashboard statique), `web/backend` (serveur
   HTTP + tunnel OAuth2), `web/api` (API REST), `web/websocket` (hub SSE),
   `services/web` (`webService` = pont de données, `webAuth` = OAuth2 +
@@ -928,6 +1154,7 @@ OAuth2 est complète.
 │   ├── contact/         #   contactowner, respond, contactlist+contactinfo
 │   ├── protections/     #   antispam+antilink+antibot, protections (tableau de bord)
 │   ├── antipub/         #   antipub (on/off/status/whitelist — invitations Discord)
+│   ├── antisensitive/   #   antisensitive (on/off/status/whitelist — sites sensibles)
 │   ├── emergency/       #   urgence (verrouillage on/off/status)
 │   ├── welcome/         #   setwelcome, welcomestatus+welcomepreview
 │   ├── backup/          #   backup (create/load/delete/list)
@@ -935,21 +1162,28 @@ OAuth2 est complète.
 │   ├── reminders/       #   remind, remindlist+reminddelete+remindedit
 │   ├── polls/           #   poll (assistant + vote), pollclose+pollresults+polllist
 │   ├── temporaryVoice/  #   voicecreate+voiceedit+voicelist+voicedelete, renamevoice
-│   ├── captcha/         #   captcha (enable/disable/status/setup + vérification)
+│   ├── captcha/         #   captcha (enable/disable/status/setup/delete + vérification)
+│   ├── levels/          #   rank+level, leaderboard, levelconfig
 │   ├── reputation/      #   reputation+globalprofile, globalrepstats+userhistory+repconfig
+│   ├── memberFiles/     #   file+fileinfo+filelist+filedelete (dossiers membres globaux)
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
+│   ├── snipe/           #   snipe+editsnipe+membersnipe+rolesnipe+sanctionsnipe+ticketsnipe+protectionsnipe
+│   ├── dm/              #   servers (sélection de serveur en messages privés)
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
 │   ├── client/          #   ready (enregistrement des commandes slash)
 │   ├── logs/            #   ready (migration auto vers les 7 catégories)
+│   ├── errors/          #   ready (init des logs d'erreurs internes du bot)
 │   ├── guild/           #   logs des salons et du serveur
 │   ├── interaction/     #   interactionCreate (slash + composants interactifs)
 │   ├── member/          #   logs des arrivées/départs et des rôles
 │   ├── message/         #   messageCreate (préfixe) + logs des messages
+│   ├── dm/              #   directMessage (commandes préfixées en messages privés)
 │   ├── reactionRoles/   #   ready (panneaux persistés opérationnels)
 │   ├── contact/         #   ready (conversations de contact persistées)
 │   ├── protections/     #   messageProtection (spam/link), botJoinProtection
 │   ├── antipub/         #   messageAntipub (création + modification de messages)
+│   ├── antisensitive/   #   messageAntisensitive (création + modification)
 │   ├── emergency/       #   channelLock (verrouillage des nouveaux salons)
 │   ├── welcome/         #   memberJoin (carte, rôles auto, MP, questions)
 │   ├── backup/          #   ready (sauvegardes disponibles)
@@ -958,8 +1192,11 @@ OAuth2 est complète.
 │   ├── polls/           #   ready (fermeture des sondages expirés)
 │   ├── tickets/         #   ready (planificateur), activity (anti-inactivité)
 │   ├── captcha/         #   memberJoin (envoi du captcha) + ready (expiration)
+│   ├── messageActivity/ #   messageXp (XP par message : cooldown, longueur, anti-répétition)
+│   ├── voiceActivity/   #   voiceXp (XP vocal : sessions persistées, flush, reprise)
 │   ├── reputation/      #   guildBan (capture des bans → réputation globale)
-│   ├── warnings/        #   ready (cohérence des rôles de warn)
+│   ├── memberFiles/     #   ready (dossiers membres globaux disponibles)
+│   ├── snipe/           #   messageSnipe + memberSnipe (capture) + ready (purge auto)
 │   ├── web/             #   ready (démarre l'interface web si activée)
 │   └── temporaryVoice/  #   voiceStateUpdate (create/delete) + ready (nettoyage)
 ├── services/            # Logique métier, partagée par slash et préfixe
@@ -974,7 +1211,11 @@ OAuth2 est complète.
 │   ├── ticketCategories/#   ticketCategoryService + ticketCategoryWizard (catégories)
 │   ├── ticketPanels/    #   ticketPanelService + ticketPanelWizard (panneaux)
 │   ├── watch/           #   watchService (surveillance de modération, 7 j max)
-│   ├── warnings/        #   warnService + sanctionService + warnRoleService (rôles auto)
+│   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
+│   ├── errors/          #   errorLogService (logs d'erreurs internes → #bot-errors)
+│   ├── prefix/          #   prefixService (préfixe personnalisable par serveur)
+│   ├── snipe/           #   snipeService (capture, requêtes filtrées, purge auto)
+│   ├── directMessages/  #   dmService (compatibilité DM + sélection de serveur)
 │   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
 │   ├── contact/         #   contactService (communication owners ↔ propriétaires)
 │   ├── protections/     #   protectionService (état, stats, logs partagés)
@@ -982,6 +1223,7 @@ OAuth2 est complète.
 │   ├── antilink/        #   antilinkService (moteur de détection)
 │   ├── antibot/         #   antibotService (arrivées de bots, raids)
 │   ├── antipub/         #   antipubService (invitations Discord, indépendant)
+│   ├── antisensitive/   #   antisensitiveService (sites sensibles, indépendant)
 │   ├── emergency/       #   emergencyService (verrouillage/restauration)
 │   ├── welcome/         #   welcomeService + welcomeCardService (modèles)
 │   ├── backup/          #   backupService + botConfigBackup (structure + config)
@@ -990,7 +1232,8 @@ OAuth2 est complète.
 │   ├── polls/           #   pollService + pollWizard (votes, modes, résultats)
 │   ├── web/             #   webService (données) + webAuth (OAuth2) + webLog
 │   ├── temporaryVoice/  #   tempVoiceService (cycle de vie) + tempVoiceWizard
-│   └── captcha/         #   captchaService (vérification) + captchaWizard
+│   ├── captcha/         #   captchaService (vérification) + captchaWizard
+│   └── levels/          #   levelService (courbe XP, montées de niveau, récompenses)
 ├── web/                 # Interface web (séparée de la logique Discord)
 │   ├── frontend/        #   dashboard statique responsive (HTML/CSS/JS)
 │   ├── backend/         #   serveur HTTP natif + tunnel OAuth2
@@ -1003,10 +1246,13 @@ OAuth2 est complète.
 │   ├── moderation/      # Garde des warns (cible valide + hiérarchie)
 │   ├── tickets/         # Admin (config) + accès ticket (créateur / assigné / équipe)
 │   ├── watch/           # Accès à la surveillance (admin / modérateur / owner)
+│   ├── snipe/           # Accès au snipe (admin / modérateur / owner)
+│   ├── dm/              # Compatibilité DM (commande directe ou serveur requis)
 │   ├── reactionRoles/   # Sécurité d'attribution des rôles (hiérarchie du bot)
 │   ├── contact/         # Accès au contact (propriétaire du serveur)
 │   ├── protections/     # Exemptions (bot, admin, hiérarchie) + permissions bot
 │   ├── antipub/         # Accès config (admin) + exemptions (salons/rôles/membres)
+│   ├── antisensitive/   # Accès config (admin) + exemptions (salons/rôles/membres)
 │   ├── emergency/       # Accès mode urgence (admin / propriétaire / owner)
 │   ├── backup/          # Accès sauvegardes (administrateur)
 │   ├── forms/           # Gestion (Gérer le serveur) + accès au remplissage
@@ -1014,13 +1260,15 @@ OAuth2 est complète.
 │   ├── polls/           # Gestion des sondages (créateur ou gestionnaire)
 │   ├── temporaryVoice/  # Admin (config) + propriétaire d'un salon temporaire
 │   ├── captcha/         # Admin (config du captcha)
-│   └── reputation/      # Confidentialité de la réputation globale (self/admin/owner)
+│   ├── levels/          # Admin (levelconfig) + éligibilité XP (exclusions)
+│   ├── reputation/      # Confidentialité de la réputation globale (self/admin/owner)
+│   └── memberFiles/     # Accès aux dossiers (ajout/consultation/suppression)
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
 ├── config/              # Configuration (env) et permissions par commande
-├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps…
+├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps, dossiers membres…
 ├── locales/             # Textes utilisateur (fr.json)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login

@@ -322,6 +322,7 @@
       "listTitle": "📛 Avertissements de {user} ({count})",
       "entry": "`{id}` • <t:{timestamp}:d> • par <@{moderatorId}>\nRaison : {reason}\nSanction : {sanction}",
       "countTitle": "📛 Avertissements de {user}",
+      "removedTag": "*↳ avertissement retiré (conservé dans l'historique)*",
       "never": "Jamais",
       "clearTitle": "🧹 Effacer les avertissements",
       "clearConfirm": "Supprimer **tous** les avertissements de **{user}** ({count}) ? Cette action est irréversible.",
@@ -359,29 +360,234 @@
       "removed": "Avertissement supprimé",
       "cleared": "Avertissements remis à zéro",
       "autoSanction": "Sanction automatique appliquée",
-      "rulesChanged": "Règles de sanction modifiées",
-      "roleAssigned": "Rôle de warn attribué",
-      "roleRemoved": "Rôle de warn retiré",
-      "roleConfig": "Rôles de warn configurés",
-      "roleAdded": "Rôle attribué",
-      "roleRemovedField": "Rôle retiré"
+      "rulesChanged": "Règles de sanction modifiées"
+    }
+  },
+  "errorLog": {
+    "title": "Erreur interne — {type}",
+    "unknownType": "inconnu",
+    "noStack": "(aucune pile d'erreurs disponible)",
+    "field": {
+      "type": "Type d'erreur",
+      "module": "Module",
+      "guild": "Serveur",
+      "channel": "Salon",
+      "user": "Utilisateur",
+      "command": "Commande",
+      "stack": "Pile d'erreurs"
+    }
+  },
+  "antisensitive": {
+    "label": "Anti-contenus sensibles",
+    "on": "activée",
+    "off": "désactivée",
+    "notify": "🔞 {user}, les liens vers des sites sensibles (adultes, violents, choquants) ne sont pas autorisés ici. Votre message a été supprimé.",
+    "noPermission": "Vous devez être **administrateur** pour configurer l'anti-contenus sensibles.",
+    "sayBlocked": "🚫 Impossible de relayer ce message : il contient un lien vers un site sensible et l'anti-contenus sensibles est actif dans ce salon.",
+    "command": {
+      "enabled": "🔞 Protection **anti-contenus sensibles activée** : les liens vers des sites sensibles seront supprimés.",
+      "disabled": "🔞 Protection **anti-contenus sensibles désactivée**."
     },
-    "roles": {
-      "title": "🎭 Rôles automatiques de warn",
-      "description": "Chaque palier de warn peut attribuer automatiquement un rôle. Le membre reçoit le rôle du plus haut palier atteint (les anciens sont retirés). À zéro warn, tous les rôles de warn sont retirés.",
-      "line": "**Warn {level}** → {role}",
-      "empty": "Aucune association. Utilisez `setwarnrole <palier> <rôle>`.",
-      "set": "✅ Palier **{level}** associé au rôle {role}.",
-      "removed": "Association du palier **{level}** supprimée.",
-      "notSet": "Le palier **{level}** n'a aucun rôle associé.",
-      "invalidLevel": "Palier invalide. Indiquez un entier ≥ 1.",
-      "invalidRole": "Ce rôle ne peut pas être utilisé (rôle géré ou @everyone).",
-      "roleTooHigh": "Le rôle {role} est trop haut dans la hiérarchie : placez-le sous le rôle du bot.",
-      "botMissingPerm": "Il me manque la permission **Gérer les rôles**.",
-      "synced": "Cohérence des rôles de warn vérifiée : **{count}** membre(s) corrigé(s).",
-      "auditReason": "Synchronisation des rôles de warn",
-      "logSet": "Palier {level} → rôle {role}",
-      "logRemoved": "Palier {level} : association supprimée"
+    "status": {
+      "title": "🔞 Anti-contenus sensibles — {guild}",
+      "state": "{indicator} Protection **{state}**",
+      "exemptCount": "Salons exemptés",
+      "stats": "Statistiques",
+      "statsValue": "{detections} détection(s) · {deleted} supprimé(s) · {errors} erreur(s)",
+      "lastModified": "Dernière modification",
+      "never": "Jamais",
+      "channels": "Salons exemptés (page {page}/{pages})",
+      "noChannels": "Aucun salon exempté."
+    },
+    "button": {
+      "enable": "Activer",
+      "disable": "Désactiver",
+      "refresh": "Actualiser",
+      "prev": "◀ Précédent",
+      "next": "Suivant ▶"
+    },
+    "whitelist": {
+      "listTitle": "🔞 Salons exemptés d'anti-contenus sensibles",
+      "needChannel": "Indiquez un salon (mention ou identifiant).",
+      "added": "✅ {channel} est désormais exempté : les liens sensibles y sont tolérés.",
+      "alreadyAdded": "ℹ️ {channel} est déjà exempté.",
+      "removed": "✅ {channel} n'est plus exempté : les liens sensibles y seront supprimés.",
+      "notFound": "ℹ️ {channel} n'était pas dans la liste des salons exemptés."
+    },
+    "field": {
+      "category": "Catégorie",
+      "domain": "Domaine",
+      "deleted": "Message supprimé",
+      "error": "Suppression impossible (permissions insuffisantes)"
+    },
+    "logs": {
+      "enabled": "Anti-contenus sensibles activé",
+      "disabled": "Anti-contenus sensibles désactivé",
+      "whitelistAdd": "Salon exempté ajouté",
+      "whitelistRemove": "Salon exempté retiré",
+      "detection": "Lien sensible supprimé"
+    }
+  },
+  "memberFiles": {
+    "empty": "Précisez le contenu de la note.",
+    "added": "🗂️ Note ajoutée au dossier de {user} (identifiant : **{id}**).",
+    "notFound": "Aucune note avec l'identifiant `{id}`.",
+    "notYourSession": "Seule la personne ayant lancé la commande peut confirmer cette action.",
+    "noPermission": {
+      "add": "Réservé aux administrateurs, aux modérateurs (Modérer les membres) et aux owners du bot.",
+      "view": "La consultation des dossiers est réservée aux administrateurs et aux owners du bot.",
+      "delete": "Vous ne pouvez supprimer que vos propres notes, celles créées sur votre serveur (admin), ou en tant qu'owner du bot."
+    },
+    "field": {
+      "target": "Utilisateur concerné",
+      "user": "Utilisateur",
+      "id": "Identifiant",
+      "content": "Contenu",
+      "author": "Auteur",
+      "repScore": "Réputation globale",
+      "trust": "Niveau de confiance",
+      "warns": "Warns (total)",
+      "sanctions": "Sanctions (total)",
+      "noteCount": "Notes enregistrées",
+      "guildsCount": "Serveurs concernés"
+    },
+    "info": {
+      "title": "🗂️ Dossier de {user}",
+      "notes": "Notes enregistrées",
+      "noNotes": "Aucune note pour cet utilisateur.",
+      "footer": "Page {page}/{pages}"
+    },
+    "list": {
+      "title": "🗂️ Notes de {user}"
+    },
+    "noteEntry": "**`{id}`** — <t:{date}:f>\n> {content}\n> — par {author} · {server}",
+    "listEntry": "**`{id}`** • par {author} • {server} • <t:{date}:d>",
+    "delete": {
+      "title": "🗑️ Supprimer une note",
+      "confirm": "Supprimer définitivement la note `{id}` ?\n> {content}",
+      "confirmButton": "Supprimer",
+      "cancelButton": "Annuler",
+      "cancelled": "Suppression annulée.",
+      "done": "Note `{id}` supprimée."
+    },
+    "logs": {
+      "created": "Note de dossier ajoutée",
+      "deleted": "Note de dossier supprimée",
+      "consulted": "Dossier membre consulté"
+    }
+  },
+  "levels": {
+    "disabled": "Le système de niveaux est désactivé sur ce serveur.",
+    "levelUp": "🎉 {user} passe **niveau {level}** !",
+    "rewardReason": "Récompense de niveau {level}",
+    "field": {
+      "level": "Niveau",
+      "rank": "Classement",
+      "xp": "XP",
+      "messages": "Messages",
+      "voice": "Temps vocal",
+      "role": "Rôle"
+    },
+    "rank": {
+      "title": "⭐ Progression de {user}",
+      "progress": "Progression"
+    },
+    "leaderboard": {
+      "title": "🏆 Classement — {guild}",
+      "entry": "**#{rank}** {user} — Niv. **{level}** · {xp} XP · {messages} msg · 🔊 {voice}",
+      "footer": "Page {page}/{pages} • {total} membre(s)",
+      "empty": "Aucun membre classé pour l'instant."
+    },
+    "config": {
+      "title": "⚙️ Configuration des niveaux — {guild}",
+      "state": "État",
+      "currentChannel": "Salon courant",
+      "excludedChannels": "Salons exclus",
+      "excludedRoles": "Rôles exclus",
+      "rewards": "Récompenses (rôles par niveau)",
+      "noRewards": "Aucune récompense configurée.",
+      "enabled": "Système de niveaux **activé**.",
+      "disabled": "Système de niveaux **désactivé**.",
+      "setUsage": "Paramètre invalide. Clés disponibles : {keys}. Exemple : `set xpmessage 20`.",
+      "setDone": "**{key}** défini sur **{value}**.",
+      "rewardUsage": "Indiquez un niveau ≥ 1 (et un rôle pour l'attribuer, ou aucun pour le retirer).",
+      "rewardSet": "Récompense du niveau **{level}** définie.",
+      "rewardRemoved": "Récompense du niveau **{level}** retirée.",
+      "announceSet": "Salon d'annonce défini sur {channel}.",
+      "announceOff": "Annonces de montée de niveau désactivées (aucun salon).",
+      "excludeUsage": "Utilisation : `{prefix}levelconfig exclude <salon|role> <#salon|@rôle>`.",
+      "excludeDone": "Exclusion mise à jour."
+    },
+    "logs": {
+      "levelUp": "Montée de niveau",
+      "rewardGranted": "Rôle de récompense attribué",
+      "configChanged": "Configuration des niveaux modifiée"
+    }
+  },
+  "dm": {
+    "guildOnlyTitle": "📩 Commande liée à un serveur",
+    "guildOnly": "La commande `{command}` nécessite un serveur. Sélectionnez un serveur ci-dessous, puis relancez-la sur ce serveur.",
+    "selectPlaceholder": "Choisissez un serveur…",
+    "serverMembers": "{count} membre(s)",
+    "serversTitle": "🖥️ Vos serveurs",
+    "serversHelp": "Sélectionnez le serveur actif. Il sera mémorisé pour améliorer votre expérience en messages privés.",
+    "noServers": "Aucun serveur partagé avec le bot n'a été trouvé (ou ses membres ne sont pas en cache).",
+    "notYours": "Ce menu appartient à la personne qui l'a ouvert.",
+    "selected": "Serveur actif : **{server}**."
+  },
+  "snipe": {
+    "noPermission": "Réservé aux administrateurs, aux modérateurs (Modérer les membres) et aux owners du bot.",
+    "notYourSession": "Cette consultation appartient à la personne qui a lancé la commande.",
+    "empty": "Aucun événement récent pour ces critères.",
+    "footer": "Événement {page}/{total}",
+    "field": {
+      "category": "Catégorie",
+      "type": "Type",
+      "date": "Date",
+      "channel": "Salon",
+      "author": "Auteur",
+      "user": "Utilisateur",
+      "content": "Contenu"
+    },
+    "event": {
+      "before": "Avant",
+      "after": "Après",
+      "rolesAdded": "Rôles ajoutés",
+      "rolesRemoved": "Rôles retirés",
+      "count": "Messages",
+      "total": "Total d'avertissements",
+      "attachments": "Pièces jointes",
+      "images": "Images",
+      "moderator": "Modérateur",
+      "noContent": "*(aucun contenu)*"
+    },
+    "logs": {
+      "consulted": "Consultation du snipe"
+    }
+  },
+  "prefix": {
+    "noPermission": "Réservé aux administrateurs, au propriétaire du serveur et aux owners du bot.",
+    "command": {
+      "title": "🔧 Préfixe — {guild}",
+      "current": "Préfixe actuel",
+      "default": "Préfixe par défaut",
+      "lastModified": "Dernière modification",
+      "lastModifiedBy": "Modifié par",
+      "never": "Jamais (préfixe par défaut)",
+      "changed": "Préfixe modifié : `{before}` → **`{after}`**. Il est actif immédiatement.",
+      "reset": "Préfixe réinitialisé au préfixe par défaut : **`{prefix}`**."
+    },
+    "error": {
+      "empty": "Le préfixe ne peut pas être vide.",
+      "tooLong": "Préfixe trop long ({max} caractères maximum).",
+      "forbidden": "Préfixe invalide : espaces et caractères `@ # / \\ ` < >` sont interdits (conflits avec les mentions, salons et commandes slash)."
+    },
+    "logs": {
+      "changed": "Préfixe modifié"
+    },
+    "field": {
+      "old": "Ancien préfixe",
+      "new": "Nouveau préfixe"
     }
   },
   "say": {
@@ -419,8 +625,10 @@
       "score": "Score",
       "badges": "Badges",
       "action": "Action",
-      "viewer": "Consultant"
+      "viewer": "Consultant",
+      "file": "🗂️ Dossier membre"
     },
+    "fileLine": "**{notes}** note(s) sur **{guilds}** serveur(s). Consultez avec `fileinfo <@utilisateur>` (`{id}`).",
     "errors": {
       "private": "🔒 Cette réputation est privée. Vous ne pouvez consulter que la vôtre (les administrateurs des serveurs concernés et les owners du bot peuvent voir les autres)."
     },
@@ -479,7 +687,15 @@
       "attempts": "Tentatives",
       "message": "Message affiché",
       "code": "Recopiez ce code",
-      "math": "Combien font"
+      "math": "Combien font",
+      "autoDelete": "Confirmation temporaire",
+      "autoDeleteOn": "🗑️ supprimée après {seconds} s",
+      "autoDeleteOff": "conservée"
+    },
+    "delete": {
+      "usage": "Indiquez une durée en secondes (1-300) ou « off » pour désactiver la suppression.",
+      "set": "Message de confirmation supprimé automatiquement après **{seconds} s**.",
+      "off": "Suppression automatique du message de confirmation **désactivée**."
     },
     "status": {
       "title": "🛂 État du captcha",
@@ -532,7 +748,10 @@
       "owner": "Propriétaire",
       "limit": "Limite d'utilisateurs",
       "format": "Format du nom",
-      "extraRoles": "Rôles supplémentaires"
+      "extraRoles": "Rôles supplémentaires",
+      "oldName": "Ancien nom",
+      "newName": "Nouveau nom",
+      "server": "Serveur"
     },
     "wizard": {
       "createTitle": "🔊 Nouveau générateur de salons vocaux",
@@ -1587,11 +1806,20 @@
   },
   "help": {
     "title": "Aide de {bot}",
-    "homeDescription": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nNaviguez entre les pages avec les boutons ci-dessous, ou utilisez `{prefix}help <commande>` pour le détail d'une commande.",
-    "homeCategory": "{emoji} **{label}** — {count} commande(s) · page {page}",
-    "footer": "Page {page}/{pages} • {commands} commandes • v{version}",
+    "mainDescription": "Préfixe : `{prefix}` — les commandes slash `/` sont également disponibles.\nChoisissez une catégorie dans le menu déroulant ci-dessous, ou utilisez `{prefix}help <commande>` pour le détail d'une commande.",
+    "homeCategory": "{emoji} **{label}** — {count} commande(s)",
+    "mainFooter": "NaoBot • v{version}",
+    "stats": {
+      "servers": "Serveurs",
+      "commands": "Commandes",
+      "categories": "Catégories"
+    },
+    "selectPlaceholder": "📚 Choisir une catégorie…",
+    "homeOptionDescription": "Revenir à l'accueil et aux statistiques",
+    "categoryOption": "{count} commande(s)",
+    "categoryFooter": "Page {page}/{pages} • {count} commande(s) dans cette catégorie",
     "home": "Accueil",
-    "notYourSession": "Ces boutons appartiennent à la personne qui a demandé l'aide. Lancez `{prefix}help` vous-même.",
+    "notYourSession": "Ce menu appartient à la personne qui a demandé l'aide. Lancez `{prefix}help` vous-même.",
     "unknownCommand": "Commande inconnue : `{command}`.",
     "usage": "Utilisation",
     "aliases": "Alias",

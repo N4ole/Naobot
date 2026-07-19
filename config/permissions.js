@@ -66,10 +66,6 @@ module.exports = {
     user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
-  setwarnrole: {
-    user: [PermissionFlagsBits.ManageGuild],
-    bot: [PermissionFlagsBits.ManageRoles],
-  },
   reactionrole: {
     user: [PermissionFlagsBits.ManageRoles],
     bot: [PermissionFlagsBits.ManageRoles],
@@ -94,6 +90,16 @@ module.exports = {
   // dans la commande : pas de permission `user` déclarative ici, sinon le
   // pipeline bloquerait les owners du bot sans permission Discord.
   say: {
+    user: [],
+    bot: [],
+  },
+  // Préfixe : accès (admin / propriétaire du serveur / owner du bot) vérifié
+  // dans la commande. `prefix` (consultation) est ouvert à tous.
+  setprefix: {
+    user: [],
+    bot: [],
+  },
+  prefix: {
     user: [],
     bot: [],
   },
@@ -147,6 +153,12 @@ module.exports = {
   // Anti-publicité (invitations Discord) : configuration réservée aux
   // administrateurs. Le bot supprime les messages contenant des invitations.
   antipub: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [PermissionFlagsBits.ManageMessages],
+  },
+  // Anti-contenus sensibles (sites adultes/violents) : configuration réservée
+  // aux administrateurs. Le bot supprime les messages contenant des liens.
+  antisensitive: {
     user: [PermissionFlagsBits.Administrator],
     bot: [PermissionFlagsBits.ManageMessages],
   },
@@ -206,6 +218,12 @@ module.exports = {
   renamevoice: {
     user: [],
     bot: [PermissionFlagsBits.ManageChannels],
+  },
+  // Niveaux : configuration réservée aux administrateurs. Le bot attribue les
+  // rôles de récompense (ManageRoles). rank/level/leaderboard restent ouverts.
+  levelconfig: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [PermissionFlagsBits.ManageRoles],
   },
   // Captcha à l'arrivée : configuration réservée aux administrateurs. Le bot
   // attribue les rôles, restreint l'accès au salon et expulse les échecs.

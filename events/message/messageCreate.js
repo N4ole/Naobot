@@ -6,19 +6,23 @@
  * celle des commandes slash.
  */
 const { Events } = require('discord.js');
-const config = require('../../config/config');
 const { CommandContext } = require('../../utils/helpers/commandContext');
 const { resolvePrefixArgs } = require('../../utils/helpers/argumentParser');
 const { executeCommand } = require('../../utils/helpers/commandExecutor');
+const prefixService = require('../../services/prefix/prefixService');
 const { errorEmbed } = require('../../utils/embeds/embeds');
 
 module.exports = {
   name: Events.MessageCreate,
   async execute(message) {
     if (message.author.bot || !message.inGuild()) return;
-    if (!message.content.startsWith(config.prefix)) return;
 
-    const [rawName, ...tokens] = message.content.slice(config.prefix.length).trim().split(/\s+/);
+    // Préfixe propre au serveur (personnalisé ou défaut), lu à chaque message
+    // pour une prise en compte immédiate après un changement.
+    const prefix = prefixService.getPrefix(message.guild.id);
+    if (!message.content.startsWith(prefix)) return;
+
+    const [rawName, ...tokens] = message.content.slice(prefix.length).trim().split(/\s+/);
     if (!rawName) return;
 
     const name = rawName.toLowerCase();

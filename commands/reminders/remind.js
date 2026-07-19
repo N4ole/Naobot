@@ -15,6 +15,7 @@ module.exports = {
   examples: ['remind 10m Aller chercher le colis', 'remind 2h Préparer la réunion', 'remind 3j Anniversaire', 'remind 25/12/2026 18:00 Repas'],
   aliases: ['rappel', 'remindme'],
   cooldown: 3,
+  dm: 'direct',
   args: [
     { name: 'echeance', type: 'string', required: true, description: 'Durée (30s, 15m, 2h, 3j, 1w) ou date (JJ/MM/AAAA [HH:mm])' },
     { name: 'message', type: 'string', required: true, rest: true, description: 'Le message du rappel' },

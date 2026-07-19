@@ -17,21 +17,25 @@ const SANCTION_TYPES = {
   ban: { key: 'ban', label: 'Bannissement', emoji: '🔨', duration: false, punitive: true },
 };
 
-const HOUR_MS = 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
+const WEEK_MS = 7 * DAY_MS;
 
 /**
  * Échelle par défaut : { "<nbWarns>": { type, durationMs?, enabled } }.
- * 1 → avertissement, 2 → timeout 1 h, 3 → timeout 1 j, 4 → mute,
- * 5 → kick, 6 → ban.
+ * 1 → avertissement, 2 → timeout 5 min, 3 → timeout 15 min, 4 → timeout 1 h,
+ * 5 → timeout 1 j, 6 → timeout 1 semaine, 7 → bannissement définitif.
+ * Le palier 1 reste toujours un simple avertissement (imposé par le service).
  */
 const DEFAULT_LADDER = {
   1: { type: 'warn', enabled: true },
-  2: { type: 'timeout', durationMs: HOUR_MS, enabled: true },
-  3: { type: 'timeout', durationMs: DAY_MS, enabled: true },
-  4: { type: 'mute', enabled: true },
-  5: { type: 'kick', enabled: true },
-  6: { type: 'ban', enabled: true },
+  2: { type: 'timeout', durationMs: 5 * MINUTE_MS, enabled: true },
+  3: { type: 'timeout', durationMs: 15 * MINUTE_MS, enabled: true },
+  4: { type: 'timeout', durationMs: HOUR_MS, enabled: true },
+  5: { type: 'timeout', durationMs: DAY_MS, enabled: true },
+  6: { type: 'timeout', durationMs: WEEK_MS, enabled: true },
+  7: { type: 'ban', enabled: true },
 };
 
-module.exports = { SANCTION_TYPES, DEFAULT_LADDER, HOUR_MS, DAY_MS };
+module.exports = { SANCTION_TYPES, DEFAULT_LADDER, MINUTE_MS, HOUR_MS, DAY_MS, WEEK_MS };

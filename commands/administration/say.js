@@ -14,6 +14,7 @@
 const { PermissionFlagsBits } = require('discord.js');
 const ownerService = require('../../services/owners/ownerService');
 const antipubService = require('../../services/antipub/antipubService');
+const antisensitiveService = require('../../services/antisensitive/antisensitiveService');
 const logService = require('../../services/logs/logService');
 const { successEmbed, errorEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
@@ -54,6 +55,10 @@ module.exports = {
     // Discord dans un salon non exempté lorsque la protection est active.
     if (antipubService.checkOutgoing(ctx.guild, ctx.channel, text)) {
       return ctx.reply({ embeds: [errorEmbed(t('antipub.sayBlocked'))], ephemeral: true });
+    }
+    // Anti-contenus sensibles : idem pour les liens vers des sites sensibles.
+    if (antisensitiveService.checkOutgoing(ctx.guild, ctx.channel, text)) {
+      return ctx.reply({ embeds: [errorEmbed(t('antisensitive.sayBlocked'))], ephemeral: true });
     }
 
     const payload = {

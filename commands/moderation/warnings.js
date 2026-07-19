@@ -22,19 +22,32 @@ function buildPayload(guild, user, page) {
   const current = Math.min(Math.max(page, 0), pageCount - 1);
   const slice = warns.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
 
-  const lines = slice.map((warn) =>
-    t('warns.command.entry', {
+  const lines = slice.map((warn) => {
+    const entry = t('warns.command.entry', {
       id: warn.id,
       timestamp: Math.floor(Date.parse(warn.createdAt) / 1000),
       moderatorId: warn.moderatorId,
       reason: warn.reason,
       sanction: warn.sanction ? sanctionService.describeSanction(warn.sanction) : t('warns.sanction.none'),
-    }),
-  );
+    });
+    // Un warn retiré reste visible dans l'historique, clairement marqué.
+    return warn.removedAt ? `~~${entry}~~\n${t('warns.command.removedTag')}` : entry;
+  });
+  // Synthèse : total ACTIF, sanction actuelle (pour ce total) et prochaine sanction.
+  const total = warns.filter((warn) => !warn.removedAt).length;
+  const currentSanction = sanctionService.describeSanction(sanctionService.resolveSanction(guild.id, total)?.sanction ?? null);
+  const upcomingSanction = sanctionService.describeSanction(sanctionService.nextSanction(guild.id, total)?.sanction ?? null);
+
   const embed = infoEmbed(
     t('warns.command.listTitle', { user: user.tag, count: warns.length }),
     lines.join('\n\n'),
-  ).setFooter({ text: `Page ${current + 1}/${pageCount}` });
+  )
+    .addFields(
+      { name: t('warns.field.total'), value: String(total), inline: true },
+      { name: t('warns.field.sanction'), value: currentSanction, inline: true },
+      { name: t('warns.field.next'), value: upcomingSanction, inline: true },
+    )
+    .setFooter({ text: `Page ${current + 1}/${pageCount}` });
 
   const components =
     pageCount > 1

@@ -32,6 +32,7 @@ function statusEmbed(guild) {
     { name: t('captcha.field.type'), value: `${type.emoji} ${type.label}`, inline: true },
     { name: t('captcha.field.timeout'), value: c.timeoutMinutes > 0 ? t('captcha.wizard.minutes', { count: c.timeoutMinutes }) : t('captcha.wizard.noTimeout'), inline: true },
     { name: t('captcha.field.attempts'), value: String(c.maxAttempts), inline: true },
+    { name: t('captcha.field.autoDelete'), value: c.deleteSuccess && c.successDeleteMs > 0 ? t('captcha.field.autoDeleteOn', { seconds: Math.round(c.successDeleteMs / 1000) }) : t('captcha.field.autoDeleteOff'), inline: true },
     { name: t('captcha.status.stats'), value: t('captcha.status.statsValue', { passed: c.stats.passed ?? 0, kicked: c.stats.kicked ?? 0, pending: Object.keys(c.pending ?? {}).length }) },
   );
 }
@@ -54,11 +55,14 @@ function resultEmbed(result) {
 module.exports = {
   name: 'captcha',
   description: 'Protection à l’arrivée : vérification des nouveaux membres',
-  usage: 'captcha <enable|disable|status|setup>',
-  examples: ['captcha status', 'captcha setup', 'captcha enable', 'captcha disable'],
+  usage: 'captcha <enable|disable|status|setup|delete> [secondes|off]',
+  examples: ['captcha status', 'captcha setup', 'captcha enable', 'captcha disable', 'captcha delete 15', 'captcha delete off'],
   aliases: [],
   cooldown: 3,
-  args: [{ name: 'action', type: 'string', required: false, choices: ['enable', 'disable', 'status', 'setup'], description: 'Action à effectuer' }],
+  args: [
+    { name: 'action', type: 'string', required: false, choices: ['enable', 'disable', 'status', 'setup', 'delete'], description: 'Action à effectuer' },
+    { name: 'valeur', type: 'string', required: false, description: 'Pour delete : durée en secondes, ou « off » pour désactiver' },
+  ],
   async execute(ctx) {
     const action = (ctx.options.action ?? 'status').toLowerCase();
 
@@ -82,6 +86,23 @@ module.exports = {
       repository.saveConfig(ctx.guild.id, config);
       await captchaService.logCaptcha(ctx.guild, 'config', [{ name: t('captcha.status.title'), value: t('captcha.status.disabled'), inline: true }], COLORS.LOG_DELETE);
       return ctx.reply({ embeds: [successEmbed(t('captcha.disabled'))] });
+    }
+    if (action === 'delete') {
+      const config = repository.getConfig(ctx.guild.id);
+      const raw = (ctx.options.valeur ?? '').toLowerCase();
+      if (['off', 'non', 'disable', '0'].includes(raw)) {
+        config.deleteSuccess = false;
+      } else {
+        const seconds = Number.parseInt(raw, 10);
+        if (!Number.isInteger(seconds) || seconds < 1 || seconds > 300) {
+          return ctx.reply({ embeds: [errorEmbed(t('captcha.delete.usage'))], ephemeral: true });
+        }
+        config.deleteSuccess = true;
+        config.successDeleteMs = seconds * 1000;
+      }
+      repository.saveConfig(ctx.guild.id, config);
+      await captchaService.logCaptcha(ctx.guild, 'config', [{ name: t('captcha.field.autoDelete'), value: config.deleteSuccess ? t('captcha.field.autoDeleteOn', { seconds: Math.round(config.successDeleteMs / 1000) }) : t('captcha.field.autoDeleteOff'), inline: true }], COLORS.LOG_UPDATE);
+      return ctx.reply({ embeds: [successEmbed(t(config.deleteSuccess ? 'captcha.delete.set' : 'captcha.delete.off', { seconds: Math.round(config.successDeleteMs / 1000) })), statusEmbed(ctx.guild)] });
     }
     return ctx.reply({ embeds: [statusEmbed(ctx.guild)], ephemeral: true });
   },

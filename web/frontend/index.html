@@ -33,8 +33,10 @@
           <button class="tab" data-tab="moderation">🛡️ Modération</button>
           <button class="tab" data-tab="tickets">🎫 Tickets</button>
           <button class="tab" data-tab="voice">🔊 Vocaux</button>
+          <button class="tab" data-tab="levels">⭐ Niveaux</button>
           <button class="tab" data-tab="antipub">📢 Anti-pub</button>
           <button class="tab" data-tab="reputation">🌐 Réputation</button>
+          <button class="tab" data-tab="files">🗂️ Dossiers</button>
           <button class="tab" data-tab="profiles">👤 Profils</button>
         </nav>
 
@@ -72,6 +74,11 @@
           <div id="voice-detail"><p class="muted">Sélectionnez un serveur.</p></div>
         </div>
 
+        <div class="panel hidden" id="panel-levels">
+          <div class="toolbar"><select id="levels-guild" class="select"></select></div>
+          <div id="levels-detail"><p class="muted">Sélectionnez un serveur.</p></div>
+        </div>
+
         <div class="panel hidden" id="panel-antipub">
           <div class="toolbar"><select id="antipub-guild" class="select"></select></div>
           <div id="antipub-detail"><p class="muted">Sélectionnez un serveur.</p></div>
@@ -84,6 +91,15 @@
             <button id="rep-stats" class="btn btn-ghost" hidden>Statistiques globales (owner)</button>
           </div>
           <div id="rep-detail"><p class="muted">Consultez votre réputation globale, ou celle d'un utilisateur (owners).</p></div>
+        </div>
+
+        <div class="panel hidden" id="panel-files">
+          <div class="toolbar">
+            <input id="files-user" class="input" placeholder="Identifiant utilisateur" />
+            <button id="files-load" class="btn">Consulter le dossier</button>
+            <input id="files-filter" class="input" placeholder="Filtrer les notes (texte, serveur, auteur)…" />
+          </div>
+          <div id="files-detail"><p class="muted">Réservé aux owners du bot. Saisissez un identifiant utilisateur pour consulter son dossier.</p></div>
         </div>
 
         <div class="panel hidden" id="panel-profiles">

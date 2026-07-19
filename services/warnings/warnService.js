@@ -5,7 +5,8 @@
  * Un warn : vérifie la hiérarchie, l'enregistre (identifiant unique, date,
  * modérateur, raison), recalcule le total actif, applique automatiquement la
  * sanction du palier atteint (sanctionService), notifie l'utilisateur en MP
- * (jamais bloquant) et journalise dans la catégorie de logs « warns ».
+ * (jamais bloquant), met à jour la réputation globale et journalise dans la
+ * catégorie de logs « sanctions ».
  *
  * La persistance vit dans database/warnRepository (warns) et
  * database/warnConfigRepository (échelle) ; la logique de sanction dans
@@ -13,8 +14,8 @@
  */
 const warnRepository = require('../../database/warnRepository');
 const sanctionService = require('./sanctionService');
-const warnRoleService = require('./warnRoleService');
 const globalReputationService = require('../reputation/globalReputationService');
+const snipeService = require('../snipe/snipeService');
 const logService = require('../logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
@@ -101,11 +102,18 @@ async function addWarn(guild, member, moderator, reason) {
     });
   }
 
-  // Rôles automatiques : retire les anciens paliers, attribue le nouveau.
-  await warnRoleService.syncMember(guild, member.id, total).catch(() => null);
-
   // Réputation globale : contribue au score inter-serveurs.
   globalReputationService.record({ guild, user: member.user, moderator, action: 'warn', reason }).catch(() => null);
+
+  // Snipe : mémorise la sanction (consultable via sanctionsnipe).
+  snipeService.record(guild, 'sanctions', {
+    type: 'warn',
+    userId: member.id,
+    userTag: member.user.tag,
+    moderatorId: moderator.id,
+    newContent: reason,
+    extra: { total, sanction: sanctionLabel },
+  });
 
   return { warn, total, sanction, applied, sanctionLabel, nextLabel };
 }
@@ -115,9 +123,12 @@ async function addWarn(guild, member, moderator, reason) {
  * @returns {{ ok: boolean, total?: number }}
  */
 async function removeWarn(guild, targetUser, warnId, moderator) {
-  const result = warnRepository.removeWarn(guild.id, targetUser.id, warnId);
+  // Soft-delete : le warn est conservé dans l'historique, mais le total actif
+  // (et donc la sanction associée / la prochaine) est recalculé.
+  const result = warnRepository.removeWarn(guild.id, targetUser.id, warnId, moderator?.id ?? null);
   if (!result.ok) return { ok: false };
 
+  const nextLabel = sanctionService.describeSanction(sanctionService.nextSanction(guild.id, result.total)?.sanction ?? null);
   await logWarnEvent(guild, 'removed', {
     target: targetUser,
     moderator,
@@ -125,11 +136,10 @@ async function removeWarn(guild, targetUser, warnId, moderator) {
     extraFields: [
       { name: t('warns.field.id'), value: `\`${warnId}\``, inline: true },
       { name: t('warns.field.total'), value: String(result.total), inline: true },
+      { name: t('warns.field.next'), value: nextLabel, inline: true },
     ],
   });
-  // Recalcule les rôles de warn selon le nouveau total.
-  await warnRoleService.syncMember(guild, targetUser.id, result.total).catch(() => null);
-  return { ok: true, total: result.total };
+  return { ok: true, total: result.total, nextLabel };
 }
 
 /**
@@ -146,8 +156,6 @@ async function clearWarns(guild, targetUser, moderator) {
     color: COLORS.LOG_CREATE,
     extraFields: [{ name: t('warns.field.removed'), value: String(count), inline: true }],
   });
-  // Plus aucun warn : retire tous les rôles de sanction liés aux warns.
-  await warnRoleService.syncMember(guild, targetUser.id, 0).catch(() => null);
   return { ok: true, count };
 }
 
