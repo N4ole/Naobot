@@ -270,6 +270,46 @@ async function loadReputation(userId) {
   }
 }
 
+let filesCache = null;
+
+function renderFiles(box, dossier, filter) {
+  box.innerHTML = '';
+  box.append(kv([
+    ['Utilisateur', dossier.rep?.record?.userId ?? '—'],
+    ['Réputation', `${dossier.rep?.score ?? '—'}/100`],
+    ['Confiance', `${dossier.rep?.level?.emoji ?? ''} ${dossier.rep?.level?.label ?? '—'}`],
+    ['Warns', dossier.totalWarns], ['Sanctions', dossier.totalSanctions],
+    ['Notes', dossier.noteCount], ['Serveurs concernés', dossier.guildsCount],
+  ]));
+  const f = (filter || '').trim().toLowerCase();
+  const notes = f
+    ? dossier.notes.filter((n) => `${n.content} ${n.guildName ?? ''} ${n.authorTag ?? ''}`.toLowerCase().includes(f))
+    : dossier.notes;
+  if (notes.length) {
+    const table = el('table');
+    table.append(el('tr', {}, [el('th', {}, 'ID'), el('th', {}, 'Contenu'), el('th', {}, 'Auteur'), el('th', {}, 'Serveur'), el('th', {}, 'Date')]));
+    for (const n of notes) {
+      table.append(el('tr', {}, [el('td', {}, n.id), el('td', {}, n.content), el('td', {}, n.authorTag || n.authorId), el('td', {}, n.guildName || n.guildId || '—'), el('td', {}, new Date(n.createdAt).toLocaleString('fr-FR'))]));
+    }
+    box.append(el('h2', {}, `Notes (${notes.length})`), table);
+  } else {
+    box.append(el('p', { className: 'muted' }, 'Aucune note.'));
+  }
+}
+
+async function loadMemberFile(userId, filter) {
+  const box = $('#files-detail');
+  const target = (userId || '').trim();
+  if (!target) return (box.innerHTML = '<p class="muted">Indiquez un identifiant utilisateur.</p>');
+  box.innerHTML = '<p class="muted">Chargement…</p>';
+  try {
+    filesCache = await api(`/api/files/${encodeURIComponent(target)}`);
+    renderFiles(box, filesCache, filter);
+  } catch (e) {
+    box.innerHTML = e === 403 ? '<p class="muted">Accès refusé : réservé aux owners du bot.</p>' : `<p class="muted">Erreur (${e}).</p>`;
+  }
+}
+
 async function loadReputationStats() {
   const box = $('#rep-detail');
   box.innerHTML = '<p class="muted">Chargement…</p>';
@@ -366,6 +406,8 @@ async function init() {
   $('#levels-guild').addEventListener('change', (e) => loadLevels(e.target.value));
   $('#antipub-guild').addEventListener('change', (e) => loadAntipub(e.target.value));
   $('#rep-load').addEventListener('click', () => loadReputation($('#rep-user').value));
+  $('#files-load').addEventListener('click', () => loadMemberFile($('#files-user').value, $('#files-filter').value));
+  $('#files-filter').addEventListener('input', (e) => { if (filesCache) renderFiles($('#files-detail'), filesCache, e.target.value); });
   if (me.user.botOwner) {
     $('#rep-stats').hidden = false;
     $('#rep-stats').addEventListener('click', loadReputationStats);

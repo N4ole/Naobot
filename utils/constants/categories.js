@@ -18,6 +18,7 @@ module.exports = {
   reactionRoles: { label: 'Rôles réactions', emoji: '📌' },
   levels: { label: 'Niveaux', emoji: '⭐' },
   reputation: { label: 'Réputation', emoji: '🌐' },
+  memberFiles: { label: 'Dossiers membres', emoji: '🗂️' },
   temporaryVoice: { label: 'Salons vocaux', emoji: '🔊' },
   welcome: { label: 'Bienvenue', emoji: '👋' },
   forms: { label: 'Formulaires', emoji: '📝' },

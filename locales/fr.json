@@ -428,6 +428,54 @@
       "detection": "Lien sensible supprimé"
     }
   },
+  "memberFiles": {
+    "empty": "Précisez le contenu de la note.",
+    "added": "🗂️ Note ajoutée au dossier de {user} (identifiant : **{id}**).",
+    "notFound": "Aucune note avec l'identifiant `{id}`.",
+    "notYourSession": "Seule la personne ayant lancé la commande peut confirmer cette action.",
+    "noPermission": {
+      "add": "Réservé aux administrateurs, aux modérateurs (Modérer les membres) et aux owners du bot.",
+      "view": "La consultation des dossiers est réservée aux administrateurs et aux owners du bot.",
+      "delete": "Vous ne pouvez supprimer que vos propres notes, celles créées sur votre serveur (admin), ou en tant qu'owner du bot."
+    },
+    "field": {
+      "target": "Utilisateur concerné",
+      "user": "Utilisateur",
+      "id": "Identifiant",
+      "content": "Contenu",
+      "author": "Auteur",
+      "repScore": "Réputation globale",
+      "trust": "Niveau de confiance",
+      "warns": "Warns (total)",
+      "sanctions": "Sanctions (total)",
+      "noteCount": "Notes enregistrées",
+      "guildsCount": "Serveurs concernés"
+    },
+    "info": {
+      "title": "🗂️ Dossier de {user}",
+      "notes": "Notes enregistrées",
+      "noNotes": "Aucune note pour cet utilisateur.",
+      "footer": "Page {page}/{pages}"
+    },
+    "list": {
+      "title": "🗂️ Notes de {user}"
+    },
+    "noteEntry": "**`{id}`** — <t:{date}:f>\n> {content}\n> — par {author} · {server}",
+    "listEntry": "**`{id}`** • par {author} • {server} • <t:{date}:d>",
+    "delete": {
+      "title": "🗑️ Supprimer une note",
+      "confirm": "Supprimer définitivement la note `{id}` ?\n> {content}",
+      "confirmButton": "Supprimer",
+      "cancelButton": "Annuler",
+      "cancelled": "Suppression annulée.",
+      "done": "Note `{id}` supprimée."
+    },
+    "logs": {
+      "created": "Note de dossier ajoutée",
+      "deleted": "Note de dossier supprimée",
+      "consulted": "Dossier membre consulté"
+    }
+  },
   "levels": {
     "disabled": "Le système de niveaux est désactivé sur ce serveur.",
     "levelUp": "🎉 {user} passe **niveau {level}** !",
@@ -577,8 +625,10 @@
       "score": "Score",
       "badges": "Badges",
       "action": "Action",
-      "viewer": "Consultant"
+      "viewer": "Consultant",
+      "file": "🗂️ Dossier membre"
     },
+    "fileLine": "**{notes}** note(s) sur **{guilds}** serveur(s). Consultez avec `fileinfo <@utilisateur>` (`{id}`).",
     "errors": {
       "private": "🔒 Cette réputation est privée. Vous ne pouvez consulter que la vôtre (les administrateurs des serveurs concernés et les owners du bot peuvent voir les autres)."
     },

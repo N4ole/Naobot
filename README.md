@@ -47,6 +47,11 @@ modulaire stricte pensée pour être maintenue et étendue facilement.
   captcha) sur tous les serveurs. `reputation`, `globalprofile`, plus des
   commandes owner (`globalrepstats`, `userhistory`, `repconfig`). Confidentiel,
   tracé, anti-abus.
+- **Dossiers membres global inter-serveurs** : dossier de modération unique par
+  utilisateur, partagé par tous les serveurs NaoBot, intégré à la réputation.
+  `file`, `fileinfo`, `filelist`, `filedelete` — notes tracées (auteur, serveur
+  d'origine, date, id), accès réservé aux équipes de modération, consultations
+  journalisées.
 - **Textes centralisés** dans `locales/fr.json` (traduction facile).
 
 ## Installation
@@ -865,6 +870,42 @@ fondé sur les actions observées par NaoBot. Persistant
 - **Logs** : l'évolution de la réputation globale est journalisée dans la
   catégorie `sanctions`. Distinct de la réputation des **serveurs** (`rep`).
 
+## Dossiers membres (global inter-serveurs)
+
+Dossier de modération **global à l'utilisateur** (indépendant du serveur),
+**centralisé au niveau du bot** : chaque utilisateur Discord possède **un
+unique dossier** partagé par tous les serveurs NaoBot, consultable par les
+équipes de modération autorisées. Un dossier regroupe des **notes** (remarques,
+événements, observations, commentaires de modération). Persistant
+(`database/data/memberFiles.json`), **entièrement intégré à la réputation**.
+
+| Commande | Description | Accès | Exemple |
+|---|---|---|---|
+| `file <utilisateur> <texte>` (alias `dossier`, `note`) | Ajoute une note au dossier global de l'utilisateur | Admin / Modérer les membres / owner | `!file @Membre Comportement suspect signalé` |
+| `fileinfo <utilisateur>` (alias `dossierinfo`) | Dossier complet : infos générales (avatar, pseudo, ID, réputation globale, warns/sanctions, nombre de notes et de serveurs) + notes paginées (boutons) | Admin / owner | `!fileinfo @Membre` |
+| `filelist <utilisateur>` (alias `dossierlist`) | Liste allégée des notes (id, auteur, serveur, date) | Admin / owner | `!filelist @Membre` |
+| `filedelete <id>` (alias `dossierdelete`) | Supprime une note après confirmation (trace conservée dans les logs) | Owner, auteur de la note, ou admin du serveur d'origine | `!filedelete a1b2c3d4` |
+
+- **Note** : contenu, auteur (pseudo + ID Discord), **serveur d'origine**, date
+  et **identifiant unique** — chaque champ est persisté et survit aux
+  redémarrages.
+- **Intégration réputation** : le profil de réputation globale
+  (`globalprofile`) affiche le **nombre de notes** et le **nombre de serveurs**
+  ayant contribué au dossier, avec un accès rapide. Les notes **ne modifient
+  jamais automatiquement** le score de réputation.
+- **Confidentialité** : les membres classiques n'ont **aucun accès** ; l'ajout
+  est réservé aux administrateurs / modérateurs / owners, la consultation aux
+  administrateurs et owners. La suppression est restreinte à l'auteur, à l'admin
+  du serveur d'origine de la note ou aux owners. **Toute consultation est
+  journalisée.**
+- **Logs** : création, suppression et consultation d'un dossier sont
+  journalisées dans la catégorie **surveillance** (`watch`).
+- **Interface web** : section « Dossiers membres » (**owners du bot
+  uniquement**) — consultation d'un dossier, recherche d'un utilisateur,
+  filtrage des notes et statistiques ; `/api/files/:userId`.
+- **Architecture évolutive** : pièces jointes, catégories de notes, niveaux de
+  gravité, tags et historique de modification pourront être ajoutés sans refonte.
+
 ## Système de niveaux (activité)
 
 Progression basée **uniquement sur l'activité réelle** des membres, propre à
@@ -1062,7 +1103,9 @@ OAuth2 est complète.
   (ouverts / fermés / catégories), vocaux temporaires (générateurs, salons
   actifs, statistiques), captcha (état, statistiques), **anti-publicité**
   (état, salons exemptés, statistiques, dernières détections), réputation
-  globale (score, statistiques, historique ; pondérations pour les owners), profils
+  globale (score, statistiques, historique ; pondérations pour les owners),
+  **dossiers membres** (consultation, recherche, filtrage des notes,
+  statistiques — owners uniquement), profils
   (réputation, warns, historique ; badges et succès à venir). Interface
   **responsive**.
 - **Temps réel** : flux **SSE** (équivalent WebSocket) — statistiques
@@ -1122,6 +1165,7 @@ OAuth2 est complète.
 │   ├── captcha/         #   captcha (enable/disable/status/setup/delete + vérification)
 │   ├── levels/          #   rank+level, leaderboard, levelconfig
 │   ├── reputation/      #   reputation+globalprofile, globalrepstats+userhistory+repconfig
+│   ├── memberFiles/     #   file+fileinfo+filelist+filedelete (dossiers membres globaux)
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   ├── snipe/           #   snipe+editsnipe+membersnipe+rolesnipe+sanctionsnipe+ticketsnipe+protectionsnipe
 │   ├── dm/              #   servers (sélection de serveur en messages privés)
@@ -1151,6 +1195,7 @@ OAuth2 est complète.
 │   ├── messageActivity/ #   messageXp (XP par message : cooldown, longueur, anti-répétition)
 │   ├── voiceActivity/   #   voiceXp (XP vocal : sessions persistées, flush, reprise)
 │   ├── reputation/      #   guildBan (capture des bans → réputation globale)
+│   ├── memberFiles/     #   ready (dossiers membres globaux disponibles)
 │   ├── snipe/           #   messageSnipe + memberSnipe (capture) + ready (purge auto)
 │   ├── web/             #   ready (démarre l'interface web si activée)
 │   └── temporaryVoice/  #   voiceStateUpdate (create/delete) + ready (nettoyage)
@@ -1216,13 +1261,14 @@ OAuth2 est complète.
 │   ├── temporaryVoice/  # Admin (config) + propriétaire d'un salon temporaire
 │   ├── captcha/         # Admin (config du captcha)
 │   ├── levels/          # Admin (levelconfig) + éligibilité XP (exclusions)
-│   └── reputation/      # Confidentialité de la réputation globale (self/admin/owner)
+│   ├── reputation/      # Confidentialité de la réputation globale (self/admin/owner)
+│   └── memberFiles/     # Accès aux dossiers (ajout/consultation/suppression)
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
 ├── config/              # Configuration (env) et permissions par commande
-├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps…
+├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps, dossiers membres…
 ├── locales/             # Textes utilisateur (fr.json)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login

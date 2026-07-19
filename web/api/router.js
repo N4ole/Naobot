@@ -76,6 +76,12 @@ function route(req, res, { client, session, pathname }) {
     return void json(res, 200, webService.reputationProfile(targetId) ?? { error: 'not_found' }) || true;
   }
 
+  // /api/files/:userId (dossier membre global — owners du bot uniquement,
+  // déjà garanti par le contrôle d'accès global ci-dessus).
+  if (parts.length === 3 && parts[1] === 'files') {
+    return void json(res, 200, webService.memberFile(parts[2]) ?? { error: 'not_found' }) || true;
+  }
+
   // /api/logs (owner du bot uniquement — journal global sensible)
   if (parts.length === 2 && parts[1] === 'logs') {
     if (!ownerService.isOwner(session.userId)) {

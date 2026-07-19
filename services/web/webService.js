@@ -27,6 +27,7 @@ const levelService = require('../levels/levelService');
 const snipeService = require('../snipe/snipeService');
 const snipeCategories = require('../../utils/constants/snipeCategories');
 const globalReputationService = require('../reputation/globalReputationService');
+const memberFileService = require('../memberFiles/memberFileService');
 
 function safe(fn, fallback) {
   try {
@@ -291,7 +292,18 @@ function profile(client, guildId, userId) {
 
 /** Profil de réputation globale d'un utilisateur (accès contrôlé côté API). */
 function reputationProfile(userId) {
-  return safe(() => globalReputationService.getProfile(userId), null);
+  return safe(() => {
+    const profile = globalReputationService.getProfile(userId);
+    return { ...profile, files: memberFileService.fileStats(userId) };
+  }, null);
+}
+
+/**
+ * Dossier membre complet (owners du bot uniquement — accès contrôlé côté API).
+ * Données sensibles : réputation + notes globales inter-serveurs.
+ */
+function memberFile(userId) {
+  return safe(() => memberFileService.getDossier(userId), null);
 }
 
 /** Statistiques + pondérations de réputation globale (owners). */
@@ -299,4 +311,4 @@ function reputationOverview() {
   return safe(() => ({ stats: globalReputationService.globalStats(), config: globalReputationService.getConfig() }), null);
 }
 
-module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, antisensitive, levels, snipe, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };
+module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, antisensitive, levels, snipe, moderation, profile, reputationProfile, reputationOverview, memberFile, totalBumps, totalTickets };
