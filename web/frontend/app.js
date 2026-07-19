@@ -105,6 +105,7 @@ async function loadGuildOverview(id) {
       ['Captcha', o.captcha?.enabled ? `activé (${o.captcha.type})` : 'désactivé'],
       ['Anti-pub', o.antipub?.enabled ? `activé (${o.antipub.exemptChannels} salon(s) exempté(s))` : 'désactivé'],
       ['Anti-sensible', o.antisensitive?.enabled ? `activé (${o.antisensitive.stats?.detections ?? 0} détection(s))` : 'désactivé'],
+      ['Niveaux', o.levels?.enabled ? `activé (${o.levels.ranked} membre(s), ${o.levels.rewards} récompense(s))` : 'désactivé'],
       ['Logs actifs', `${Object.values(o.logs || {}).filter((l) => l && l.enabled).length}/7`],
       ['Réputation', o.reputation?.level ?? o.reputation?.score ?? '—'],
     ]));
@@ -208,6 +209,36 @@ async function loadAntipub(id) {
         table.append(el('tr', {}, [el('td', {}, `${d.userId}`), el('td', {}, `#${d.channelId}`), el('td', {}, d.match), el('td', {}, d.deleted ? '✅' : '❌'), el('td', {}, new Date(d.at).toLocaleString('fr-FR'))]));
       }
       box.append(el('h2', {}, 'Dernières détections'), table);
+    }
+  } catch (e) {
+    box.innerHTML = `<p class="muted">Erreur (${e}).</p>`;
+  }
+}
+
+async function loadLevels(id) {
+  const box = $('#levels-detail');
+  if (!id) return (box.innerHTML = '<p class="muted">Sélectionnez un serveur.</p>');
+  box.innerHTML = '<p class="muted">Chargement…</p>';
+  try {
+    const l = await api(`/api/guilds/${id}/levels`);
+    box.innerHTML = '';
+    const c = l.config || {};
+    box.append(kv([
+      ['État', c.enabled ? '🟢 activé' : '🔴 désactivé'],
+      ['XP / message', c.xpPerMessage ?? '—'], ['XP / min vocale', c.xpPerVoiceMinute ?? '—'],
+      ['Cooldown (ms)', c.messageCooldownMs ?? '—'], ['Longueur min.', c.minMessageLength ?? '—'],
+      ['Membres classés', l.leaderboard.length], ['Récompenses', l.rewards.length],
+    ]));
+    if (l.rewards.length) {
+      box.append(el('h2', {}, 'Récompenses'), el('p', {}, l.rewards.map((r) => `Niv. ${r.level} → ${r.roleId}`).join(', ')));
+    }
+    if (l.leaderboard.length) {
+      const table = el('table');
+      table.append(el('tr', {}, [el('th', {}, '#'), el('th', {}, 'Membre'), el('th', {}, 'Niveau'), el('th', {}, 'XP'), el('th', {}, 'Messages'), el('th', {}, 'Vocal (min)')]));
+      for (const e of l.leaderboard) {
+        table.append(el('tr', {}, [el('td', {}, `${e.rank}`), el('td', {}, `${e.userId}`), el('td', {}, String(e.level)), el('td', {}, String(e.xp)), el('td', {}, String(e.messages)), el('td', {}, String(Math.round((e.voiceMs || 0) / 60000)))]));
+      }
+      box.append(el('h2', {}, 'Classement'), table);
     }
   } catch (e) {
     box.innerHTML = `<p class="muted">Erreur (${e}).</p>`;
@@ -319,7 +350,7 @@ async function init() {
   $('#dash-view').classList.remove('hidden');
   renderUser(me);
   renderGuildList();
-  for (const sel of ['#mod-guild', '#tickets-guild', '#voice-guild', '#antipub-guild', '#profile-guild']) fillGuildSelect($(sel));
+  for (const sel of ['#mod-guild', '#tickets-guild', '#voice-guild', '#levels-guild', '#antipub-guild', '#profile-guild']) fillGuildSelect($(sel));
   setupTabs();
 
   try {
@@ -332,6 +363,7 @@ async function init() {
   $('#mod-guild').addEventListener('change', (e) => loadModeration(e.target.value));
   $('#tickets-guild').addEventListener('change', (e) => loadTickets(e.target.value));
   $('#voice-guild').addEventListener('change', (e) => loadTempVoice(e.target.value));
+  $('#levels-guild').addEventListener('change', (e) => loadLevels(e.target.value));
   $('#antipub-guild').addEventListener('change', (e) => loadAntipub(e.target.value));
   $('#rep-load').addEventListener('click', () => loadReputation($('#rep-user').value));
   if (me.user.botOwner) {

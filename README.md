@@ -745,6 +745,7 @@ configuré par serveur, persistant (`database/data/captcha.json`).
 | `captcha setup` | Assistant : salon, rôle temporaire, rôle après validation, type, délai, message, tentatives | Administrateur | `!captcha setup` |
 | `captcha enable` | Active la vérification (configuration requise) | Administrateur | `!captcha enable` |
 | `captcha disable` | Désactive la vérification | Administrateur | `!captcha disable` |
+| `captcha delete <secondes\|off>` | Durée avant suppression auto du message de confirmation (défaut 10 s ; `off` conserve le message) | Administrateur | `!captcha delete 15` |
 
 - **Arrivée d'un membre** (si activé) : attribution d'un **rôle temporaire**,
   restriction d'accès (le membre ne voit que le salon de captcha), envoi du
@@ -754,8 +755,13 @@ configuré par serveur, persistant (`database/data/captcha.json`).
   `K7P4X9` via un modal), **calcul** (résoudre une opération). Ajouter un type
   = une entrée + un cas dans `generateChallenge`.
 - **Validation** : le **rôle vérifié** est attribué, le rôle temporaire retiré,
-  l'accès débloqué. **Échec** (trop de tentatives) ou **expiration** (délai
-  dépassé) → **expulsion** automatique (anti-raid), même après un redémarrage
+  l'accès débloqué. Le **message de confirmation** (« Vérification réussie ») est
+  **temporaire** : il est supprimé automatiquement après une durée configurable
+  (défaut **10 s**, réglable via `captcha delete`, ou désactivable). Un échec de
+  suppression n'est jamais critique : il est consigné dans les **logs d'erreurs
+  internes** du bot et le fonctionnement continue normalement.
+- **Échec** (trop de tentatives) ou **expiration** (délai dépassé) →
+  **expulsion** automatique (anti-raid), même après un redémarrage
   (vérifications en attente persistées, planificateur au démarrage).
 - **Sécurité** : seul le membre concerné peut résoudre son captcha ; nombre de
   tentatives limité ; configuration réservée aux administrateurs.
@@ -858,6 +864,43 @@ fondé sur les actions observées par NaoBot. Persistant
   pondérations pour les owners).
 - **Logs** : l'évolution de la réputation globale est journalisée dans la
   catégorie `sanctions`. Distinct de la réputation des **serveurs** (`rep`).
+
+## Système de niveaux (activité)
+
+Progression basée **uniquement sur l'activité réelle** des membres, propre à
+chaque serveur, persistante (`database/data/levels.json`). **Désactivé par
+défaut** (activation via `levelconfig on`).
+
+| Commande | Description | Permission | Exemple |
+|---|---|---|---|
+| `rank` / `level` [membre] (alias `niveau`) | Profil de progression (niveau, XP, progression, classement, messages, temps vocal) | Tous | `!rank @Membre` |
+| `leaderboard` (alias `classement`, `top`) | Classement paginé des membres (niveau, XP, messages, vocal) | Tous | `!leaderboard` |
+| `levelconfig [on\|off\|set\|reward\|announce\|exclude] …` | Configuration (administrateurs) | Administrateur | `!levelconfig set xpmessage 20` |
+
+- **Sources d'XP** :
+  - **Messages** : XP par message avec **cooldown anti-spam**, **longueur
+    minimale** et **anti-répétition** (message identique ignoré) ; bots, salons
+    et rôles exclus ne rapportent rien.
+  - **Temps vocal** : XP par minute réellement active (salon vocal hors AFK, non
+    sourd), **exclusion des membres seuls** si configuré, **bots exclus**. Les
+    sessions vocales sont **persistées** : le calcul survit aux redémarrages
+    (reprise au démarrage + flush périodique).
+- **Courbe configurable** : XP total requis pour un niveau = `base·niveau² +
+  offset` (défaut `50·L²+50` → **100, 250, 500, 850…**, conforme à l'exemple).
+- **Récompenses** : rôles attribués à certains niveaux (cumulatifs), **message
+  d'annonce** de montée de niveau dans un **salon d'annonce** configurable (ou
+  le salon courant).
+- **Configuration** (`levelconfig`) : activation, XP/message, XP/minute vocale,
+  cooldown, longueur minimale, salons/rôles exclus, bots exclus, récompenses,
+  salon d'annonce.
+- **rank** : embed avec niveau, XP actuelle/nécessaire, **barre de progression**,
+  classement serveur, messages et temps vocal cumulé. L'architecture sépare les
+  **données** (`buildRankData`) de la présentation, pour ajouter plus tard une
+  **carte graphique** de profil.
+- **Logs** : montée de niveau et configuration → catégorie `members` ;
+  attribution d'un rôle de récompense → catégorie `roles`.
+- **Interface web** : section « Niveaux » (statistiques, paramètres, classement,
+  récompenses ; `/api/guilds/:id/levels`).
 
 ## Système de snipe
 
@@ -1076,7 +1119,8 @@ OAuth2 est complète.
 │   ├── reminders/       #   remind, remindlist+reminddelete+remindedit
 │   ├── polls/           #   poll (assistant + vote), pollclose+pollresults+polllist
 │   ├── temporaryVoice/  #   voicecreate+voiceedit+voicelist+voicedelete, renamevoice
-│   ├── captcha/         #   captcha (enable/disable/status/setup + vérification)
+│   ├── captcha/         #   captcha (enable/disable/status/setup/delete + vérification)
+│   ├── levels/          #   rank+level, leaderboard, levelconfig
 │   ├── reputation/      #   reputation+globalprofile, globalrepstats+userhistory+repconfig
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   ├── snipe/           #   snipe+editsnipe+membersnipe+rolesnipe+sanctionsnipe+ticketsnipe+protectionsnipe
@@ -1104,6 +1148,8 @@ OAuth2 est complète.
 │   ├── polls/           #   ready (fermeture des sondages expirés)
 │   ├── tickets/         #   ready (planificateur), activity (anti-inactivité)
 │   ├── captcha/         #   memberJoin (envoi du captcha) + ready (expiration)
+│   ├── messageActivity/ #   messageXp (XP par message : cooldown, longueur, anti-répétition)
+│   ├── voiceActivity/   #   voiceXp (XP vocal : sessions persistées, flush, reprise)
 │   ├── reputation/      #   guildBan (capture des bans → réputation globale)
 │   ├── snipe/           #   messageSnipe + memberSnipe (capture) + ready (purge auto)
 │   ├── web/             #   ready (démarre l'interface web si activée)
@@ -1141,7 +1187,8 @@ OAuth2 est complète.
 │   ├── polls/           #   pollService + pollWizard (votes, modes, résultats)
 │   ├── web/             #   webService (données) + webAuth (OAuth2) + webLog
 │   ├── temporaryVoice/  #   tempVoiceService (cycle de vie) + tempVoiceWizard
-│   └── captcha/         #   captchaService (vérification) + captchaWizard
+│   ├── captcha/         #   captchaService (vérification) + captchaWizard
+│   └── levels/          #   levelService (courbe XP, montées de niveau, récompenses)
 ├── web/                 # Interface web (séparée de la logique Discord)
 │   ├── frontend/        #   dashboard statique responsive (HTML/CSS/JS)
 │   ├── backend/         #   serveur HTTP natif + tunnel OAuth2
@@ -1168,6 +1215,7 @@ OAuth2 est complète.
 │   ├── polls/           # Gestion des sondages (créateur ou gestionnaire)
 │   ├── temporaryVoice/  # Admin (config) + propriétaire d'un salon temporaire
 │   ├── captcha/         # Admin (config du captcha)
+│   ├── levels/          # Admin (levelconfig) + éligibilité XP (exclusions)
 │   └── reputation/      # Confidentialité de la réputation globale (self/admin/owner)
 ├── utils/
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…

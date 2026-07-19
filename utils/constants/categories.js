@@ -16,6 +16,7 @@ module.exports = {
   watch: { label: 'Surveillance', emoji: '👁️' },
   snipe: { label: 'Snipe', emoji: '🔍' },
   reactionRoles: { label: 'Rôles réactions', emoji: '📌' },
+  levels: { label: 'Niveaux', emoji: '⭐' },
   reputation: { label: 'Réputation', emoji: '🌐' },
   temporaryVoice: { label: 'Salons vocaux', emoji: '🔊' },
   welcome: { label: 'Bienvenue', emoji: '👋' },

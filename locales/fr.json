@@ -428,6 +428,54 @@
       "detection": "Lien sensible supprimé"
     }
   },
+  "levels": {
+    "disabled": "Le système de niveaux est désactivé sur ce serveur.",
+    "levelUp": "🎉 {user} passe **niveau {level}** !",
+    "rewardReason": "Récompense de niveau {level}",
+    "field": {
+      "level": "Niveau",
+      "rank": "Classement",
+      "xp": "XP",
+      "messages": "Messages",
+      "voice": "Temps vocal",
+      "role": "Rôle"
+    },
+    "rank": {
+      "title": "⭐ Progression de {user}",
+      "progress": "Progression"
+    },
+    "leaderboard": {
+      "title": "🏆 Classement — {guild}",
+      "entry": "**#{rank}** {user} — Niv. **{level}** · {xp} XP · {messages} msg · 🔊 {voice}",
+      "footer": "Page {page}/{pages} • {total} membre(s)",
+      "empty": "Aucun membre classé pour l'instant."
+    },
+    "config": {
+      "title": "⚙️ Configuration des niveaux — {guild}",
+      "state": "État",
+      "currentChannel": "Salon courant",
+      "excludedChannels": "Salons exclus",
+      "excludedRoles": "Rôles exclus",
+      "rewards": "Récompenses (rôles par niveau)",
+      "noRewards": "Aucune récompense configurée.",
+      "enabled": "Système de niveaux **activé**.",
+      "disabled": "Système de niveaux **désactivé**.",
+      "setUsage": "Paramètre invalide. Clés disponibles : {keys}. Exemple : `set xpmessage 20`.",
+      "setDone": "**{key}** défini sur **{value}**.",
+      "rewardUsage": "Indiquez un niveau ≥ 1 (et un rôle pour l'attribuer, ou aucun pour le retirer).",
+      "rewardSet": "Récompense du niveau **{level}** définie.",
+      "rewardRemoved": "Récompense du niveau **{level}** retirée.",
+      "announceSet": "Salon d'annonce défini sur {channel}.",
+      "announceOff": "Annonces de montée de niveau désactivées (aucun salon).",
+      "excludeUsage": "Utilisation : `{prefix}levelconfig exclude <salon|role> <#salon|@rôle>`.",
+      "excludeDone": "Exclusion mise à jour."
+    },
+    "logs": {
+      "levelUp": "Montée de niveau",
+      "rewardGranted": "Rôle de récompense attribué",
+      "configChanged": "Configuration des niveaux modifiée"
+    }
+  },
   "dm": {
     "guildOnlyTitle": "📩 Commande liée à un serveur",
     "guildOnly": "La commande `{command}` nécessite un serveur. Sélectionnez un serveur ci-dessous, puis relancez-la sur ce serveur.",
@@ -589,7 +637,15 @@
       "attempts": "Tentatives",
       "message": "Message affiché",
       "code": "Recopiez ce code",
-      "math": "Combien font"
+      "math": "Combien font",
+      "autoDelete": "Confirmation temporaire",
+      "autoDeleteOn": "🗑️ supprimée après {seconds} s",
+      "autoDeleteOff": "conservée"
+    },
+    "delete": {
+      "usage": "Indiquez une durée en secondes (1-300) ou « off » pour désactiver la suppression.",
+      "set": "Message de confirmation supprimé automatiquement après **{seconds} s**.",
+      "off": "Suppression automatique du message de confirmation **désactivée**."
     },
     "status": {
       "title": "🛂 État du captcha",

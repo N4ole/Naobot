@@ -34,6 +34,10 @@ function defaults() {
     type: 'button',
     message: 'Bienvenue ! Pour accéder au serveur, validez la vérification ci-dessous.',
     maxAttempts: 3,
+    // Message de confirmation temporaire : supprimé automatiquement après
+    // `successDeleteMs` (0 ou deleteSuccess=false → conservé).
+    deleteSuccess: true,
+    successDeleteMs: 10 * 1000,
     pending: {},
     stats: { passed: 0, failed: 0, kicked: 0 },
   };

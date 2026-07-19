@@ -23,6 +23,7 @@ const captchaRepository = require('../../database/captchaRepository');
 const antipubRepository = require('../../database/antipubRepository');
 const antisensitiveRepository = require('../../database/antisensitiveRepository');
 const prefixService = require('../prefix/prefixService');
+const levelService = require('../levels/levelService');
 const snipeService = require('../snipe/snipeService');
 const snipeCategories = require('../../utils/constants/snipeCategories');
 const globalReputationService = require('../reputation/globalReputationService');
@@ -102,8 +103,35 @@ function guildOverview(client, guildId) {
     antipub: safe(() => { const c = antipubRepository.getConfig(guildId); return { enabled: c.enabled, exemptChannels: c.exemptChannels.length, stats: c.stats }; }, { enabled: false, exemptChannels: 0, stats: { detections: 0, deleted: 0, errors: 0 } }),
     snipe: safe(() => Object.fromEntries(Object.keys(snipeCategories).map((key) => [key, snipeService.query(guildId, key).length])), {}),
     antisensitive: safe(() => { const c = antisensitiveRepository.getConfig(guildId); return { enabled: c.enabled, exemptChannels: c.exemptChannels.length, stats: c.stats }; }, { enabled: false, exemptChannels: 0, stats: { detections: 0, deleted: 0, errors: 0 } }),
+    levels: safe(() => { const c = levelService.getConfig(guildId); return { enabled: c.enabled, ranked: levelService.leaderboard(guildId).length, rewards: Object.keys(c.rewards).length }; }, { enabled: false, ranked: 0, rewards: 0 }),
     stats: safe(() => guildStatsRepository.getStats(guildId), {}),
   };
+}
+
+/** Système de niveaux d'un serveur (section dédiée) : config, top et récompenses. */
+function levels(guildId) {
+  return safe(
+    () => {
+      const c = levelService.getConfig(guildId);
+      return {
+        config: {
+          enabled: c.enabled,
+          xpPerMessage: c.xpPerMessage,
+          xpPerVoiceMinute: c.xpPerVoiceMinute,
+          messageCooldownMs: c.messageCooldownMs,
+          minMessageLength: c.minMessageLength,
+          excludedChannels: c.excludedChannels,
+          excludedRoles: c.excludedRoles,
+          announceChannelId: c.announceChannelId,
+          curve: c.curve,
+          lastModifiedAt: c.lastModifiedAt,
+        },
+        rewards: Object.entries(c.rewards).map(([level, roleId]) => ({ level: Number(level), roleId })).sort((a, b) => a.level - b.level),
+        leaderboard: levelService.leaderboard(guildId).slice(0, 50),
+      };
+    },
+    { config: { enabled: false }, rewards: [], leaderboard: [] },
+  );
 }
 
 /** Anti-contenus sensibles d'un serveur (section dédiée, lecture seule). */
@@ -271,4 +299,4 @@ function reputationOverview() {
   return safe(() => ({ stats: globalReputationService.globalStats(), config: globalReputationService.getConfig() }), null);
 }
 
-module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, antisensitive, snipe, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };
+module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, antisensitive, levels, snipe, moderation, profile, reputationProfile, reputationOverview, totalBumps, totalTickets };

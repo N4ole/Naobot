@@ -219,6 +219,12 @@ module.exports = {
     user: [],
     bot: [PermissionFlagsBits.ManageChannels],
   },
+  // Niveaux : configuration réservée aux administrateurs. Le bot attribue les
+  // rôles de récompense (ManageRoles). rank/level/leaderboard restent ouverts.
+  levelconfig: {
+    user: [PermissionFlagsBits.Administrator],
+    bot: [PermissionFlagsBits.ManageRoles],
+  },
   // Captcha à l'arrivée : configuration réservée aux administrateurs. Le bot
   // attribue les rôles, restreint l'accès au salon et expulse les échecs.
   captcha: {

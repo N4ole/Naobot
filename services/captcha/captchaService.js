@@ -17,6 +17,7 @@ const repository = require('../../database/captchaRepository');
 const captchaTypes = require('../../utils/constants/captchaTypes');
 const globalReputationService = require('../reputation/globalReputationService');
 const logService = require('../logs/logService');
+const errorLogService = require('../errors/errorLogService');
 const { infoEmbed, successEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');
@@ -162,9 +163,20 @@ async function disableMessage(guild, config, pending, state) {
   if (!pending.messageId) return;
   const channel = guild.channels.cache.get(config.channelId);
   const message = await channel?.messages.fetch(pending.messageId).catch(() => null);
-  if (message) {
-    const embed = state === 'success' ? successEmbed(t('captcha.done')) : infoEmbed(t('captcha.title'), t('captcha.expiredMessage'));
-    await message.edit({ content: '', embeds: [embed], components: [] }).catch(() => null);
+  if (!message) return;
+
+  const embed = state === 'success' ? successEmbed(t('captcha.done')) : infoEmbed(t('captcha.title'), t('captcha.expiredMessage'));
+  await message.edit({ content: '', embeds: [embed], components: [] }).catch(() => null);
+
+  // Message de confirmation temporaire : suppression automatique après délai.
+  // Un échec de suppression n'est jamais critique : il est journalisé dans les
+  // logs d'erreurs internes du bot, et le fonctionnement continue normalement.
+  if (state === 'success' && config.deleteSuccess && config.successDeleteMs > 0) {
+    setTimeout(() => {
+      message.delete().catch((error) => {
+        errorLogService.report({ type: 'captchaCleanup', error, guild, channel, module: 'captchaService' });
+      });
+    }, config.successDeleteMs).unref?.();
   }
 }
 
