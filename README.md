@@ -83,7 +83,7 @@ public multi-serveurs.
 | `ERROR_GUILD_ID` | — | Serveur privé recevant les logs d'erreurs internes du bot (salon `#bot-errors` créé automatiquement). Aucun autre serveur n'y a accès. |
 | `CLIENT_ID` | — | Identifiant de l'application (lien d'invitation) |
 | `GUILD_ID` | — | Si défini, les commandes slash sont enregistrées sur ce serveur uniquement (instantané, idéal en développement). Sinon, enregistrement global (~1 h de propagation). |
-| `PREFIX` | — | Préfixe des commandes textuelles (défaut : `!`) |
+| `PREFIX` | — | Préfixe **par défaut** des commandes textuelles (défaut : `!`). Chaque serveur peut le remplacer via `setprefix` (persisté séparément). |
 | `LOCALE` | — | Langue des messages (défaut : `fr`) |
 | `MUTED_ROLE_NAME` | — | Nom du rôle de mute (défaut : `Muted`) |
 | `OWNER_ROLE_NAME` | — | Nom du rôle décoratif attribué aux owners (défaut : `Owner NaoBot`) |
@@ -165,6 +165,19 @@ palier 1 est toujours un simple avertissement.
 | `logs disable <catégories…\|tout>` | Désactive une, plusieurs ou toutes les catégories | Gérer le serveur | `!logs disable tout` |
 | `setwarnsanction [reset]` | Configure l'échelle des sanctions progressives des warns (panneau interactif : menus + boutons + modal ; `reset` restaure les valeurs par défaut) | Gérer le serveur | `!setwarnsanction` |
 | `say <message>` | Fait relayer un message par le bot (texte, mentions, emojis, liens, pièces jointes) ; supprime la commande d'origine, neutralise @everyone/@here, journalise l'auteur | Admin / propriétaire / owner du bot | `!say Bienvenue à tous !` |
+| `prefix` (alias `prefixe`) | Affiche le préfixe actuel, le préfixe par défaut, l'auteur et la date de la dernière modification | Tous | `!prefix` |
+| `setprefix <nouveau\|reset>` (alias `changeprefix`) | Change le préfixe des commandes textuelles du serveur (ou `reset` pour revenir au défaut), pris en compte immédiatement | Admin / propriétaire / owner du bot | `!setprefix ?` |
+
+**Préfixe personnalisable par serveur** : le préfixe **par défaut** est défini
+dans le code (`PREFIX` du `.env`) et n'est jamais stocké en base ; chaque
+serveur peut le remplacer via `setprefix`. Le nouveau préfixe est **persistant**
+(`database/data/prefixes.json`), pris en compte **immédiatement** (sans
+redémarrage) et journalisé (catégorie `moderation` : ancien préfixe, nouveau
+préfixe, auteur). Validation : non vide, **5 caractères max**, sans espace ni
+caractères `@ # / \ ` `` ` `` `< >` (évite les conflits avec les mentions, les
+salons et les commandes slash). Les commandes **slash** restent toujours
+disponibles quel que soit le préfixe. Architecture prête pour **plusieurs
+préfixes par serveur** dans une future mise à jour.
 
 ### 🛡️ Protections automatiques
 
@@ -736,6 +749,12 @@ actifs, propriétaires et statistiques survivent aux redémarrages.
   des permissions de sa catégorie** Discord (synchronisation native via
   `lockPermissions`) — aucune permission n'est copiée manuellement et le salon
   reste aligné sur sa catégorie.
+- **Renommage (`renamevoice <nom>`)** : le **propriétaire** du salon peut le
+  renommer. Vérifications avant modification : l'utilisateur est **connecté**
+  à un salon vocal, le salon est bien un **salon temporaire** géré par le bot,
+  l'utilisateur en est le **propriétaire**, et le nouveau nom respecte les
+  **limites Discord** (100 caractères max). Le salon est renommé immédiatement,
+  la modification persistée (`renamedAt`) et une confirmation envoyée en embed.
 - **Propriétaire** : sa seule capacité est de **renommer** son salon via
   `renamevoice` (arbitré par le bot). Il **ne peut pas** modifier les
   permissions, changer la catégorie, supprimer le salon, déplacer des membres
@@ -745,9 +764,13 @@ actifs, propriétaires et statistiques survivent aux redémarrages.
   générateur — sinon le membre est déplacé vers l'existant), pas de boucle de
   création (un salon temporaire n'est jamais un générateur), configuration
   réservée aux administrateurs, suppression automatique des salons vides.
-- **Logs** : journalisation (fusionnée dans les 7 catégories de logs) (création, suppression, renommage,
-  configuration, erreurs). **Interface web** : section « Vocaux » (générateurs,
-  salons actifs, statistiques).
+- **Persistance** : identifiant du salon, propriétaire, date de création et
+  date du dernier renommage survivent aux redémarrages
+  (`database/data/tempVoice.json`).
+- **Logs** : journalisation (fusionnée dans les 7 catégories de logs) : création,
+  suppression, **renommage (ancien nom → nouveau nom, propriétaire, serveur,
+  date)**, configuration, erreurs. **Interface web** : section « Vocaux »
+  (générateurs, salons actifs, statistiques).
 - **Extensible sans refonte** : salons privés, mots de passe, limite
   ajustable, verrouillage, transfert de propriété, salons permanents…
   (services/temporaryVoice, schéma des générateurs/temps ouvert).
@@ -891,8 +914,9 @@ défaut** : elle ne démarre que si `WEB_ENABLED=true` et que la configuration
 OAuth2 est complète.
 
 - **Sections** : tableau de bord (serveurs, utilisateurs, tickets, bumps, état
-  du bot), serveurs (protections, tickets, rôles réactions, formulaires,
-  sauvegardes, réputation…), modération (warns, statistiques), tickets
+  du bot), serveurs (**préfixe du serveur**, protections, tickets, rôles
+  réactions, formulaires, sauvegardes, réputation…), modération (warns,
+  statistiques), tickets
   (ouverts / fermés / catégories), vocaux temporaires (générateurs, salons
   actifs, statistiques), captcha (état, statistiques), **anti-publicité**
   (état, salons exemptés, statistiques, dernières détections), réputation
@@ -989,6 +1013,7 @@ OAuth2 est complète.
 │   ├── watch/           #   watchService (surveillance de modération, 7 j max)
 │   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
 │   ├── errors/          #   errorLogService (logs d'erreurs internes → #bot-errors)
+│   ├── prefix/          #   prefixService (préfixe personnalisable par serveur)
 │   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
 │   ├── contact/         #   contactService (communication owners ↔ propriétaires)
 │   ├── protections/     #   protectionService (état, stats, logs partagés)

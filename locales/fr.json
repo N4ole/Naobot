@@ -376,6 +376,31 @@
       "stack": "Pile d'erreurs"
     }
   },
+  "prefix": {
+    "noPermission": "Réservé aux administrateurs, au propriétaire du serveur et aux owners du bot.",
+    "command": {
+      "title": "🔧 Préfixe — {guild}",
+      "current": "Préfixe actuel",
+      "default": "Préfixe par défaut",
+      "lastModified": "Dernière modification",
+      "lastModifiedBy": "Modifié par",
+      "never": "Jamais (préfixe par défaut)",
+      "changed": "Préfixe modifié : `{before}` → **`{after}`**. Il est actif immédiatement.",
+      "reset": "Préfixe réinitialisé au préfixe par défaut : **`{prefix}`**."
+    },
+    "error": {
+      "empty": "Le préfixe ne peut pas être vide.",
+      "tooLong": "Préfixe trop long ({max} caractères maximum).",
+      "forbidden": "Préfixe invalide : espaces et caractères `@ # / \\ ` < >` sont interdits (conflits avec les mentions, salons et commandes slash)."
+    },
+    "logs": {
+      "changed": "Préfixe modifié"
+    },
+    "field": {
+      "old": "Ancien préfixe",
+      "new": "Nouveau préfixe"
+    }
+  },
   "say": {
     "noPermission": "Réservé aux administrateurs, au propriétaire du serveur et aux owners du bot.",
     "empty": "Précisez un message (ou joignez un fichier).",
@@ -524,7 +549,10 @@
       "owner": "Propriétaire",
       "limit": "Limite d'utilisateurs",
       "format": "Format du nom",
-      "extraRoles": "Rôles supplémentaires"
+      "extraRoles": "Rôles supplémentaires",
+      "oldName": "Ancien nom",
+      "newName": "Nouveau nom",
+      "server": "Serveur"
     },
     "wizard": {
       "createTitle": "🔊 Nouveau générateur de salons vocaux",

@@ -93,6 +93,16 @@ module.exports = {
     user: [],
     bot: [],
   },
+  // Préfixe : accès (admin / propriétaire du serveur / owner du bot) vérifié
+  // dans la commande. `prefix` (consultation) est ouvert à tous.
+  setprefix: {
+    user: [],
+    bot: [],
+  },
+  prefix: {
+    user: [],
+    bot: [],
+  },
   // Configuration des tickets (catégories + panneaux) : administrateurs.
   // Le bot crée des salons/catégories et gère les permissions.
   ticketcategory: {

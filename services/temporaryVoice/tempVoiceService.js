@@ -166,21 +166,29 @@ async function renameOwnChannel(guild, member, rawName) {
   const name = String(rawName ?? '').replace(/\s+/g, ' ').trim().slice(0, 100);
   if (!name) return { ok: false, code: 'invalidName' };
 
+  const previousName = temp.name;
   const renamed = await channel.setName(name, `Renommé par le propriétaire ${member.user.tag}`).then(() => true).catch(() => false);
   if (!renamed) return { ok: false, code: 'renameFailed' };
 
+  // Persistance : nom courant + date du dernier renommage (l'identifiant, le
+  // propriétaire et la date de création sont déjà conservés).
   temp.name = name;
+  temp.renamedAt = new Date().toISOString();
   repository.saveTemp(temp);
+
   await logVoice(
     guild,
     'renamed',
     [
       { name: t('tempVoice.field.channel'), value: `${channel}`, inline: true },
       { name: t('tempVoice.field.owner'), value: `<@${member.id}>`, inline: true },
+      { name: t('tempVoice.field.oldName'), value: `\`${previousName}\``, inline: true },
+      { name: t('tempVoice.field.newName'), value: `\`${name}\``, inline: true },
+      { name: t('tempVoice.field.server'), value: `${guild.name}`, inline: true },
     ],
     COLORS.LOG_UPDATE,
   );
-  return { ok: true, name };
+  return { ok: true, name, previousName };
 }
 
 /**

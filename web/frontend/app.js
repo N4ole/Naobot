@@ -93,6 +93,7 @@ async function loadGuildOverview(id) {
     detail.append(el('h2', {}, o.name));
     detail.append(kv([
       ['Membres', o.members], ['Salons', o.channels], ['Rôles', o.roles],
+      ['Préfixe', `${o.prefix?.prefix ?? '!'}${o.prefix?.isCustom ? '' : ' (défaut)'}`],
       ['Tickets ouverts', o.tickets.open], ['Tickets fermés', o.tickets.closed], ['Catégories tickets', o.tickets.categories],
       ['Rôles réactions', o.reactionRoles], ['Formulaires', o.forms], ['Sauvegardes', o.backups],
       ['Vocaux (générateurs)', o.tempVoice?.generators ?? 0], ['Vocaux actifs', o.tempVoice?.active ?? 0],

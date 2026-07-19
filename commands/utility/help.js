@@ -22,9 +22,9 @@ const {
   MessageFlags,
   PermissionsBitField,
 } = require('discord.js');
-const config = require('../../config/config');
 const permissionsConfig = require('../../config/permissions');
 const ownerService = require('../../services/owners/ownerService');
+const prefixService = require('../../services/prefix/prefixService');
 const categories = require('../../utils/constants/categories');
 const permissionLabels = require('../../utils/constants/permissionLabels');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
@@ -78,7 +78,7 @@ function totalCommandCount(cats) {
 }
 
 /** Embed d'accueil : identité du bot + statistiques utiles. */
-function homeEmbed(client, cats) {
+function homeEmbed(client, cats, prefix) {
   const commands = totalCommandCount(cats);
   const lines = cats.map((cat) => {
     const meta = categoryMeta(cat.key);
@@ -86,7 +86,7 @@ function homeEmbed(client, cats) {
   });
   const embed = infoEmbed(
     t('help.title', { bot: client.user.username }),
-    `${t('help.mainDescription', { prefix: config.prefix })}\n\n${lines.join('\n')}`,
+    `${t('help.mainDescription', { prefix })}\n\n${lines.join('\n')}`,
   ).addFields(
     { name: t('help.stats.servers'), value: String(client.guilds.cache.size), inline: true },
     { name: t('help.stats.commands'), value: String(commands), inline: true },
@@ -98,14 +98,14 @@ function homeEmbed(client, cats) {
 }
 
 /** Embed d'une catégorie (page donnée) : commandes détaillées. */
-function categoryEmbed(cat, page, pageCount) {
+function categoryEmbed(cat, page, pageCount, prefix) {
   const meta = categoryMeta(cat.key);
   const slice = cat.commands.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
   const blocks = slice.map((command) => {
     const perms = commandPermissionNames(command);
-    const parts = [`**\`${config.prefix}${command.usage}\`**`, command.description];
+    const parts = [`**\`${prefix}${command.usage}\`**`, command.description];
     if (perms.length > 0) parts.push(`🔒 ${t('help.permissions')} : ${perms.join(', ')}`);
-    if (command.examples?.length) parts.push(`💡 ${command.examples.map((e) => `\`${config.prefix}${e}\``).join(' · ')}`);
+    if (command.examples?.length) parts.push(`💡 ${command.examples.map((e) => `\`${prefix}${e}\``).join(' · ')}`);
     return parts.join('\n');
   });
   return infoEmbed(`${meta.emoji} ${meta.label}`, blocks.join('\n\n')).setFooter({
@@ -161,19 +161,19 @@ function navRow(userId, catKey, page, pageCount) {
  * @param {?string} catKey  null → accueil ; sinon la catégorie affichée
  * @param {number} page     page courante de la catégorie
  */
-function buildHelpPayload(client, userId, catKey = null, page = 0) {
+function buildHelpPayload(client, userId, prefix, catKey = null, page = 0) {
   const cats = buildCategories(client, userId);
   const selected = catKey && cats.find((cat) => cat.key === catKey);
 
   if (!selected) {
-    return { embeds: [homeEmbed(client, cats)], components: [selectRow(userId, cats, null)] };
+    return { embeds: [homeEmbed(client, cats, prefix)], components: [selectRow(userId, cats, null)] };
   }
 
   const pageCount = Math.max(1, Math.ceil(selected.commands.length / PAGE_SIZE));
   const current = Math.min(Math.max(0, page), pageCount - 1);
   const components = [selectRow(userId, cats, selected.key)];
   if (pageCount > 1) components.push(navRow(userId, selected.key, current, pageCount));
-  return { embeds: [categoryEmbed(selected, current, pageCount)], components };
+  return { embeds: [categoryEmbed(selected, current, pageCount, prefix)], components };
 }
 
 /** Retire les composants après expiration (gestion propre de la péremption). */
@@ -184,10 +184,10 @@ function scheduleComponentsExpiry(message) {
   }, COMPONENTS_LIFETIME_MS).unref?.();
 }
 
-function commandDetailEmbed(command) {
+function commandDetailEmbed(command, prefix) {
   const permNames = commandPermissionNames(command);
-  const embed = infoEmbed(`${config.prefix}${command.name}`, command.description).addFields(
-    { name: t('help.usage'), value: `\`${config.prefix}${command.usage}\` ou \`/${command.name}\`` },
+  const embed = infoEmbed(`${prefix}${command.name}`, command.description).addFields(
+    { name: t('help.usage'), value: `\`${prefix}${command.usage}\` ou \`/${command.name}\`` },
     {
       name: t('help.aliases'),
       value: command.aliases?.length ? command.aliases.map((a) => `\`${a}\``).join(', ') : t('help.none'),
@@ -202,7 +202,7 @@ function commandDetailEmbed(command) {
   if (command.examples?.length) {
     embed.addFields({
       name: t('help.examples'),
-      value: command.examples.map((e) => `\`${config.prefix}${e}\``).join('\n'),
+      value: command.examples.map((e) => `\`${prefix}${e}\``).join('\n'),
     });
   }
   return embed;
@@ -219,11 +219,12 @@ module.exports = {
     { name: 'commande', type: 'string', required: false, description: 'La commande dont afficher le détail' },
   ],
   async execute(ctx) {
+    const prefix = prefixService.getPrefix(ctx.guild.id);
     const name = ctx.options.commande?.toLowerCase();
     if (!name) {
       // En préfixe, ctx.reply retourne le message envoyé ; en slash, il faut
       // le récupérer pour programmer le retrait des composants.
-      const sent = await ctx.reply(buildHelpPayload(ctx.client, ctx.user.id, null, 0));
+      const sent = await ctx.reply(buildHelpPayload(ctx.client, ctx.user.id, prefix, null, 0));
       const message = ctx.isSlash ? await ctx.interaction.fetchReply().catch(() => null) : sent;
       scheduleComponentsExpiry(message);
       return;
@@ -237,7 +238,7 @@ module.exports = {
         ephemeral: true,
       });
     }
-    return ctx.reply({ embeds: [commandDetailEmbed(command)] });
+    return ctx.reply({ embeds: [commandDetailEmbed(command, prefix)] });
   },
 
   /**
@@ -251,9 +252,10 @@ module.exports = {
     const [, kind, ownerId] = parts;
     if (!['cat', 'page'].includes(kind)) return;
 
+    const prefix = prefixService.getPrefix(interaction.guild?.id);
     if (interaction.user.id !== ownerId) {
       return interaction.reply({
-        embeds: [errorEmbed(t('help.notYourSession', { prefix: config.prefix }))],
+        embeds: [errorEmbed(t('help.notYourSession', { prefix }))],
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -261,12 +263,12 @@ module.exports = {
     if (kind === 'cat' && interaction.isStringSelectMenu()) {
       const value = interaction.values[0];
       const catKey = value === 'home' ? null : value;
-      return interaction.update(buildHelpPayload(interaction.client, ownerId, catKey, 0));
+      return interaction.update(buildHelpPayload(interaction.client, ownerId, prefix, catKey, 0));
     }
     if (kind === 'page' && interaction.isButton()) {
       const catKey = parts[3];
       const page = Number.parseInt(parts[4], 10) || 0;
-      return interaction.update(buildHelpPayload(interaction.client, ownerId, catKey, page));
+      return interaction.update(buildHelpPayload(interaction.client, ownerId, prefix, catKey, page));
     }
     return undefined;
   },

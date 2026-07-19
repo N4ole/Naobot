@@ -35,7 +35,7 @@ Respecter l'organisation :
 ```
 commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/, watch/, owner/, administration/)
 events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, logs/, errors/, watch/, reactionRoles/, contact/, protections/, antipub/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
-services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
+services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], prefix/ [préfixe personnalisable par serveur], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, reactionRoles/, contact/, protections/, antipub/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
@@ -110,8 +110,11 @@ serveur, via les repositories (`database/*.js` → `database/data/*.json`,
 
 Toujours :
 
-- supporter **les commandes slash et les commandes préfixées** (`!`) avec
-  la même logique interne (voir le schéma `args` ci-dessus) ;
+- supporter **les commandes slash et les commandes préfixées** avec
+  la même logique interne (voir le schéma `args` ci-dessus). Le préfixe est
+  **personnalisable par serveur** (`services/prefix/prefixService`,
+  `setprefix`/`prefix`) : le défaut vit dans `.env` (`PREFIX`), jamais en base ;
+  le point d'entrée des messages lit `prefixService.getPrefix(guildId)` ;
 - utiliser les fonctionnalités **natives** de Discord (timeout natif,
   bans, bulkDelete, raisons d'audit log, `default_member_permissions`,
   sélecteurs de salons/rôles natifs…) plutôt que réinventer ;

@@ -21,6 +21,7 @@ const logService = require('../logs/logService');
 const tempVoiceRepository = require('../../database/tempVoiceRepository');
 const captchaRepository = require('../../database/captchaRepository');
 const antipubRepository = require('../../database/antipubRepository');
+const prefixService = require('../prefix/prefixService');
 const globalReputationService = require('../reputation/globalReputationService');
 
 function safe(fn, fallback) {
@@ -85,6 +86,7 @@ function guildOverview(client, guildId) {
     members: guild.memberCount ?? 0,
     channels: safe(() => guild.channels.cache.size, 0),
     roles: safe(() => guild.roles.cache.size, 0),
+    prefix: safe(() => prefixService.getConfig(guildId), { prefix: '!', default: '!', isCustom: false, updatedBy: null, updatedAt: null }),
     protections: safe(() => protectionRepository.getConfig(guildId), {}),
     reactionRoles: safe(() => Object.keys(reactionRoleRepository.getGuildPanels(guildId)).length, 0),
     forms: safe(() => formRepository.getForms(guildId).length, 0),
