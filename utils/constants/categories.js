@@ -27,6 +27,7 @@ module.exports = {
   contact: { label: 'Contact', emoji: '✉️' },
   logs: { label: 'Logs', emoji: '📄' },
   administration: { label: 'Administration', emoji: '⚙️' },
+  dm: { label: 'Messages privés', emoji: '✉️' },
   utility: { label: 'Utilitaire', emoji: '🧰' },
   fun: { label: 'Fun', emoji: '🎉' },
   owner: { label: 'Owner', emoji: '👑' },

@@ -9,7 +9,8 @@ const { Events, MessageFlags } = require('discord.js');
 const { CommandContext } = require('../../utils/helpers/commandContext');
 const { resolveSlashOptions } = require('../../utils/helpers/argumentParser');
 const { executeCommand } = require('../../utils/helpers/commandExecutor');
-const { errorEmbed } = require('../../utils/embeds/embeds');
+const dmService = require('../../services/directMessages/dmService');
+const { errorEmbed, infoEmbed } = require('../../utils/embeds/embeds');
 const { t } = require('../../utils/helpers/i18n');
 
 module.exports = {
@@ -36,9 +37,29 @@ module.exports = {
     const command = interaction.client.commands.get(interaction.commandName);
     if (!command) return;
 
+    // Messages privés : les commandes compatibles (dm: 'direct') s'exécutent
+    // sans serveur ; les autres proposent une sélection de serveur.
     if (!interaction.inCachedGuild()) {
+      if (dmService.isDirect(command)) {
+        const resolvedDm = resolveSlashOptions(interaction, command);
+        if (resolvedDm.error) {
+          return interaction.reply({ embeds: [errorEmbed(resolvedDm.error)], flags: MessageFlags.Ephemeral });
+        }
+        const dmCtx = new CommandContext({
+          client: interaction.client,
+          guild: null,
+          channel: interaction.channel,
+          member: null,
+          user: interaction.user,
+          options: resolvedDm.values,
+          interaction,
+        });
+        return executeCommand(dmCtx, command);
+      }
+      const picker = dmService.buildServerPicker(interaction.client, interaction.user.id);
       return interaction.reply({
-        embeds: [errorEmbed(t('errors.guildOnly'))],
+        embeds: [infoEmbed(t('dm.guildOnlyTitle'), t('dm.guildOnly', { command: command.name }))],
+        components: picker ? [picker] : [],
         flags: MessageFlags.Ephemeral,
       });
     }

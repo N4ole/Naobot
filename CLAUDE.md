@@ -33,10 +33,10 @@ les modules (loaders) et se connecte — rien d'autre.
 Respecter l'organisation :
 
 ```
-commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, snipe/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/, watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, interaction/, logs/, errors/, snipe/, watch/, reactionRoles/, contact/, protections/, antipub/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
-services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
-middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, reactionRoles/, contact/, protections/, antipub/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
+commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, snipe/, dm/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/, watch/, owner/, administration/)
+events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, dm/ [commandes préfixées en DM], interaction/, logs/, errors/, snipe/, watch/, reactionRoles/, contact/, protections/, antipub/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
+services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], directMessages/ [compatibilité DM + sélection de serveur], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
+middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, dm/, reactionRoles/, contact/, protections/, antipub/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
 config/        # config.js (env), permissions.js (permissions par commande)
@@ -115,6 +115,13 @@ Toujours :
   **personnalisable par serveur** (`services/prefix/prefixService`,
   `setprefix`/`prefix`) : le défaut vit dans `.env` (`PREFIX`), jamais en base ;
   le point d'entrée des messages lit `prefixService.getPrefix(guildId)` ;
+- prendre en charge les **messages privés (DM)** : une commande personnelle
+  (sans serveur) déclare `dm: 'direct'` et s'exécute en DM (`ctx.guild` est
+  `null` ; le pipeline ignore alors permissions Discord, statistiques et logs de
+  serveur). Les commandes nécessitant un serveur proposent en DM une **sélection
+  de serveur** (menu déroulant des serveurs partagés) via
+  `services/directMessages`. Points d'entrée : `events/dm/directMessage.js`
+  (préfixe) et la branche DM de `events/interaction/interactionCreate.js` (slash) ;
 - utiliser les fonctionnalités **natives** de Discord (timeout natif,
   bans, bulkDelete, raisons d'audit log, `default_member_permissions`,
   sélecteurs de salons/rôles natifs…) plutôt que réinventer ;

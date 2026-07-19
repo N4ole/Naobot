@@ -91,6 +91,7 @@ const globalprofile = {
   examples: ['globalprofile', 'globalprofile @Membre'],
   aliases: ['gprofile'],
   cooldown: 5,
+  dm: 'direct',
   args: [{ name: 'utilisateur', type: 'user', required: false, description: 'L’utilisateur (par défaut : vous)' }],
   async execute(ctx) {
     const target = ctx.options.utilisateur ?? ctx.user;

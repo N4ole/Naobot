@@ -33,11 +33,15 @@ function commandLogFields(ctx, command) {
  */
 async function executeCommand(ctx, command) {
   // Serveur banni du service : aucune fonctionnalité disponible.
-  if (serverBanRepository.isBanned(ctx.guild.id)) return;
+  if (ctx.guild && serverBanRepository.isBanned(ctx.guild.id)) return;
 
-  const permissions = checkCommandPermissions(ctx, command);
-  if (!permissions.ok) {
-    return ctx.reply({ embeds: [errorEmbed(permissions.error)], ephemeral: true });
+  // En message privé (sans serveur), les permissions Discord ne s'appliquent
+  // pas : seules les commandes explicitement compatibles DM arrivent ici.
+  if (ctx.guild) {
+    const permissions = checkCommandPermissions(ctx, command);
+    if (!permissions.ok) {
+      return ctx.reply({ embeds: [errorEmbed(permissions.error)], ephemeral: true });
+    }
   }
 
   const remainingSeconds = checkCooldown(ctx.user.id, command);
@@ -50,18 +54,20 @@ async function executeCommand(ctx, command) {
 
   try {
     await command.execute(ctx);
-    // Suivi d'activité du serveur (statistiques + réputation).
-    statsService.recordCommand(ctx.guild.id);
-    await logService.log(
-      ctx.guild,
-      'commandes',
-      logEventEmbed({
-        title: t('logs.events.commandExecuted'),
-        color: COLORS.LOG_NEUTRAL,
-        user: ctx.user,
-        fields: commandLogFields(ctx, command),
-      }),
-    );
+    // Suivi et journalisation propres au serveur (ignorés en message privé).
+    if (ctx.guild) {
+      statsService.recordCommand(ctx.guild.id);
+      await logService.log(
+        ctx.guild,
+        'commandes',
+        logEventEmbed({
+          title: t('logs.events.commandExecuted'),
+          color: COLORS.LOG_NEUTRAL,
+          user: ctx.user,
+          fields: commandLogFields(ctx, command),
+        }),
+      );
+    }
   } catch (error) {
     console.error(`[commands] Erreur dans "${command.name}" :`, error);
     // Journalisation interne (serveur privé #bot-errors), avec contexte complet.

@@ -29,10 +29,12 @@ const client = new Client({
     // Nécessaire aux commandes préfixées (lecture du contenu des messages).
     // Doit aussi être activé dans le Discord Developer Portal (onglet Bot).
     GatewayIntentBits.MessageContent,
+    // Messages privés : permet aux commandes compatibles de fonctionner en DM.
+    GatewayIntentBits.DirectMessages,
   ],
-  // Permet de recevoir les suppressions/modifications de messages qui ne
-  // sont pas en cache (le contenu reste alors indisponible dans les logs).
-  partials: [Partials.Message],
+  // Partials.Message : messages non mis en cache (logs). Partials.Channel :
+  // indispensable pour recevoir les messages privés (salon DM non caché).
+  partials: [Partials.Message, Partials.Channel],
 });
 
 loadCommands(client);

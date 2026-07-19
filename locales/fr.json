@@ -376,6 +376,17 @@
       "stack": "Pile d'erreurs"
     }
   },
+  "dm": {
+    "guildOnlyTitle": "📩 Commande liée à un serveur",
+    "guildOnly": "La commande `{command}` nécessite un serveur. Sélectionnez un serveur ci-dessous, puis relancez-la sur ce serveur.",
+    "selectPlaceholder": "Choisissez un serveur…",
+    "serverMembers": "{count} membre(s)",
+    "serversTitle": "🖥️ Vos serveurs",
+    "serversHelp": "Sélectionnez le serveur actif. Il sera mémorisé pour améliorer votre expérience en messages privés.",
+    "noServers": "Aucun serveur partagé avec le bot n'a été trouvé (ou ses membres ne sont pas en cache).",
+    "notYours": "Ce menu appartient à la personne qui l'a ouvert.",
+    "selected": "Serveur actif : **{server}**."
+  },
   "snipe": {
     "noPermission": "Réservé aux administrateurs, aux modérateurs (Modérer les membres) et aux owners du bot.",
     "notYourSession": "Cette consultation appartient à la personne qui a lancé la commande.",

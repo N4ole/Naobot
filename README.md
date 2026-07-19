@@ -854,6 +854,30 @@ avec limites et **purge automatique**.
   **surveillance** (`watch`). **Interface web** : nombre d'événements récents par
   catégorie dans la vue serveur (`/api/guilds/:id/snipe`).
 
+## Commandes en messages privés (DM)
+
+Le bot fonctionne aussi en **messages privés**. Les commandes **personnelles**
+(sans contexte serveur) déclarent `dm: 'direct'` et s'utilisent directement en
+DM ; les commandes nécessitant un serveur proposent une **sélection de serveur**.
+
+- **Commandes utilisables en DM** : `help`, `remind` / `remindlist` /
+  `reminddelete` / `remindedit` (rappels personnels), `globalprofile`
+  (réputation globale), `servers` (choix du serveur actif). En DM, le **préfixe
+  par défaut** s'applique (aucun préfixe personnalisé sans serveur).
+- **Sélection de serveur** : `servers` (alias `serveurs`) affiche un **menu
+  déroulant** des serveurs que vous partagez avec le bot et **mémorise** votre
+  serveur actif (`database/data/dmSelections.json`) pour améliorer l'expérience.
+- **Commandes nécessitant un serveur** : lancées en DM, elles **détectent** le
+  contexte, **expliquent** pourquoi un serveur est requis et proposent le menu de
+  sélection de serveur. Les commandes agissant sur un salon/serveur précis
+  (modération directe…) restent réservées à une utilisation **en serveur**.
+- **Pipeline** : en DM, `ctx.guild` est `null` ; le pipeline ignore alors les
+  permissions Discord, les statistiques et les logs de serveur (les commandes
+  DM compatibles sont personnelles). Points d'entrée dédiés :
+  `events/dm/directMessage.js` (préfixe) et la branche DM de
+  `events/interaction/interactionCreate.js` (slash). Intents requis :
+  `DirectMessages` + partiel `Channel`.
+
 ## Système de logs
 
 Le système de logs se limite à **sept catégories fixes**, réellement utiles à
@@ -1011,6 +1035,7 @@ OAuth2 est complète.
 │   ├── reputation/      #   reputation+globalprofile, globalrepstats+userhistory+repconfig
 │   ├── watch/           #   watch+stopwatch, watchtimeuser+watchserveurs
 │   ├── snipe/           #   snipe+editsnipe+membersnipe+rolesnipe+sanctionsnipe+ticketsnipe+protectionsnipe
+│   ├── dm/              #   servers (sélection de serveur en messages privés)
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
 │   ├── client/          #   ready (enregistrement des commandes slash)
@@ -1020,6 +1045,7 @@ OAuth2 est complète.
 │   ├── interaction/     #   interactionCreate (slash + composants interactifs)
 │   ├── member/          #   logs des arrivées/départs et des rôles
 │   ├── message/         #   messageCreate (préfixe) + logs des messages
+│   ├── dm/              #   directMessage (commandes préfixées en messages privés)
 │   ├── reactionRoles/   #   ready (panneaux persistés opérationnels)
 │   ├── contact/         #   ready (conversations de contact persistées)
 │   ├── protections/     #   messageProtection (spam/link), botJoinProtection
@@ -1052,6 +1078,7 @@ OAuth2 est complète.
 │   ├── errors/          #   errorLogService (logs d'erreurs internes → #bot-errors)
 │   ├── prefix/          #   prefixService (préfixe personnalisable par serveur)
 │   ├── snipe/           #   snipeService (capture, requêtes filtrées, purge auto)
+│   ├── directMessages/  #   dmService (compatibilité DM + sélection de serveur)
 │   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
 │   ├── contact/         #   contactService (communication owners ↔ propriétaires)
 │   ├── protections/     #   protectionService (état, stats, logs partagés)
@@ -1081,6 +1108,7 @@ OAuth2 est complète.
 │   ├── tickets/         # Admin (config) + accès ticket (créateur / assigné / équipe)
 │   ├── watch/           # Accès à la surveillance (admin / modérateur / owner)
 │   ├── snipe/           # Accès au snipe (admin / modérateur / owner)
+│   ├── dm/              # Compatibilité DM (commande directe ou serveur requis)
 │   ├── reactionRoles/   # Sécurité d'attribution des rôles (hiérarchie du bot)
 │   ├── contact/         # Accès au contact (propriétaire du serveur)
 │   ├── protections/     # Exemptions (bot, admin, hiérarchie) + permissions bot

@@ -218,8 +218,9 @@ module.exports = {
   args: [
     { name: 'commande', type: 'string', required: false, description: 'La commande dont afficher le détail' },
   ],
+  dm: 'direct',
   async execute(ctx) {
-    const prefix = prefixService.getPrefix(ctx.guild.id);
+    const prefix = ctx.guild ? prefixService.getPrefix(ctx.guild.id) : prefixService.DEFAULT_PREFIX;
     const name = ctx.options.commande?.toLowerCase();
     if (!name) {
       // En préfixe, ctx.reply retourne le message envoyé ; en slash, il faut
@@ -252,7 +253,7 @@ module.exports = {
     const [, kind, ownerId] = parts;
     if (!['cat', 'page'].includes(kind)) return;
 
-    const prefix = prefixService.getPrefix(interaction.guild?.id);
+    const prefix = interaction.guild ? prefixService.getPrefix(interaction.guild.id) : prefixService.DEFAULT_PREFIX;
     if (interaction.user.id !== ownerId) {
       return interaction.reply({
         embeds: [errorEmbed(t('help.notYourSession', { prefix }))],
