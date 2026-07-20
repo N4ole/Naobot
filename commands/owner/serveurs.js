@@ -90,7 +90,9 @@ module.exports = {
   description: 'Liste les serveurs où le bot est présent (réservé aux owners)',
   usage: 'serveurs',
   examples: ['serveurs'],
-  aliases: ['servers', 'guilds'],
+  // « servers » n'est pas un alias ici : c'est déjà le nom de la commande DM
+  // de sélection de serveur (commands/dm/servers.js).
+  aliases: ['guilds'],
   cooldown: 3,
   args: [],
   async execute(ctx) {

@@ -136,7 +136,9 @@ const rep = {
     'rep top',
     'rep flop',
   ],
-  aliases: ['reputation'],
+  // « reputation » n'est pas un alias ici : c'est déjà le nom de la commande
+  // publique de réputation globale (commands/reputation/reputation.js).
+  aliases: [],
   cooldown: 3,
   args: [
     {

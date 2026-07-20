@@ -34,14 +34,16 @@ Respecter l'organisation :
 
 ```
 commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, snipe/, dm/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, levels/ [rank+level+leaderboard+levelconfig], reputation/, memberFiles/ [dossiers globaux : file+fileinfo+filelist+filedelete], watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, messageActivity/ [XP messages], voiceActivity/ [XP vocal], dm/ [commandes préfixées en DM], interaction/, logs/, errors/, snipe/, memberFiles/, watch/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
-services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [sites sensibles adultes/violents, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
+events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, messageActivity/ [XP messages], voiceActivity/ [XP vocal], dm/ [commandes préfixées en DM], interaction/, logs/, errors/, audit/ [parité slash/préfixe au démarrage], snipe/, memberFiles/, watch/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
+services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], audit/ [commandParityService : audit de parité slash/préfixe], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [sites sensibles adultes/violents, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, dm/, levels/, memberFiles/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
 config/        # config.js (env), permissions.js (permissions par commande)
 database/      # jsonStore.js + repositories ; données dans database/data/*.json (gitignoré)
 locales/       # textes utilisateur (fr.json) — tout texte visible passe par t()/tList()
+scripts/       # utilitaires hors ligne (checkCommandParity.js → npm run audit)
+.githooks/     # hooks Git versionnés (pre-commit : parité slash/préfixe)
 tests/         # tests unitaires node:test (npm test)
 ```
 
@@ -67,6 +69,43 @@ Chaque commande est un objet
   une commande = déposer un fichier**, aucun fichier d'infrastructure à
   modifier. Un fichier peut exporter un objet ou un tableau (famille).
 
+## Parité slash / préfixe (garantie structurelle)
+
+Comme une commande est un **objet unique** (schéma `args` → slash + préfixe,
+même `execute`), la parité slash ⇄ préfixe est **structurelle** : ne **jamais**
+créer deux fichiers séparés (`commands/slash/x.js` + `commands/prefix/x.js`) —
+ce serait de la duplication interdite. Une commande correctement déclarée
+existe automatiquement dans les deux modes, la logique métier restant dans
+`services/`.
+
+Deux pièges cassent réellement la parité ; l'audit les détecte :
+
+- **définition slash invalide** (nom non minuscule / avec espace, description
+  absente ou > 100 caractères, argument **requis après un optionnel**, > 25
+  arguments…) → la commande marche en préfixe mais Discord rejette la slash ;
+- **comportement dépendant de l'interaction dans `execute`** — surtout
+  `interaction.showModal(...)` : un modal ne s'ouvre que depuis une interaction.
+  Les modals sont donc **uniquement** déclenchés depuis `handleComponent`
+  (réponse à un bouton/menu, toujours une interaction), **jamais** depuis
+  `execute` (qui doit fonctionner aussi en préfixe, où `ctx.interaction` est nul).
+
+**Audit automatisé** (`services/audit/commandParityService.js`) : `runAudit()`
+parcourt toutes les commandes et signale les incohérences (nom, description,
+arguments, ordre, `rest`, alias en collision, permissions, modal dans
+`execute`…). Points d'usage :
+
+- commande owner **`commandaudit`** (`/commandaudit` = `!commandaudit`) :
+  statistiques, problèmes restants, date du dernier audit ;
+- **avertissements au démarrage** (`events/audit/ready.js`) : détecte toute
+  nouvelle commande et journalise les anomalies ;
+- **hook pre-commit** (`.githooks/pre-commit` → `npm run audit`) : **bloque le
+  commit** en cas d'incohérence critique. Activation : `git config core.hooksPath
+  .githooks`. Le test `tests/commandParity.test.js` fait le même garde-fou en CI.
+
+Considérer l'absence d'un équivalent slash ou préfixe comme une **erreur de
+conception** : la corriger (déclaration `args`, `handleComponent` pour les
+modals) plutôt que dupliquer la commande.
+
 # Code
 
 Toujours :
@@ -83,9 +122,10 @@ Ne jamais :
 - coder une fonctionnalité rapidement sans respecter l'architecture ;
 - stocker des données dynamiques dans le `.env`.
 
-Vérifications avant de committer : `npm test` (tests `node:test`) et un
-smoke test de chargement (les loaders + `buildSlashCommand` sur toutes les
-commandes).
+Vérifications avant de committer : `npm test` (tests `node:test`), `npm run
+audit` (parité slash/préfixe — bloquant en cas d'incohérence critique, aussi
+posé en hook `.githooks/pre-commit`) et un smoke test de chargement (les
+loaders + `buildSlashCommand` sur toutes les commandes).
 
 # Configuration
 

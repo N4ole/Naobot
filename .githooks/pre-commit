@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+# Hook Git pre-commit de NaoBot.
+#
+# Bloque le commit si une commande ne respecte pas la parité slash / préfixe
+# (incohérence critique). Voir services/audit/commandParityService.
+#
+# Activation (une seule fois par clone) :
+#   git config core.hooksPath .githooks
+#
+node scripts/checkCommandParity.js
+status=$?
+if [ "$status" -ne 0 ]; then
+  echo ""
+  echo "Commit interrompu : incohérence de parité slash/préfixe détectée."
+  echo "Lancez « npm run audit » pour le détail."
+fi
+exit $status

@@ -428,6 +428,25 @@
       "detection": "Lien sensible supprimé"
     }
   },
+  "audit": {
+    "command": {
+      "title": "🧭 Audit de parité slash / préfixe",
+      "statsField": "📊 Statistiques",
+      "stats": "Commandes totales : **{total}**\nCompatibles slash : **{slash}**\nCompatibles préfixe : **{prefix}**\nParité complète : **{dual}**",
+      "missingField": "🔁 Parité",
+      "missingNone": "✅ Toutes les commandes existent en slash **et** en préfixe.",
+      "missingSlash": "❌ Sans équivalent slash : {list}",
+      "missingPrefix": "❌ Sans équivalent préfixe : {list}",
+      "issuesField": "🩺 Incohérences ({critical} critique(s), {warning} avert.)",
+      "issuesNone": "✅ Aucune incohérence détectée.",
+      "issueLine": "{severity} `{command}` — {message}",
+      "moreIssues": "…et {count} autre(s) anomalie(s).",
+      "severityCritical": "🔴",
+      "severityWarning": "🟡",
+      "footer": "Dernier audit : {date}",
+      "loadedMismatch": "⚠️ {loaded} commande(s) chargée(s) en mémoire pour {onDisk} déclarée(s) sur disque."
+    }
+  },
   "memberFiles": {
     "empty": "Précisez le contenu de la note.",
     "added": "🗂️ Note ajoutée au dossier de {user} (identifiant : **{id}**).",

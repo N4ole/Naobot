@@ -18,7 +18,9 @@ module.exports = {
   description: 'Affiche vos serveurs et mémorise le serveur actif (utile en DM)',
   usage: 'servers',
   examples: ['servers'],
-  aliases: ['serveurs', 'serveur'],
+  // « serveurs » n'est pas un alias ici : c'est déjà le nom de la commande
+  // owner de liste des serveurs du bot (commands/owner/serveurs.js).
+  aliases: ['serveur'],
   cooldown: 5,
   dm: 'direct',
   args: [],

@@ -52,6 +52,10 @@ modulaire stricte pensée pour être maintenue et étendue facilement.
   `file`, `fileinfo`, `filelist`, `filedelete` — notes tracées (auteur, serveur
   d'origine, date, id), accès réservé aux équipes de modération, consultations
   journalisées.
+- **Parité slash / préfixe garantie** : chaque commande existe automatiquement
+  dans les deux modes (schéma d'arguments unique). Audit intégré (`commandaudit`,
+  `npm run audit`, hook pre-commit, avertissements au démarrage) qui détecte et
+  bloque toute incohérence.
 - **Textes centralisés** dans `locales/fr.json` (traduction facile).
 
 ## Installation
@@ -368,6 +372,7 @@ Logs `formulaires`.
 | `serverban <id_serveur> [raison]` | Ajoute un serveur à la **liste noire globale** ; si le bot y est présent, le propriétaire est prévenu en MP et le bot part immédiatement | `!serverban 123456789012345678 Violation des règles` |
 | `serverunban <id_serveur>` | Retire un serveur de la liste noire | `!serverunban 123456789012345678` |
 | `serverbanlist` (alias `sbl`) | Liste noire complète (ID, raison, date, owner responsable), paginée par boutons | `!serverbanlist` |
+| `commandaudit` (alias `cmdaudit`, `auditcommands`) | Audit de parité slash / préfixe de toutes les commandes : statistiques, incohérences restantes, date du dernier audit | `!commandaudit` |
 | `respond <identifiant> <message>` | Répond à une conversation de contact (message signé transmis au propriétaire via le bot ; autres owners synchronisés) | `!respond CONTACT-000001 Bonjour…` |
 | `contactlist` | Liste paginée des conversations de contact (statut, serveur, dernier message, date) | `!contactlist` |
 | `contactinfo <identifiant>` | Détail d'une conversation + menu de changement de statut | `!contactinfo CONTACT-000001` |
@@ -1195,6 +1200,7 @@ OAuth2 est complète.
 │   ├── messageActivity/ #   messageXp (XP par message : cooldown, longueur, anti-répétition)
 │   ├── voiceActivity/   #   voiceXp (XP vocal : sessions persistées, flush, reprise)
 │   ├── reputation/      #   guildBan (capture des bans → réputation globale)
+│   ├── audit/           #   ready (audit de parité slash/préfixe + avertissements)
 │   ├── memberFiles/     #   ready (dossiers membres globaux disponibles)
 │   ├── snipe/           #   messageSnipe + memberSnipe (capture) + ready (purge auto)
 │   ├── web/             #   ready (démarre l'interface web si activée)
@@ -1230,6 +1236,7 @@ OAuth2 est complète.
 │   ├── forms/           #   formService + formWizard (questions, soumissions)
 │   ├── reminders/       #   reminderService (planificateur, envoi en MP)
 │   ├── polls/           #   pollService + pollWizard (votes, modes, résultats)
+│   ├── audit/           #   commandParityService (audit de parité slash/préfixe)
 │   ├── web/             #   webService (données) + webAuth (OAuth2) + webLog
 │   ├── temporaryVoice/  #   tempVoiceService (cycle de vie) + tempVoiceWizard
 │   ├── captcha/         #   captchaService (vérification) + captchaWizard
@@ -1270,6 +1277,8 @@ OAuth2 est complète.
 ├── config/              # Configuration (env) et permissions par commande
 ├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps, dossiers membres…
 ├── locales/             # Textes utilisateur (fr.json)
+├── scripts/             # Utilitaires hors ligne (checkCommandParity.js → npm run audit)
+├── .githooks/           # Hooks Git versionnés (pre-commit : parité slash/préfixe)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login
 ```
@@ -1285,6 +1294,37 @@ OAuth2 est complète.
    (`utils/helpers/commandExecutor.js` : permissions → cooldown → `execute`).
 4. La commande n'écrit qu'une seule méthode `execute(ctx)`, qui délègue au
    service métier concerné.
+
+### Parité slash / préfixe garantie (audit)
+
+Comme une commande est un **objet unique** (un seul schéma `args`, un seul
+`execute`), chaque commande existe **automatiquement** en slash **et** en
+préfixe : il n'y a jamais de « version slash » et de « version préfixe »
+séparées à maintenir (ce serait de la duplication). Un **audit intégré**
+(`services/audit/commandParityService.js`) garantit cette parité en détectant
+les rares défauts qui casseraient un mode :
+
+- **définition slash invalide** (nom non minuscule / avec espace, description
+  manquante ou trop longue, **argument requis après un optionnel**, plus de 25
+  arguments, alias en collision avec un nom de commande…) ;
+- **comportement propre à l'interaction dans `execute`** — un `showModal` ne
+  peut venir que d'une interaction, il reste donc réservé à `handleComponent`
+  (réponse à un bouton/menu), jamais à `execute` (qui doit fonctionner en
+  préfixe).
+
+Points d'accès :
+
+| Usage | Détail |
+|---|---|
+| `commandaudit` (owner) | `/commandaudit` = `!commandaudit` : statistiques (total, compatibles slash, compatibles préfixe, parité complète), incohérences restantes et date du dernier audit |
+| `npm run audit` | Rapport en console ; **sort en erreur** s'il reste une incohérence critique |
+| `.githooks/pre-commit` | **Bloque le commit** en cas d'incohérence critique (activer une fois : `git config core.hooksPath .githooks`) |
+| Démarrage | `events/audit/ready.js` rejoue l'audit et **avertit** en console (détection des nouvelles commandes) |
+| `npm test` | `tests/commandParity.test.js` échoue si une commande casse la parité |
+
+L'audit a d'ailleurs corrigé trois alias morts (des alias qui reprenaient le
+nom d'une autre commande — `serveurs`/`servers` croisés et `rep`→`reputation` —
+et n'étaient donc jamais résolus).
 
 ### Ajouter une commande
 
@@ -1304,8 +1344,11 @@ loaders découvrent les nouveaux fichiers au démarrage.
 ## Tests
 
 ```bash
-npm test
+npm test        # tests unitaires (node:test)
+npm run audit   # audit de parité slash / préfixe (bloquant si incohérence critique)
 ```
 
 Tests unitaires avec le runner natif de Node (`node:test`) : parseur de
-durées, stockage JSON, i18n.
+durées, stockage JSON, i18n, **audit de parité slash/préfixe** (règles
+unitaires + garde-fou du projet). L'audit est aussi disponible en hook Git
+(`.githooks/pre-commit`, activé via `git config core.hooksPath .githooks`).
