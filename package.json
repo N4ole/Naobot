@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "test": "node --test",
-    "audit": "node scripts/checkCommandParity.js"
+    "audit": "node scripts/checkCommandParity.js",
+    "audit:emojis": "node scripts/auditEmojis.js"
   },
   "engines": {
     "node": ">=18.0.0"

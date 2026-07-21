@@ -38,4 +38,17 @@ const DEFAULT_LADDER = {
   7: { type: 'ban', enabled: true },
 };
 
-module.exports = { SANCTION_TYPES, DEFAULT_LADDER, MINUTE_MS, HOUR_MS, DAY_MS, WEEK_MS };
+/**
+ * Clé d'émoji officiel NaoBot associée à la gravité (nombre de warns) :
+ * 1 → `doubt`, 2-4 → `angry`, 5-6 → `crying`, 7+ → `glitch`.
+ * @param {number} count - Nombre total de warns actifs.
+ * @returns {string}
+ */
+function warnSeverityEmojiKey(count) {
+  if (count >= 7) return 'glitch';
+  if (count >= 5) return 'crying';
+  if (count >= 2) return 'angry';
+  return 'doubt';
+}
+
+module.exports = { SANCTION_TYPES, DEFAULT_LADDER, MINUTE_MS, HOUR_MS, DAY_MS, WEEK_MS, warnSeverityEmojiKey };

@@ -73,6 +73,19 @@ function trustLevel(score) {
   return TRUST_LEVELS.find((level) => score >= level.min) ?? TRUST_LEVELS[TRUST_LEVELS.length - 1];
 }
 
+/**
+ * Clé d'émoji officiel NaoBot associée à un score de réputation, par plage :
+ * 80-100 → `love`, 50-79 → `thumb`, 20-49 → `doubt`, 0-19 → `angry`.
+ * @param {number} score
+ * @returns {string}
+ */
+function scoreEmojiKey(score) {
+  if (score >= 80) return 'love';
+  if (score >= 50) return 'thumb';
+  if (score >= 20) return 'doubt';
+  return 'angry';
+}
+
 /** Badges de réputation (extensibles) selon le profil. */
 function badgesFor(record, score) {
   const badges = [];
@@ -97,5 +110,6 @@ module.exports = {
   ACTION_STAT,
   TRUST_LEVELS,
   trustLevel,
+  scoreEmojiKey,
   badgesFor,
 };

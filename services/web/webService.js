@@ -28,6 +28,17 @@ const snipeService = require('../snipe/snipeService');
 const snipeCategories = require('../../utils/constants/snipeCategories');
 const globalReputationService = require('../reputation/globalReputationService');
 const memberFileService = require('../memberFiles/memberFileService');
+const emojis = require('../../config/emojis');
+
+/**
+ * Convertit le niveau de réputation pour l'interface web : le champ `emoji`
+ * (émoji personnalisé Discord, non rendu sur une page web) est remplacé par son
+ * **secours Unicode**, garantissant une identité visuelle cohérente et lisible.
+ */
+function webLevel(level) {
+  if (!level) return level;
+  return { ...level, emoji: level.emojiKey ? emojis.fallback(level.emojiKey) : level.emoji };
+}
 
 function safe(fn, fallback) {
   try {
@@ -294,7 +305,7 @@ function profile(client, guildId, userId) {
 function reputationProfile(userId) {
   return safe(() => {
     const profile = globalReputationService.getProfile(userId);
-    return { ...profile, files: memberFileService.fileStats(userId) };
+    return { ...profile, level: webLevel(profile.level), files: memberFileService.fileStats(userId) };
   }, null);
 }
 
@@ -303,7 +314,12 @@ function reputationProfile(userId) {
  * Données sensibles : réputation + notes globales inter-serveurs.
  */
 function memberFile(userId) {
-  return safe(() => memberFileService.getDossier(userId), null);
+  return safe(() => {
+    const dossier = memberFileService.getDossier(userId);
+    // Émoji de niveau en secours Unicode pour un rendu web lisible.
+    if (dossier?.rep?.level) dossier.rep = { ...dossier.rep, level: webLevel(dossier.rep.level) };
+    return dossier;
+  }, null);
 }
 
 /** Statistiques + pondérations de réputation globale (owners). */

@@ -6,6 +6,8 @@
 const warnService = require('../../services/warnings/warnService');
 const sanctionService = require('../../services/warnings/sanctionService');
 const { infoEmbed } = require('../../utils/embeds/embeds');
+const emojis = require('../../config/emojis');
+const { warnSeverityEmojiKey } = require('../../utils/constants/warnSanctions');
 const { t } = require('../../utils/helpers/i18n');
 
 module.exports = {
@@ -27,7 +29,7 @@ module.exports = {
       sanctionService.nextSanction(ctx.guild.id, total)?.sanction ?? null,
     );
 
-    const embed = infoEmbed(t('warns.command.countTitle', { user: user.tag }), null)
+    const embed = infoEmbed(`${emojis.get(warnSeverityEmojiKey(total))} ${t('warns.command.countTitle', { user: user.tag })}`, null)
       .setThumbnail(user.displayAvatarURL())
       .addFields(
         { name: t('warns.field.total'), value: String(total), inline: true },

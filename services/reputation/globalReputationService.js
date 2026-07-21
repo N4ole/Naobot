@@ -23,7 +23,7 @@ const { logEventEmbed } = require('../../utils/embeds/embeds');
 const emojis = require('../../config/emojis');
 const COLORS = require('../../utils/constants/colors');
 const {
-  SCORE_BASE, SCORE_MIN, SCORE_MAX, TIMEOUT_LONG_MS, ACTION_STAT, trustLevel, badgesFor,
+  SCORE_BASE, SCORE_MIN, SCORE_MAX, TIMEOUT_LONG_MS, ACTION_STAT, trustLevel, scoreEmojiKey, badgesFor,
 } = require('../../utils/constants/globalReputation');
 const { t } = require('../../utils/helpers/i18n');
 
@@ -126,9 +126,12 @@ function getProfile(userId) {
   const rec = repository.getRecord(userId) ?? repository.defaultRecord(userId);
   const history = historyRepository.getHistory(userId);
   const baseLevel = trustLevel(rec.score);
-  // Émoji officiel NaoBot (love/doubt/angry) résolu dynamiquement, avec secours
-  // Unicode automatique si l'émoji personnalisé est indisponible.
-  const level = { ...baseLevel, emoji: baseLevel.emojiKey ? emojis.get(baseLevel.emojiKey) : baseLevel.emoji };
+  // Émoji officiel NaoBot par plage de score (80-100 love, 50-79 thumb,
+  // 20-49 doubt, 0-19 angry), résolu dynamiquement avec secours Unicode.
+  // `emojiKey` est conservé pour les surfaces qui ne rendent pas les émojis
+  // personnalisés (interface web → secours Unicode via emojis.fallback).
+  const scoreKey = scoreEmojiKey(rec.score);
+  const level = { ...baseLevel, emoji: emojis.get(scoreKey), emojiKey: scoreKey };
   return {
     record: rec,
     score: rec.score,

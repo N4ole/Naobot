@@ -7,6 +7,8 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('
 const warnService = require('../../services/warnings/warnService');
 const sanctionService = require('../../services/warnings/sanctionService');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
+const emojis = require('../../config/emojis');
+const { warnSeverityEmojiKey } = require('../../utils/constants/warnSanctions');
 const { t } = require('../../utils/helpers/i18n');
 
 const PAGE_SIZE = 5;
@@ -39,7 +41,8 @@ function buildPayload(guild, user, page) {
   const upcomingSanction = sanctionService.describeSanction(sanctionService.nextSanction(guild.id, total)?.sanction ?? null);
 
   const embed = infoEmbed(
-    t('warns.command.listTitle', { user: user.tag, count: warns.length }),
+    // Émoji de gravité selon le nombre de warns actifs (doubt→angry→crying→glitch).
+    `${emojis.get(warnSeverityEmojiKey(total))} ${t('warns.command.listTitle', { user: user.tag, count: warns.length })}`,
     lines.join('\n\n'),
   )
     .addFields(

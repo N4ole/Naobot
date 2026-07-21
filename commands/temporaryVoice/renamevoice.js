@@ -29,6 +29,6 @@ module.exports = {
     if (!result.ok) {
       return ctx.reply({ embeds: [errorEmbed(t(ERROR_KEYS[result.code] ?? 'tempVoice.rename.failed'))], ephemeral: true });
     }
-    return ctx.reply({ embeds: [successEmbed(t('tempVoice.rename.done', { name: result.name }))], ephemeral: true });
+    return ctx.reply({ embeds: [successEmbed(t('tempVoice.rename.done', { name: result.name }), { emoji: 'happy' })], ephemeral: true });
   },
 };

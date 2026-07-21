@@ -195,9 +195,21 @@ ailleurs** : tout module qui affiche un émoji importe ce fichier. Ajouter un
 - **Usages câblés** : `successEmbed`/`errorEmbed` (défaut `thumb`/`glitch`,
   override par `{ emoji }`) → propagation à **tous** les succès/erreurs ; help
   (icône `basic` + `CATEGORY_EMOJIS` par catégorie) ; captcha (`party` / `crying`
-  / `angry`) ; réputation (`love`/`doubt`/`angry` via `emojiKey`) ; niveaux
-  (`party` / `love`) ; sanctions (`replyResult(..., { successEmoji })`) ; logs de
-  commandes (`thumb`/`glitch`).
+  / `doubt`) ; réputation par plage de score (`scoreEmojiKey` : 80-100 `love`,
+  50-79 `thumb`, 20-49 `doubt`, 0-19 `angry`) ; warns par gravité
+  (`warnSeverityEmojiKey` : 1 `doubt`, 2-4 `angry`, 5-6 `crying`, 7 `glitch`) ;
+  niveaux (`party` / `love` / `happy`) ; tickets (`wink` / `sleepy`) ; salons
+  vocaux (`party` / `happy` / `sleepy`) ; dossiers (`wink` / `basic` / `crying`) ;
+  protections (`thumb` / `sleepy`) ; sanctions
+  (`replyResult(..., { successEmoji })`) ; logs de commandes (`thumb`/`glitch`).
+- **Interface web** : les émojis personnalisés ne s'affichent pas sur une page
+  web → `webService.webLevel` renvoie le **secours Unicode** (`emojis.fallback`).
+- **Règles** : un seul émoji par bouton, pas d'émoji dans les longs paragraphes,
+  aucune décoration « au hasard » (rester professionnel).
+- **Audit** (`services/audit/emojiAuditService.js`) : commande owner
+  `emojiaudit` (= `/emojiaudit`), `npm run audit:emojis` (échoue sur un
+  identifiant d'émoji en dur) et `tests/emojiAudit.test.js`. La couverture des
+  embeds n'a pas à atteindre 100 % (ne pas surcharger).
 
 # Permissions
 

@@ -428,6 +428,17 @@
       "detection": "Lien sensible supprimé"
     }
   },
+  "emojiAudit": {
+    "title": "Audit des émojis officiels",
+    "statsField": "📊 Couverture",
+    "stats": "Embeds analysés : **{total}**\nUtilisant les émojis officiels : **{official}**\nCouverture : **{coverage} %**",
+    "hardcodedField": "⛔ Identifiants d'émoji en dur",
+    "hardcodedNone": "✅ Aucun (tous via `config/emojis.js`).",
+    "nonCompliantField": "🩹 Modules sans émoji officiel ({count})",
+    "nonCompliantNone": "✅ Tous les embeds s'appuient sur les émojis officiels.",
+    "more": "…et {count} autre(s).",
+    "footer": "Dernier audit : {date}"
+  },
   "audit": {
     "command": {
       "title": "🧭 Audit de parité slash / préfixe",
@@ -449,7 +460,7 @@
   },
   "memberFiles": {
     "empty": "Précisez le contenu de la note.",
-    "added": "🗂️ Note ajoutée au dossier de {user} (identifiant : **{id}**).",
+    "added": "Note ajoutée au dossier de {user} (identifiant : **{id}**).",
     "notFound": "Aucune note avec l'identifiant `{id}`.",
     "notYourSession": "Seule la personne ayant lancé la commande peut confirmer cette action.",
     "noPermission": {
@@ -471,18 +482,18 @@
       "guildsCount": "Serveurs concernés"
     },
     "info": {
-      "title": "🗂️ Dossier de {user}",
+      "title": "Dossier de {user}",
       "notes": "Notes enregistrées",
       "noNotes": "Aucune note pour cet utilisateur.",
       "footer": "Page {page}/{pages}"
     },
     "list": {
-      "title": "🗂️ Notes de {user}"
+      "title": "Notes de {user}"
     },
     "noteEntry": "**`{id}`** — <t:{date}:f>\n> {content}\n> — par {author} · {server}",
     "listEntry": "**`{id}`** • par {author} • {server} • <t:{date}:d>",
     "delete": {
-      "title": "🗑️ Supprimer une note",
+      "title": "Supprimer une note",
       "confirm": "Supprimer définitivement la note `{id}` ?\n> {content}",
       "confirmButton": "Supprimer",
       "cancelButton": "Annuler",

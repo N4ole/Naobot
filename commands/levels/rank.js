@@ -9,6 +9,7 @@
  */
 const levelService = require('../../services/levels/levelService');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
+const emojis = require('../../config/emojis');
 const { formatDuration } = require('../../utils/helpers/durationParser');
 const { t } = require('../../utils/helpers/i18n');
 
@@ -24,7 +25,7 @@ function buildRankPayload(guild, user) {
   }
   const data = levelService.buildRankData(guild, user.id);
   const p = data.progress;
-  const embed = infoEmbed(t('levels.rank.title', { user: user.username }), null)
+  const embed = infoEmbed(`${emojis.get('happy')} ${t('levels.rank.title', { user: user.username })}`, null)
     .setThumbnail(user.displayAvatarURL?.({ size: 128 }) ?? null)
     .addFields(
       { name: t('levels.field.level'), value: `**${data.level}**`, inline: true },

@@ -373,6 +373,7 @@ Logs `formulaires`.
 | `serverunban <id_serveur>` | Retire un serveur de la liste noire | `!serverunban 123456789012345678` |
 | `serverbanlist` (alias `sbl`) | Liste noire complète (ID, raison, date, owner responsable), paginée par boutons | `!serverbanlist` |
 | `commandaudit` (alias `cmdaudit`, `auditcommands`) | Audit de parité slash / préfixe de toutes les commandes : statistiques, incohérences restantes, date du dernier audit | `!commandaudit` |
+| `emojiaudit` (alias `auditemojis`) | Audit d'usage des émojis officiels dans les embeds : couverture, modules non conformes, identifiants en dur, date du dernier audit | `!emojiaudit` |
 | `respond <identifiant> <message>` | Répond à une conversation de contact (message signé transmis au propriétaire via le bot ; autres owners synchronisés) | `!respond CONTACT-000001 Bonjour…` |
 | `contactlist` | Liste paginée des conversations de contact (statut, serveur, dernier message, date) | `!contactlist` |
 | `contactinfo <identifiant>` | Détail d'une conversation + menu de changement de statut | `!contactinfo CONTACT-000001` |
@@ -1044,6 +1045,46 @@ existantes.
   câblés le help (icône + émoji par catégorie), le captcha, la réputation, les
   niveaux, les sanctions et les logs de commandes.
 
+### Conventions graphiques (par module)
+
+- **Succès / validation / création** → `thumb` · **erreur / permission / panne**
+  → `glitch` · **information** → `basic`.
+- **Modération** : sanction ban/kick → `angry`, mute/timeout → `crying` ; les
+  actions inverses (unban/unmute/untimeout) restent en `thumb`.
+- **Warns (gravité)** : 1 → `doubt`, 2-4 → `angry`, 5-6 → `crying`, 7 → `glitch`
+  (helper `warnSeverityEmojiKey`).
+- **Captcha** : validé → `party`, échec → `crying`, expiration → `doubt`.
+- **Tickets** : ouvert → `wink`, fermé → `sleepy`.
+- **Salons vocaux** : création → `party`, renommage → `happy`, suppression →
+  `sleepy`.
+- **Niveaux** : montée → `party`, récompense → `love`, profil/leaderboard →
+  `happy`/`party`.
+- **Réputation** (plages de score) : 80-100 → `love`, 50-79 → `thumb`, 20-49 →
+  `doubt`, 0-19 → `angry` (helper `scoreEmojiKey`). Sur l'**interface web**, le
+  secours Unicode est utilisé (les émojis personnalisés Discord ne s'affichent
+  pas sur une page web).
+- **Dossiers membres** : ajout → `wink`, consultation → `basic`, suppression →
+  `crying`.
+- **Protections** : active → `thumb`, inactive → `sleepy`.
+- **Règles** : un seul émoji par bouton, pas d'émoji dans les longs paragraphes,
+  pas de décoration « au hasard » — l'objectif reste une interface
+  professionnelle et cohérente.
+
+### Audit d'usage des émojis
+
+Un audit vérifie la cohérence graphique et interdit tout identifiant d'émoji
+écrit en dur (`services/audit/emojiAuditService.js`) :
+
+| Usage | Détail |
+|---|---|
+| `emojiaudit` (owner) | `/emojiaudit` = `!emojiaudit` : couverture des embeds, modules non conformes, identifiants en dur, date du dernier audit |
+| `npm run audit:emojis` | Rapport console ; **sort en erreur** si un identifiant d'émoji est écrit en dur hors `config/emojis.js` |
+| `npm test` | `tests/emojiAudit.test.js` garantit l'absence d'identifiant en dur |
+
+La couverture n'a **pas** vocation à atteindre 100 % : tous les embeds n'ont pas
+besoin d'un émoji de marque (info brute, journaux à icône de module…), afin de
+ne pas surcharger l'interface.
+
 ## Système de logs
 
 Le système de logs se limite à **sept catégories fixes**, réellement utiles à
@@ -1274,7 +1315,7 @@ OAuth2 est complète.
 │   ├── forms/           #   formService + formWizard (questions, soumissions)
 │   ├── reminders/       #   reminderService (planificateur, envoi en MP)
 │   ├── polls/           #   pollService + pollWizard (votes, modes, résultats)
-│   ├── audit/           #   commandParityService (audit de parité slash/préfixe)
+│   ├── audit/           #   commandParityService (parité slash/préfixe) + emojiAuditService (émojis)
 │   ├── web/             #   webService (données) + webAuth (OAuth2) + webLog
 │   ├── temporaryVoice/  #   tempVoiceService (cycle de vie) + tempVoiceWizard
 │   ├── captcha/         #   captchaService (vérification) + captchaWizard
@@ -1315,7 +1356,7 @@ OAuth2 est complète.
 ├── config/              # Configuration (env), permissions par commande, émojis officiels
 ├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps, dossiers membres…
 ├── locales/             # Textes utilisateur (fr.json)
-├── scripts/             # Utilitaires hors ligne (checkCommandParity.js → npm run audit)
+├── scripts/             # Utilitaires hors ligne (checkCommandParity.js → npm run audit ; auditEmojis.js → npm run audit:emojis)
 ├── .githooks/           # Hooks Git versionnés (pre-commit : parité slash/préfixe)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login

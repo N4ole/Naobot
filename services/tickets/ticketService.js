@@ -25,6 +25,7 @@ const transcriptService = require('./transcriptService');
 const logService = require('../logs/logService');
 const snipeService = require('../snipe/snipeService');
 const { infoEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
+const emojis = require('../../config/emojis');
 const COLORS = require('../../utils/constants/colors');
 const ticketVariables = require('../../utils/constants/ticketVariables');
 const { t } = require('../../utils/helpers/i18n');
@@ -111,7 +112,8 @@ function buildWelcomePayload(ticket, category) {
       })
     : t('tickets.welcome.instructions');
 
-  const embed = infoEmbed(t('tickets.welcome.title', { name: ticket.channelName }), instructions).addFields(
+  // Ticket ouvert → `wink` ; ticket fermé → `sleepy`.
+  const embed = infoEmbed(`${emojis.get(closed ? 'sleepy' : 'wink')} ${t('tickets.welcome.title', { name: ticket.channelName })}`, instructions).addFields(
     { name: t('tickets.logs.category'), value: category ? `${category.emoji ?? '🎫'} ${category.name}` : ticket.categoryId, inline: true },
     { name: t('tickets.welcome.creator'), value: `<@${ticket.userId}>`, inline: true },
     { name: t('tickets.welcome.status'), value: closed ? t('tickets.welcome.statusClosed', { by: ticket.closedBy, at: Math.floor(Date.parse(ticket.closedAt) / 1000) }) : t('tickets.welcome.statusOpen'), inline: true },
