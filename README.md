@@ -1007,6 +1007,43 @@ DM ; les commandes nécessitant un serveur proposent une **sélection de serveur
   `events/interaction/interactionCreate.js` (slash). Intents requis :
   `DirectMessages` + partiel `Channel`.
 
+## Émojis officiels (charte)
+
+Tous les émojis de marque de NaoBot sont **centralisés** dans
+**`config/emojis.js`** (source unique) et réutilisés partout sans duplication.
+**Aucun identifiant d'émoji (`<:nom:id>`) n'est écrit ailleurs** : chaque module
+importe ce fichier ; ajouter un émoji = une entrée, sans modifier les commandes
+existantes.
+
+| Émoji | Clé | Usage principal |
+|---|---|---|
+| 🤖 | `basic` | Icône principale du bot (help) |
+| 👍 | `thumb` | Succès : confirmations, validations, sauvegardes, créations, logs de succès |
+| ⚠️ | `glitch` | Erreurs : exceptions, permissions insuffisantes, problèmes internes, logs d'erreur |
+| 🎉 | `party` | Captcha validé, bienvenue, **montée de niveau** |
+| ❤️ | `love` | Réputation excellente, **récompense débloquée**, catégories bump/sondages |
+| 🤔 | `doubt` | Réputation moyenne, avertissements (logs), surveillance |
+| 😠 | `angry` | Sanction (ban/kick), réputation mauvaise, captcha échoué, modération |
+| 😢 | `crying` | Sanction (mute/timeout), échec de captcha |
+| 😉 | `wink` | Tickets, formulaires |
+| 😄 | `happy` | Rôles réactions, salons vocaux |
+| 😴 | `sleepy` | Rappels |
+| 😲 | `shocked` | Réservé (extensible) |
+
+- **Formes** : `emojis.thumb` / `emojis.get('thumb')` (chaîne, pour texte et
+  descriptions d'embeds) ; `emojis.component('thumb')` (pour `setEmoji` des
+  boutons et menus) ; `emojis.fallback('thumb')` (secours Unicode seul).
+- **Secours automatique** : chaque émoji déclare un équivalent **Unicode**. Au
+  démarrage (`events/emoji/ready.js` → `syncAvailability`), le bot vérifie quels
+  émojis personnalisés existent réellement ; si l'un a été supprimé, toutes les
+  résolutions basculent **automatiquement** sur l'Unicode, sans changement de
+  code.
+- **Intégration** : les constructeurs partagés `successEmbed`/`errorEmbed`
+  utilisent `thumb`/`glitch` par défaut (override via `{ emoji }`), ce qui
+  applique la charte à **tous** les succès et erreurs du projet ; sont aussi
+  câblés le help (icône + émoji par catégorie), le captcha, la réputation, les
+  niveaux, les sanctions et les logs de commandes.
+
 ## Système de logs
 
 Le système de logs se limite à **sept catégories fixes**, réellement utiles à
@@ -1201,6 +1238,7 @@ OAuth2 est complète.
 │   ├── voiceActivity/   #   voiceXp (XP vocal : sessions persistées, flush, reprise)
 │   ├── reputation/      #   guildBan (capture des bans → réputation globale)
 │   ├── audit/           #   ready (audit de parité slash/préfixe + avertissements)
+│   ├── emoji/           #   ready (disponibilité des émojis officiels + secours Unicode)
 │   ├── memberFiles/     #   ready (dossiers membres globaux disponibles)
 │   ├── snipe/           #   messageSnipe + memberSnipe (capture) + ready (purge auto)
 │   ├── web/             #   ready (démarre l'interface web si activée)
@@ -1274,7 +1312,7 @@ OAuth2 est complète.
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
-├── config/              # Configuration (env) et permissions par commande
+├── config/              # Configuration (env), permissions par commande, émojis officiels
 ├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps, dossiers membres…
 ├── locales/             # Textes utilisateur (fr.json)
 ├── scripts/             # Utilitaires hors ligne (checkCommandParity.js → npm run audit)

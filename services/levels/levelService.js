@@ -16,6 +16,7 @@
 const repository = require('../../database/levelRepository');
 const logService = require('../logs/logService');
 const { logEventEmbed, successEmbed } = require('../../utils/embeds/embeds');
+const emojis = require('../../config/emojis');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');
 
@@ -72,7 +73,7 @@ async function assignRewards(guild, member, config, newLevel) {
     if (added) {
       await logService
         .log(guild, 'roles', logEventEmbed({
-          title: `🎁 ${t('levels.logs.rewardGranted')}`,
+          title: `${emojis.get('love')} ${t('levels.logs.rewardGranted')}`,
           color: COLORS.LOG_CREATE,
           fields: [
             { name: t('common.member'), value: `${member.user.tag}`, inline: true },
@@ -91,7 +92,7 @@ async function announceLevelUp(guild, member, config, newLevel, fallbackChannel)
   const channel = (config.announceChannelId && guild.channels.cache.get(config.announceChannelId)) || fallbackChannel;
   if (!channel?.isTextBased?.()) return;
   await channel
-    .send({ embeds: [successEmbed(t('levels.levelUp', { user: `<@${member.id}>`, level: newLevel }))], allowedMentions: { users: [member.id] } })
+    .send({ embeds: [successEmbed(t('levels.levelUp', { user: `<@${member.id}>`, level: newLevel }), { emoji: 'party' })], allowedMentions: { users: [member.id] } })
     .catch(() => null);
 }
 

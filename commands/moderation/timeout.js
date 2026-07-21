@@ -22,7 +22,7 @@ const timeout = {
   async execute(ctx) {
     const reason = ctx.options.raison ?? t('common.noReason');
     const result = await timeoutService.applyTimeout(ctx, ctx.options.membre, ctx.options.duree, reason);
-    return replyResult(ctx, result);
+    return replyResult(ctx, result, { successEmoji: 'crying' });
   },
 };
 

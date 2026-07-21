@@ -55,13 +55,18 @@ const ACTION_STAT = {
   captcha: 'captcha',
 };
 
-/** Niveaux de confiance (du plus haut au plus bas), par seuil minimal. */
+/**
+ * Niveaux de confiance (du plus haut au plus bas), par seuil minimal.
+ * `emojiKey` désigne l'émoji officiel NaoBot associé (config/emojis.js) :
+ * bonne réputation → `love`, moyenne → `doubt`, mauvaise → `angry`. `emoji`
+ * reste le secours Unicode si l'émoji personnalisé venait à manquer.
+ */
 const TRUST_LEVELS = [
-  { key: 'excellent', min: 90, label: 'Très fiable', emoji: '🟢' },
-  { key: 'good', min: 70, label: 'Fiable', emoji: '🟩' },
-  { key: 'neutral', min: 50, label: 'À surveiller', emoji: '🟡' },
-  { key: 'risky', min: 25, label: 'À risque', emoji: '🟠' },
-  { key: 'critical', min: 0, label: 'Problématique', emoji: '🔴' },
+  { key: 'excellent', min: 90, label: 'Très fiable', emoji: '🟢', emojiKey: 'love' },
+  { key: 'good', min: 70, label: 'Fiable', emoji: '🟩', emojiKey: 'love' },
+  { key: 'neutral', min: 50, label: 'À surveiller', emoji: '🟡', emojiKey: 'doubt' },
+  { key: 'risky', min: 25, label: 'À risque', emoji: '🟠', emojiKey: 'angry' },
+  { key: 'critical', min: 0, label: 'Problématique', emoji: '🔴', emojiKey: 'angry' },
 ];
 
 function trustLevel(score) {

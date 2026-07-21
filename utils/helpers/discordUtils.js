@@ -27,12 +27,16 @@ async function dmUser(user, content) {
 /**
  * Répond à l'utilisateur à partir du résultat { ok, message } retourné par
  * un service. Les échecs sont éphémères en slash pour ne pas polluer le salon.
+ * `successEmoji` permet d'imposer l'émoji officiel du succès (ex. `crying`/
+ * `angry` pour une sanction) ; par défaut, l'embed de succès utilise `thumb`.
  * @param {import('./commandContext').CommandContext} ctx
  * @param {{ ok: boolean, message: string }} result
+ * @param {{ successEmoji?: string }} [options]
  */
-function replyResult(ctx, result) {
+function replyResult(ctx, result, { successEmoji } = {}) {
+  const successOptions = successEmoji ? { emoji: successEmoji } : undefined;
   return ctx.reply({
-    embeds: [result.ok ? successEmbed(result.message) : errorEmbed(result.message)],
+    embeds: [result.ok ? successEmbed(result.message, successOptions) : errorEmbed(result.message)],
     ephemeral: !result.ok,
   });
 }

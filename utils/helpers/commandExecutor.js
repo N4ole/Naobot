@@ -12,6 +12,7 @@ const logService = require('../../services/logs/logService');
 const errorLogService = require('../../services/errors/errorLogService');
 const statsService = require('../../services/tracking/guildStatsService');
 const { errorEmbed, logEventEmbed } = require('../embeds/embeds');
+const emojis = require('../../config/emojis');
 const COLORS = require('../constants/colors');
 const { t } = require('./i18n');
 
@@ -61,7 +62,7 @@ async function executeCommand(ctx, command) {
         ctx.guild,
         'commandes',
         logEventEmbed({
-          title: t('logs.events.commandExecuted'),
+          title: `${emojis.get('thumb')} ${t('logs.events.commandExecuted')}`,
           color: COLORS.LOG_NEUTRAL,
           user: ctx.user,
           fields: commandLogFields(ctx, command),
@@ -85,7 +86,7 @@ async function executeCommand(ctx, command) {
         ctx.guild,
         'erreurs',
         logEventEmbed({
-          title: t('logs.events.commandError'),
+          title: `${emojis.get('glitch')} ${t('logs.events.commandError')}`,
           color: COLORS.ERROR,
           user: ctx.user,
           fields: [

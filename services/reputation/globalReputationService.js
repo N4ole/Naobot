@@ -20,6 +20,7 @@ const historyRepository = require('../../database/moderationHistoryRepository');
 const configRepository = require('../../database/reputationConfigRepository');
 const logService = require('../logs/logService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
+const emojis = require('../../config/emojis');
 const COLORS = require('../../utils/constants/colors');
 const {
   SCORE_BASE, SCORE_MIN, SCORE_MAX, TIMEOUT_LONG_MS, ACTION_STAT, trustLevel, badgesFor,
@@ -124,7 +125,10 @@ function recalculateAll() {
 function getProfile(userId) {
   const rec = repository.getRecord(userId) ?? repository.defaultRecord(userId);
   const history = historyRepository.getHistory(userId);
-  const level = trustLevel(rec.score);
+  const baseLevel = trustLevel(rec.score);
+  // Émoji officiel NaoBot (love/doubt/angry) résolu dynamiquement, avec secours
+  // Unicode automatique si l'émoji personnalisé est indisponible.
+  const level = { ...baseLevel, emoji: baseLevel.emojiKey ? emojis.get(baseLevel.emojiKey) : baseLevel.emoji };
   return {
     record: rec,
     score: rec.score,

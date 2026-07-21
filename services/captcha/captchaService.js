@@ -165,7 +165,8 @@ async function disableMessage(guild, config, pending, state) {
   const message = await channel?.messages.fetch(pending.messageId).catch(() => null);
   if (!message) return;
 
-  const embed = state === 'success' ? successEmbed(t('captcha.done')) : infoEmbed(t('captcha.title'), t('captcha.expiredMessage'));
+  // Vérification réussie : émoji officiel `party` (bienvenue / validation).
+  const embed = state === 'success' ? successEmbed(t('captcha.done'), { emoji: 'party' }) : infoEmbed(t('captcha.title'), t('captcha.expiredMessage'));
   await message.edit({ content: '', embeds: [embed], components: [] }).catch(() => null);
 
   // Message de confirmation temporaire : suppression automatique après délai.

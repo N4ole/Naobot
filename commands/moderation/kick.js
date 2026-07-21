@@ -19,6 +19,6 @@ module.exports = {
   async execute(ctx) {
     const reason = ctx.options.raison ?? t('common.noReason');
     const result = await kickService.kickMember(ctx, ctx.options.membre, reason);
-    return replyResult(ctx, result);
+    return replyResult(ctx, result, { successEmoji: 'angry' });
   },
 };
