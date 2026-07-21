@@ -12,6 +12,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('
 const memberFileService = require('../../services/memberFiles/memberFileService');
 const { canAddFile, canViewFiles, canDeleteNote } = require('../../middlewares/memberFiles/memberFileAccess');
 const { successEmbed, errorEmbed, infoEmbed } = require('../../utils/embeds/embeds');
+const emojis = require('../../config/emojis');
 const { t } = require('../../utils/helpers/i18n');
 
 const NOTES_PER_PAGE = 5;
@@ -34,7 +35,7 @@ function buildInfoPayload(targetUser, page, requesterId) {
   const current = Math.min(Math.max(0, page), pages - 1);
   const slice = dossier.notes.slice(current * NOTES_PER_PAGE, current * NOTES_PER_PAGE + NOTES_PER_PAGE);
 
-  const embed = infoEmbed(t('memberFiles.info.title', { user: targetUser.tag ?? targetUser.id }), null)
+  const embed = infoEmbed(`${emojis.get('basic')} ${t('memberFiles.info.title', { user: targetUser.tag ?? targetUser.id })}`, null)
     .setThumbnail(targetUser.displayAvatarURL?.({ size: 128 }) ?? null)
     .addFields(
       { name: t('memberFiles.field.user'), value: `${targetUser.tag ?? '—'} (\`${targetUser.id}\`)`, inline: false },
@@ -64,7 +65,7 @@ function buildInfoPayload(targetUser, page, requesterId) {
 function buildListPayload(targetUser, page, requesterId) {
   const notes = memberFileService.getNotes(targetUser.id);
   if (notes.length === 0) {
-    return { embeds: [infoEmbed(t('memberFiles.list.title', { user: targetUser.tag ?? targetUser.id }), t('memberFiles.info.noNotes'))], components: [] };
+    return { embeds: [infoEmbed(`${emojis.get('basic')} ${t('memberFiles.list.title', { user: targetUser.tag ?? targetUser.id })}`, t('memberFiles.info.noNotes'))], components: [] };
   }
   const pages = Math.max(1, Math.ceil(notes.length / (NOTES_PER_PAGE * 2)));
   const current = Math.min(Math.max(0, page), pages - 1);
@@ -77,7 +78,7 @@ function buildListPayload(targetUser, page, requesterId) {
       date: Math.floor(Date.parse(note.createdAt) / 1000),
     }),
   );
-  const embed = infoEmbed(t('memberFiles.list.title', { user: targetUser.tag ?? targetUser.id }), lines.join('\n')).setFooter({
+  const embed = infoEmbed(`${emojis.get('basic')} ${t('memberFiles.list.title', { user: targetUser.tag ?? targetUser.id })}`, lines.join('\n')).setFooter({
     text: t('memberFiles.info.footer', { page: current + 1, pages }),
   });
   const components =
@@ -118,7 +119,7 @@ const file = {
     if (!content) return ctx.reply({ embeds: [errorEmbed(t('memberFiles.empty'))], ephemeral: true });
 
     const note = await memberFileService.addNote(ctx.guild, ctx.options.utilisateur, ctx.user, content);
-    return ctx.reply({ embeds: [successEmbed(t('memberFiles.added', { user: `${ctx.options.utilisateur}`, id: note.id }))] });
+    return ctx.reply({ embeds: [successEmbed(t('memberFiles.added', { user: `${ctx.options.utilisateur}`, id: note.id }), { emoji: 'wink' })] });
   },
 };
 
@@ -185,7 +186,7 @@ const filedelete = {
     if (!found) return ctx.reply({ embeds: [errorEmbed(t('memberFiles.notFound', { id: ctx.options.identifiant }))], ephemeral: true });
     if (!canDeleteNote(ctx.member, found.note)) return ctx.reply({ embeds: [errorEmbed(t('memberFiles.noPermission.delete'))], ephemeral: true });
 
-    const embed = infoEmbed(t('memberFiles.delete.title'), t('memberFiles.delete.confirm', { id: found.note.id, content: found.note.content.slice(0, 500) }));
+    const embed = infoEmbed(`${emojis.get('crying')} ${t('memberFiles.delete.title')}`, t('memberFiles.delete.confirm', { id: found.note.id, content: found.note.content.slice(0, 500) }));
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId(`filedelete:confirm:${found.note.id}:${ctx.user.id}`).setLabel(t('memberFiles.delete.confirmButton')).setStyle(ButtonStyle.Danger),
       new ButtonBuilder().setCustomId(`filedelete:cancel:${found.note.id}:${ctx.user.id}`).setLabel(t('memberFiles.delete.cancelButton')).setStyle(ButtonStyle.Secondary),
@@ -200,7 +201,7 @@ const filedelete = {
       return interaction.reply({ embeds: [errorEmbed(t('memberFiles.notYourSession'))], flags: MessageFlags.Ephemeral });
     }
     if (kind === 'cancel') {
-      return interaction.update({ embeds: [infoEmbed(t('memberFiles.delete.title'), t('memberFiles.delete.cancelled'))], components: [] });
+      return interaction.update({ embeds: [infoEmbed(`${emojis.get('crying')} ${t('memberFiles.delete.title')}`, t('memberFiles.delete.cancelled'))], components: [] });
     }
     // Re-vérifie l'existence et la permission au moment de la confirmation.
     const found = memberFileService.findNote(noteId);
@@ -209,7 +210,7 @@ const filedelete = {
       return interaction.update({ embeds: [errorEmbed(t('memberFiles.noPermission.delete'))], components: [] });
     }
     await memberFileService.deleteNote(interaction.guild, noteId, interaction.user);
-    return interaction.update({ embeds: [successEmbed(t('memberFiles.delete.done', { id: noteId }))], components: [] });
+    return interaction.update({ embeds: [successEmbed(t('memberFiles.delete.done', { id: noteId }), { emoji: 'crying' })], components: [] });
   },
 };
 

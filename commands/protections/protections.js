@@ -10,10 +10,12 @@ const antipubService = require('../../services/antipub/antipubService');
 const antisensitiveService = require('../../services/antisensitive/antisensitiveService');
 const protectionTypes = require('../../utils/constants/protectionTypes');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
+const emojis = require('../../config/emojis');
 const { t } = require('../../utils/helpers/i18n');
 
+// Protection active → `thumb` ; inactive → `sleepy` (dormante).
 function indicator(enabled) {
-  return enabled ? '🟢' : '🔴';
+  return enabled ? emojis.get('thumb') : emojis.get('sleepy');
 }
 
 function buildPayload(guild) {

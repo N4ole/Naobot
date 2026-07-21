@@ -34,12 +34,12 @@ Respecter l'organisation :
 
 ```
 commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, snipe/, dm/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, levels/ [rank+level+leaderboard+levelconfig], reputation/, memberFiles/ [dossiers globaux : file+fileinfo+filelist+filedelete], watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, messageActivity/ [XP messages], voiceActivity/ [XP vocal], dm/ [commandes préfixées en DM], interaction/, logs/, errors/, audit/ [parité slash/préfixe au démarrage], snipe/, memberFiles/, watch/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
+events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, messageActivity/ [XP messages], voiceActivity/ [XP vocal], dm/ [commandes préfixées en DM], interaction/, logs/, errors/, audit/ [parité slash/préfixe au démarrage], emoji/ [disponibilité des émojis officiels + secours Unicode], snipe/, memberFiles/, watch/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
 services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], audit/ [commandParityService : audit de parité slash/préfixe], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [sites sensibles adultes/violents, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, dm/, levels/, memberFiles/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
-config/        # config.js (env), permissions.js (permissions par commande)
+config/        # config.js (env), permissions.js (permissions par commande), emojis.js (émojis officiels + secours Unicode)
 database/      # jsonStore.js + repositories ; données dans database/data/*.json (gitignoré)
 locales/       # textes utilisateur (fr.json) — tout texte visible passe par t()/tList()
 scripts/       # utilitaires hors ligne (checkCommandParity.js → npm run audit)
@@ -173,7 +173,43 @@ Toujours :
 - utiliser les **embeds** (constructeurs de `utils/embeds/embeds.js` —
   charte graphique unique : `successEmbed`, `errorEmbed`, `infoEmbed`,
   `modLogEmbed`, `logEventEmbed`, couleurs de `utils/constants/colors.js`) ;
-- utiliser les **boutons et composants** quand pertinent.
+- utiliser les **boutons et composants** quand pertinent ;
+- utiliser les **émojis officiels** via `config/emojis.js` (jamais d'identifiant
+  d'émoji en dur) — voir ci-dessous.
+
+## Émojis officiels
+
+Tous les émojis de marque de NaoBot sont centralisés dans **`config/emojis.js`**
+(source unique). **Aucun identifiant d'émoji (`<:nom:id>`) ne doit être écrit
+ailleurs** : tout module qui affiche un émoji importe ce fichier. Ajouter un
+émoji = une entrée dans `DEFS` (aucune commande existante à modifier).
+
+- `emojis.thumb` / `emojis.get('thumb')` → **chaîne** pour un texte ou une
+  description d'embed ; `emojis.component('thumb')` → valeur pour `setEmoji`
+  (boutons/menus) ; `emojis.fallback('thumb')` → secours Unicode seul.
+- **Secours automatique** : chaque émoji déclare un `fallback` Unicode. Au
+  démarrage, `events/emoji/ready.js` appelle `syncAvailability(client)` qui
+  vérifie les émojis réellement disponibles (émojis d'application + cache) ;
+  un émoji supprimé bascule **automatiquement** sur son secours, sans toucher
+  au code.
+- **Usages câblés** : `successEmbed`/`errorEmbed` (défaut `thumb`/`glitch`,
+  override par `{ emoji }`) → propagation à **tous** les succès/erreurs ; help
+  (icône `basic` + `CATEGORY_EMOJIS` par catégorie) ; captcha (`party` / `crying`
+  / `doubt`) ; réputation par plage de score (`scoreEmojiKey` : 80-100 `love`,
+  50-79 `thumb`, 20-49 `doubt`, 0-19 `angry`) ; warns par gravité
+  (`warnSeverityEmojiKey` : 1 `doubt`, 2-4 `angry`, 5-6 `crying`, 7 `glitch`) ;
+  niveaux (`party` / `love` / `happy`) ; tickets (`wink` / `sleepy`) ; salons
+  vocaux (`party` / `happy` / `sleepy`) ; dossiers (`wink` / `basic` / `crying`) ;
+  protections (`thumb` / `sleepy`) ; sanctions
+  (`replyResult(..., { successEmoji })`) ; logs de commandes (`thumb`/`glitch`).
+- **Interface web** : les émojis personnalisés ne s'affichent pas sur une page
+  web → `webService.webLevel` renvoie le **secours Unicode** (`emojis.fallback`).
+- **Règles** : un seul émoji par bouton, pas d'émoji dans les longs paragraphes,
+  aucune décoration « au hasard » (rester professionnel).
+- **Audit** (`services/audit/emojiAuditService.js`) : commande owner
+  `emojiaudit` (= `/emojiaudit`), `npm run audit:emojis` (échoue sur un
+  identifiant d'émoji en dur) et `tests/emojiAudit.test.js`. La couverture des
+  embeds n'a pas à atteindre 100 % (ne pas surcharger).
 
 # Permissions
 

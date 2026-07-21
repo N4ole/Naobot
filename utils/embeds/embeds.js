@@ -4,14 +4,28 @@
  */
 const { EmbedBuilder } = require('discord.js');
 const COLORS = require('../constants/colors');
+const emojis = require('../../config/emojis');
 const { t } = require('../helpers/i18n');
 
-function successEmbed(description) {
-  return new EmbedBuilder().setColor(COLORS.SUCCESS).setDescription(`✅ ${description}`);
+/**
+ * Embed de succès. Préfixé par l'émoji officiel `pouce` (thumb) par défaut ;
+ * `emoji` permet d'imposer un autre émoji de marque (ex. `party` pour un
+ * captcha validé ou une montée de niveau). Tout passe par config/emojis.js
+ * (secours Unicode automatique).
+ * @param {string} description
+ * @param {{ emoji?: string }} [options]
+ */
+function successEmbed(description, { emoji = 'thumb' } = {}) {
+  return new EmbedBuilder().setColor(COLORS.SUCCESS).setDescription(`${emojis.get(emoji)} ${description}`);
 }
 
-function errorEmbed(description) {
-  return new EmbedBuilder().setColor(COLORS.ERROR).setDescription(`❌ ${description}`);
+/**
+ * Embed d'erreur. Préfixé par l'émoji officiel `glitch` par défaut.
+ * @param {string} description
+ * @param {{ emoji?: string }} [options]
+ */
+function errorEmbed(description, { emoji = 'glitch' } = {}) {
+  return new EmbedBuilder().setColor(COLORS.ERROR).setDescription(`${emojis.get(emoji)} ${description}`);
 }
 
 function infoEmbed(title, description) {

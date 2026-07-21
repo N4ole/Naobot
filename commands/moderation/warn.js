@@ -7,6 +7,7 @@
 const warnService = require('../../services/warnings/warnService');
 const { checkWarnable } = require('../../middlewares/moderation/warnGuard');
 const { successEmbed, errorEmbed } = require('../../utils/embeds/embeds');
+const { warnSeverityEmojiKey } = require('../../utils/constants/warnSanctions');
 const { t } = require('../../utils/helpers/i18n');
 
 module.exports = {
@@ -40,6 +41,7 @@ module.exports = {
       }),
       t('warns.command.next', { next: result.nextLabel }),
     ];
-    return ctx.reply({ embeds: [successEmbed(lines.join('\n'))] });
+    // Émoji selon la gravité (nombre de warns) : doubt → angry → crying → glitch.
+    return ctx.reply({ embeds: [successEmbed(lines.join('\n'), { emoji: warnSeverityEmojiKey(result.total) })] });
   },
 };

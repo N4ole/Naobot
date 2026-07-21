@@ -46,9 +46,11 @@ function answerModal(userId) {
 }
 
 function resultEmbed(result) {
-  if (result.code === 'success') return successEmbed(t('captcha.success'));
-  if (result.code === 'retry') return errorEmbed(t('captcha.retry', { remaining: result.remaining }));
-  if (result.code === 'kicked') return errorEmbed(t('captcha.kicked'));
+  // Vérification réussie → `party` ; échec avec tentatives → `crying` ;
+  // expulsion (sanction) → `angry`.
+  if (result.code === 'success') return successEmbed(t('captcha.success'), { emoji: 'party' });
+  if (result.code === 'retry') return errorEmbed(t('captcha.retry', { remaining: result.remaining }), { emoji: 'crying' });
+  if (result.code === 'kicked') return errorEmbed(t('captcha.kicked'), { emoji: 'angry' });
   return errorEmbed(t('captcha.noPending'));
 }
 

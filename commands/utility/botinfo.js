@@ -4,6 +4,7 @@
  */
 const { version: discordJsVersion } = require('discord.js');
 const { infoEmbed } = require('../../utils/embeds/embeds');
+const emojis = require('../../config/emojis');
 const { formatDuration } = require('../../utils/helpers/durationParser');
 const { t } = require('../../utils/helpers/i18n');
 
@@ -20,7 +21,7 @@ const botinfo = {
     const totalUsers = client.guilds.cache.reduce((sum, guild) => sum + (guild.memberCount ?? 0), 0);
     const memoryMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
 
-    const embed = infoEmbed(t('info.botTitle', { bot: client.user.username }), null)
+    const embed = infoEmbed(`${emojis.get('basic')} ${t('info.botTitle', { bot: client.user.username })}`, null)
       .setThumbnail(client.user.displayAvatarURL())
       .addFields(
         { name: t('info.servers'), value: String(client.guilds.cache.size), inline: true },

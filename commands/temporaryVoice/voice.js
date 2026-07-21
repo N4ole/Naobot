@@ -111,7 +111,8 @@ const voicecreate = {
       COLORS.LOG_UPDATE,
     );
     return interaction.update({
-      embeds: [successEmbed(t(draft.editing ? 'tempVoice.wizard.saved' : 'tempVoice.wizard.created', { channel: `<#${generator.channelId}>` }))],
+      // Création d'un générateur → `party` (l'édition reste un succès `thumb`).
+      embeds: [successEmbed(t(draft.editing ? 'tempVoice.wizard.saved' : 'tempVoice.wizard.created', { channel: `<#${generator.channelId}>` }), draft.editing ? undefined : { emoji: 'party' })],
       components: [],
     });
   },
@@ -197,7 +198,8 @@ const voicedelete = {
       await tempVoiceService.logVoice(interaction.guild, 'config', [{ name: t('tempVoice.delete.title'), value: `<#${channelId}>`, inline: true }], COLORS.LOG_DELETE);
     }
     return interaction.update({
-      embeds: [removed ? successEmbed(t('tempVoice.delete.done')) : errorEmbed(t('tempVoice.errors.notGenerator'))],
+      // Suppression d'un générateur → `sleepy`.
+      embeds: [removed ? successEmbed(t('tempVoice.delete.done'), { emoji: 'sleepy' }) : errorEmbed(t('tempVoice.errors.notGenerator'))],
       components: [],
     });
   },
