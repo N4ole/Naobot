@@ -34,8 +34,8 @@ Respecter l'organisation :
 
 ```
 commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, snipe/, dm/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, levels/ [rank+level+leaderboard+levelconfig], reputation/, memberFiles/ [dossiers globaux : file+fileinfo+filelist+filedelete], watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, messageActivity/ [XP messages], voiceActivity/ [XP vocal], dm/ [commandes préfixées en DM], interaction/, logs/, errors/, audit/ [parité slash/préfixe au démarrage], emoji/ [disponibilité des émojis officiels + secours Unicode], snipe/, memberFiles/, watch/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
-services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], audit/ [commandParityService : audit de parité slash/préfixe], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [sites sensibles adultes/violents, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
+events/        # écouteurs Discord, par famille (client/, guild/ [serveur], channels/, roles/, emojis/, stickers/, invites/, voice/ [logs d'activité vocale], member/, message/, messageActivity/ [XP messages], voiceActivity/ [XP vocal], dm/ [commandes préfixées en DM], interaction/, logs/, errors/, audit/ [parité slash/préfixe au démarrage], emoji/ [disponibilité des émojis officiels + secours Unicode], snipe/, memberFiles/, watch/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
+services/      # logique métier (moderation/, logs/ [logService (record/log) + auditLogService (exécuteur, cache) + logThrottle (anti-doublon) + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], audit/ [commandParityService : audit de parité slash/préfixe], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [sites sensibles adultes/violents, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, dm/, levels/, memberFiles/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
@@ -263,19 +263,38 @@ Toutes les fonctionnalités importantes doivent intégrer le système de logs
 Le système est limité à **sept catégories fixes** (`utils/constants/logCategories.js`) :
 `moderation`, `sanctions`, `members`, `roles`, `tickets`, `watch`,
 `protections`. **Aucune nouvelle catégorie ne peut être créée sans modifier le
-code.** Les anciennes clés sont fusionnées vers ces sept catégories (ou
-supprimées) par la table `LEGACY_ALIASES` de `logService` : appeler
-`logService.log(guild, '<clé ou ancienne clé>', logEventEmbed({...}))` route
-automatiquement vers la bonne catégorie (ou ignore l'événement).
+code.** Les clés sémantiques (`salons`, `serveur`, `messages-supprimes`,
+`emojis`, `stickers`, `invitations`, `vocaux`…) sont **routées** vers ces sept
+catégories par `LEGACY_ALIASES` de `logService` (journalisation serveur détaillée
+→ `moderation` ; activité vocale → `members`).
+
+**Deux points d'entrée, aucun envoi direct d'embed de log** :
+
+- `logService.log(guild, '<clé>', logEventEmbed({...}))` — historique (embed
+  pré-construit) ; persiste aussi une entrée compacte au journal.
+- `logService.record(guild, '<clé>', { title, emoji, color, fields, user,
+  moderator, signature })` — **point d'entrée enrichi** des événements serveur :
+  émoji système, horodatage, membre, modérateur, **anti-doublon**
+  (`logThrottle`), persistance au **journal borné** (`logStore`) et envoi.
+
+Le **modérateur responsable** est résolu via les audit logs Discord
+(`services/logs/auditLogService`, avec **cache** ; nécessite la permission « Voir
+les logs d'audit »). Chaque nouveau listener d'événement doit passer par
+`record` (jamais `channel.send` directement).
 
 Les logs doivent rester :
 
-- configurables (commande `logs` : panneau, `setup`, `status`, `enable`,
-  `disable`) ;
+- configurables (commande `logs` : panneau, `setup`, `status`, `stats`,
+  `enable`, `disable`) ;
 - activables/désactivables (par catégorie et en masse, persistant, avec date
   et auteur de la dernière modification) ;
+- consultables (`logs stats` + interface web « Logs serveur » : filtres
+  catégorie/utilisateur/date/recherche, `/api/guilds/:id/logs`, owners) ;
 - migrés automatiquement au démarrage depuis l'ancien système
   (`services/logs/logMigration.js`).
+
+Intents requis pour la journalisation complète : `Guilds`, `GuildMessages`,
+`GuildExpressions`, `GuildVoiceStates`, `GuildInvites` (+ partial `Message`).
 
 Ajouter une catégorie (rare, volontairement fermé) = une entrée dans
 `logCategories.js` + le routage des appels concernés ; le panneau, la

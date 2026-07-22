@@ -28,6 +28,8 @@ const snipeService = require('../snipe/snipeService');
 const snipeCategories = require('../../utils/constants/snipeCategories');
 const globalReputationService = require('../reputation/globalReputationService');
 const memberFileService = require('../memberFiles/memberFileService');
+const logStore = require('../../database/logStoreRepository');
+const logCategories = require('../../utils/constants/logCategories');
 const emojis = require('../../config/emojis');
 
 /**
@@ -327,4 +329,19 @@ function reputationOverview() {
   return safe(() => ({ stats: globalReputationService.globalStats(), config: globalReputationService.getConfig() }), null);
 }
 
-module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, antisensitive, levels, snipe, moderation, profile, reputationProfile, reputationOverview, memberFile, totalBumps, totalTickets };
+/**
+ * Journal des logs serveur (owners) : entrées filtrées + compteurs par
+ * catégorie. Filtres : catégorie, utilisateur, plage de dates, recherche texte.
+ */
+function serverLogs(guildId, filters = {}) {
+  return safe(
+    () => ({
+      categories: Object.fromEntries(Object.entries(logCategories).map(([key, def]) => [key, def.label])),
+      stats: logStore.statsByCategory(guildId),
+      entries: logStore.query(guildId, filters),
+    }),
+    { categories: {}, stats: {}, entries: [] },
+  );
+}
+
+module.exports = { globalStats, listGuilds, guildOverview, ticketSummary, tickets, tempVoice, captcha, antipub, antisensitive, levels, snipe, moderation, profile, reputationProfile, reputationOverview, memberFile, serverLogs, totalBumps, totalTickets };

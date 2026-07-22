@@ -1126,10 +1126,10 @@ possible de créer d'autres catégories sans modifier le code.
 
 | Clé | Contenu | Salon |
 |---|---|---|
-| `moderation` | Kick, ban, unban, mute, unmute, timeout, retrait de timeout, suppressions massives, renommage de salons, commandes de modération | `#moderation-logs` |
+| `moderation` | Sanctions (kick/ban/mute/timeout…), **messages** (supprimés/modifiés/en masse), **salons** (création/modification/suppression), **serveur** (nom/icône/bannière/vérification/communauté), **émojis**, **stickers**, **invitations**, commandes de modération | `#moderation-logs` |
 | `sanctions` | Warns, retrait/remise à zéro, évolution de la réputation globale, sanctions automatiques | `#sanctions-logs` |
-| `members` | Arrivée, départ volontaire, expulsion, bannissement, validation et échec du captcha (pseudo, ID, création du compte, ancienneté, nombre de membres) | `#members-logs` |
-| `roles` | Ajout/retrait de rôle, rôles réactions, rôles automatiques | `#roles-logs` |
+| `members` | Arrivée, départ, expulsion, bannissement, captcha (pseudo, ID, ancienneté), **activité vocale** (arrivée/départ/déplacement, durée de session, membres présents) | `#members-logs` |
+| `roles` | **Création/modification/suppression de rôle** (nom, couleur, permissions, position), ajout/retrait de rôle, rôles réactions/automatiques | `#roles-logs` |
 | `tickets` | Ouverture, fermeture, suppression, transfert, attribution, renommage, transcript | `#tickets-logs` |
 | `watch` | Surveillance : lancement, arrêt, expiration automatique, reprise, statistiques | `#watch-logs` |
 | `protections` | Détection de spam/raid/liens/bots, mode urgence, événements captcha, actions automatiques | `#protection-logs` |
@@ -1141,6 +1141,7 @@ possible de créer d'autres catégories sans modifier le code.
 | `logs` | Panneau interactif (menu de catégories + boutons) |
 | `logs setup` | Crée la catégorie « Logs » et les sept salons (réutilise l'existant), active tout |
 | `logs status` | État détaillé : catégorie, état, salon, **date et auteur** de la dernière modification |
+| `logs stats` | **Statistiques** : nombre d'événements récents consignés, par catégorie |
 | `logs enable <catégories\|tout>` | Active une, plusieurs, ou toutes les catégories |
 | `logs disable <catégories\|tout>` | Désactive une, plusieurs, ou toutes les catégories |
 
@@ -1148,6 +1149,43 @@ possible de créer d'autres catégories sans modifier le code.
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
 `@everyone`) ; les salons existants sont **réutilisés** — jamais de doublon.
 La désactivation conserve les salons.
+
+### Journalisation détaillée des événements serveur
+
+Chaque événement important est consigné en **embed** avec **date et heure**,
+**membre concerné**, **identifiant Discord** des objets, **émoji système** et,
+lorsque Discord le fournit, le **modérateur responsable** (via les *audit logs*,
+avec un **cache** pour éviter les requêtes inutiles). Événements couverts :
+
+- **Messages** : suppression (auteur, salon, contenu, **fichiers**, identifiant),
+  modification (avant/après ; un simple aperçu de lien ne crée **aucun** log),
+  suppression en masse (nombre, salon, modérateur).
+- **Salons** : création (nom, type, catégorie parente), modification (seules les
+  propriétés réellement changées : nom, sujet, catégorie, slowmode, NSFW, débit,
+  limite, permissions), suppression.
+- **Rôles** : création (nom, couleur, permissions, position), modification
+  (nom, couleur, permissions ajoutées/retirées), suppression.
+- **Serveur** : nom, icône, bannière, niveau de vérification, paramètres
+  communautaires.
+- **Émojis** et **stickers** : création, renommage, suppression.
+- **Invitations** : création (durée, utilisations max, créateur), suppression.
+- **Activité vocale** : arrivée, départ (avec **durée de session**), déplacement,
+  nombre de membres présents.
+
+**Optimisation** : un anti-doublon (`services/logs/logThrottle`) regroupe les
+événements identiques rapprochés et ignore les modifications invisibles ; les
+logs restent centralisés — **aucun module n'envoie d'embed de log directement**,
+tout passe par `services/logs/logService` (`record`/`log`). Chaque événement est
+aussi archivé dans un **journal borné** par serveur
+(`database/data/logStore.json`) pour `logs stats` et l'interface web.
+
+**Interface web** (owners uniquement) : section « Logs serveur » —
+consultation du journal, **filtres** par catégorie, utilisateur, plage de dates
+et **recherche** texte (`/api/guilds/:id/logs`).
+
+> Intents requis : `Guilds`, `GuildMessages`, `GuildExpressions` (émojis/stickers),
+> `GuildVoiceStates`, `GuildInvites`, plus la permission **Voir les logs
+> d'audit** pour attribuer le modérateur responsable.
 
 **Migration automatique** : au démarrage, les serveurs configurés avec l'ancien
 système (nombreuses catégories) sont migrés vers ces sept catégories
@@ -1289,10 +1327,16 @@ OAuth2 est complète.
 │   ├── client/          #   ready (enregistrement des commandes slash)
 │   ├── logs/            #   ready (migration auto vers les 7 catégories)
 │   ├── errors/          #   ready (init des logs d'erreurs internes du bot)
-│   ├── guild/           #   logs des salons et du serveur
+│   ├── guild/           #   logs du serveur (nom/icône/bannière/vérification/communauté)
+│   ├── channels/        #   logs des salons (création/modification/suppression + exécuteur)
+│   ├── roles/           #   logs des rôles serveur (création/modification/suppression)
+│   ├── emojis/          #   logs des émojis (création/renommage/suppression)
+│   ├── stickers/        #   logs des stickers (création/renommage/suppression)
+│   ├── invites/         #   logs des invitations (création/suppression)
+│   ├── voice/           #   logs d'activité vocale (arrivée/départ/déplacement + durée)
 │   ├── interaction/     #   interactionCreate (slash + composants interactifs)
-│   ├── member/          #   logs des arrivées/départs et des rôles
-│   ├── message/         #   messageCreate (préfixe) + logs des messages
+│   ├── member/          #   logs des arrivées/départs et des rôles des membres
+│   ├── message/         #   messageCreate (préfixe) + logs des messages (suppr./modif./masse)
 │   ├── dm/              #   directMessage (commandes préfixées en messages privés)
 │   ├── reactionRoles/   #   ready (panneaux persistés opérationnels)
 │   ├── contact/         #   ready (conversations de contact persistées)
@@ -1318,7 +1362,7 @@ OAuth2 est complète.
 │   └── temporaryVoice/  #   voiceStateUpdate (create/delete) + ready (nettoyage)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
-│   ├── logs/            #   logService (7 catégories + alias) + modLogService + logMigration
+│   ├── logs/            #   logService (record/log, 7 catégories + alias) + auditLogService (exécuteur) + logThrottle (anti-doublon) + logMigration
 │   ├── owners/          #   ownerService (owners globaux + rôle décoratif)
 │   ├── reputation/      #   reputationService (serveurs) + globalReputationService (utilisateurs, inter-serveurs)
 │   ├── tracking/        #   guildStatsService, ownerNotifier (arrivées/départs)
