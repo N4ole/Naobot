@@ -155,16 +155,22 @@ function antisensitive(guildId) {
       const c = antisensitiveRepository.getConfig(guildId);
       return {
         enabled: c.enabled,
+        categories: c.categories,
+        action: c.action,
         exemptChannels: c.exemptChannels,
+        exemptCategories: c.exemptCategories,
+        exemptRoles: c.exemptRoles,
+        exemptUsers: c.exemptUsers,
         blockedDomains: c.blockedDomains,
         allowedDomains: c.allowedDomains,
+        blockedKeywords: c.blockedKeywords,
         stats: c.stats,
         lastModifiedAt: c.lastModifiedAt,
         lastModifiedBy: c.lastModifiedBy,
         recentDetections: c.recentDetections,
       };
     },
-    { enabled: false, exemptChannels: [], stats: { detections: 0, deleted: 0, errors: 0 }, recentDetections: [] },
+    { enabled: false, categories: {}, action: 'delete', exemptChannels: [], stats: { detections: 0, deleted: 0, errors: 0 }, recentDetections: [] },
   );
 }
 

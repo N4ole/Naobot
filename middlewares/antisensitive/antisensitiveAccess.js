@@ -22,6 +22,12 @@ function isExemptChannel(config, channelId) {
   return config.exemptChannels.includes(channelId);
 }
 
+/** true si la catégorie parente du salon est exemptée. */
+function isExemptCategory(config, parentId) {
+  if (!parentId) return false;
+  return (config.exemptCategories ?? []).includes(parentId);
+}
+
 /** true si le membre échappe à la protection (staff, rôle ou utilisateur exempté). */
 function isExemptMember(config, member) {
   if (isExempt(member)) return true;
@@ -30,4 +36,4 @@ function isExemptMember(config, member) {
   return false;
 }
 
-module.exports = { canConfigure, isExemptChannel, isExemptMember, canModerateMessages };
+module.exports = { canConfigure, isExemptChannel, isExemptCategory, isExemptMember, canModerateMessages };

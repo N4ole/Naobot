@@ -1,0 +1,31 @@
+{
+  "_comment": "Base locale de contenus sensibles (protection anti-contenus sensibles). Domaines + mots-clés par catégorie. Les expressions régulières vivent dans utils/constants/sensitiveContent.js (le JSON ne peut pas porter de regex). Chaque serveur peut ajouter ses propres domaines/mots-clés via la commande antisensitive (repository), sans modifier ce fichier.",
+  "porn": {
+    "domains": [
+      "pornhub.com", "xvideos.com", "xnxx.com", "xhamster.com", "redtube.com",
+      "youporn.com", "youjizz.com", "brazzers.com", "spankbang.com", "eporner.com",
+      "tnaflix.com", "motherless.com", "porntrex.com", "porn.com", "txxx.com",
+      "onlyfans.com", "fansly.com", "chaturbate.com", "stripchat.com", "bongacams.com",
+      "myfreecams.com", "cam4.com", "livejasmin.com",
+      "rule34.xxx", "e-hentai.org", "nhentai.net", "hentaihaven.xxx",
+      "adultfriendfinder.com", "ashleymadison.com", "fetlife.com", "benaughty.com"
+    ],
+    "keywords": ["pornographie", "porno", "porn", "pron", "xxx", "hentai", "camgirl", "escort", "nudes", "sexcam", "nsfw"]
+  },
+  "gore": {
+    "domains": [
+      "bestgore.com", "bestgore.fun", "theync.com", "documentingreality.com",
+      "watchpeopledie.tv", "seegore.com", "goregrish.com", "kaotic.com",
+      "deathaddict.com", "gore.com", "crazyshit.com"
+    ],
+    "keywords": ["gore", "decapitation", "torture", "snuff", "mutilation", "egorgement"]
+  },
+  "violence": {
+    "domains": ["liveleak.com", "ogrish.com", "rotten.com", "shockgore.com", "ogrish.tv"],
+    "keywords": ["beheading", "massacre", "lynchage"]
+  },
+  "danger": {
+    "domains": [],
+    "keywords": ["automutilation", "selfharm", "scarification"]
+  }
+}

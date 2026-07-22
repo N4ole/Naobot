@@ -437,9 +437,17 @@
     "status": {
       "title": "🔞 Anti-contenus sensibles — {guild}",
       "state": "{indicator} Protection **{state}**",
+      "categories": "Catégories surveillées",
+      "action": "Réaction",
       "exemptCount": "Salons exemptés",
       "stats": "Statistiques",
       "statsValue": "{detections} détection(s) · {deleted} supprimé(s) · {errors} erreur(s)",
+      "exemptions": "Exceptions",
+      "exemptionsValue": "Salons : **{channels}** · Catégories : **{categories}** · Rôles : **{roles}** · Membres : **{users}**",
+      "customLists": "Listes personnalisées",
+      "customListsValue": "Domaines interdits : **{blocked}** · Autorisés : **{allowed}** · Mots-clés : **{keywords}**",
+      "recent": "Derniers événements (page {page}/{pages})",
+      "noDetections": "Aucune détection pour le moment.",
       "lastModified": "Dernière modification",
       "never": "Jamais",
       "channels": "Salons exemptés (page {page}/{pages})",
@@ -452,26 +460,67 @@
       "prev": "◀ Précédent",
       "next": "Suivant ▶"
     },
-    "whitelist": {
-      "listTitle": "🔞 Salons exemptés d'anti-contenus sensibles",
-      "needChannel": "Indiquez un salon (mention ou identifiant).",
-      "added": "✅ {channel} est désormais exempté : les liens sensibles y sont tolérés.",
-      "alreadyAdded": "ℹ️ {channel} est déjà exempté.",
-      "removed": "✅ {channel} n'est plus exempté : les liens sensibles y seront supprimés.",
-      "notFound": "ℹ️ {channel} n'était pas dans la liste des salons exemptés."
+    "whitelist": { "listTitle": "🔞 Salons ignorés (anti-contenus sensibles)" },
+    "category": { "listTitle": "🔞 Catégories de salons ignorées" },
+    "role": { "listTitle": "🔞 Rôles ignorés" },
+    "user": { "listTitle": "🔞 Membres ignorés" },
+    "blacklist": { "listTitle": "🔞 Domaines interdits personnalisés" },
+    "allow": { "listTitle": "🔞 Domaines autorisés (whitelist)" },
+    "keyword": { "listTitle": "🔞 Mots-clés personnalisés" },
+    "list": {
+      "empty": "Liste vide.",
+      "needTarget": "Précisez une cible (mention, identifiant, domaine ou mot).",
+      "added": "✅ **{value}** ajouté(e).",
+      "alreadyAdded": "ℹ️ **{value}** est déjà présent(e).",
+      "removed": "✅ **{value}** retiré(e).",
+      "notFound": "ℹ️ **{value}** n'était pas dans la liste."
+    },
+    "method": {
+      "domain": "Domaine",
+      "keyword": "Mot-clé",
+      "expression": "Expression"
+    },
+    "action": {
+      "delete": "Supprimer le message",
+      "notify": "Avertir sans supprimer",
+      "log": "Journaliser uniquement"
+    },
+    "filter": {
+      "unknown": "Catégorie inconnue. Catégories : {categories}.",
+      "needState": "Précisez `on` ou `off`.",
+      "set": "✅ Catégorie **{category}** : détection **{state}**."
+    },
+    "reaction": {
+      "unknown": "Réaction inconnue. Valeurs : {actions}.",
+      "set": "✅ Réaction définie : **{action}**."
+    },
+    "warn": {
+      "set": "✅ Message d'avertissement personnalisé enregistré.",
+      "reset": "✅ Message d'avertissement réinitialisé (message par défaut)."
+    },
+    "test": {
+      "needText": "Indiquez un texte à tester.",
+      "title": "🔞 Test de détection",
+      "clean": "✅ Aucun contenu sensible détecté dans ce texte.",
+      "detected": "🚨 Détecté : {category}\nMéthode : **{method}** · Correspondance : `{match}`"
     },
     "field": {
       "category": "Catégorie",
       "domain": "Domaine",
+      "method": "Méthode",
+      "detected": "Contenu détecté",
       "deleted": "Message supprimé",
+      "logged": "Journalisé (sans suppression)",
       "error": "Suppression impossible (permissions insuffisantes)"
     },
     "logs": {
       "enabled": "Anti-contenus sensibles activé",
       "disabled": "Anti-contenus sensibles désactivé",
-      "whitelistAdd": "Salon exempté ajouté",
-      "whitelistRemove": "Salon exempté retiré",
-      "detection": "Lien sensible supprimé"
+      "whitelistAdd": "Salon ignoré ajouté",
+      "whitelistRemove": "Salon ignoré retiré",
+      "blacklistAdd": "Domaine interdit ajouté",
+      "blacklistRemove": "Domaine interdit retiré",
+      "detection": "Contenu sensible détecté"
     }
   },
   "emojiAudit": {
