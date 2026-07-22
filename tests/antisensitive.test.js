@@ -8,59 +8,84 @@ const logService = require('../services/logs/logService');
 logService.log = async () => {};
 
 const antisensitiveService = require('../services/antisensitive/antisensitiveService');
+const matcher = require('../services/antisensitive/sensitiveMatcher');
 const repository = require('../database/antisensitiveRepository');
 
 const user = (id) => ({ id, tag: `${id}#0001`, displayAvatarURL: () => 'https://cdn.discordapp.com/avatar.png' });
 const G = 'test-guild-antisensitive';
 after(() => fs.rmSync(path.join(__dirname, '..', 'database', 'data', 'antisensitive.json'), { force: true }));
 
-const emptyConfig = { enabled: true, exemptChannels: [], exemptRoles: [], exemptUsers: [], blockedDomains: [], allowedDomains: [] };
+const cfg = () => ({ categories: { porn: true, gore: true, violence: true, danger: true } });
 
-test('analyze : détecte les domaines sensibles et leurs sous-domaines', () => {
-  assert.equal(antisensitiveService.analyze('lien xvideos.com/abc', emptyConfig).category, 'adult');
-  assert.equal(antisensitiveService.analyze('va sur m.xhamster.com', emptyConfig).category, 'adult');
-  assert.equal(antisensitiveService.analyze('gore bestgore.fun/x', emptyConfig).category, 'gore');
+test('matcher : domaines sensibles et sous-domaines (par catégorie)', () => {
+  assert.equal(matcher.analyze('lien xvideos.com/abc', cfg()).category, 'porn');
+  assert.equal(matcher.analyze('va sur m.xhamster.com', cfg()).category, 'porn');
+  assert.equal(matcher.analyze('gore bestgore.fun/x', cfg()).category, 'gore');
+  assert.equal(matcher.analyze('liveleak.com/watch', cfg()).category, 'violence');
 });
 
-test('analyze : révèle les liens obfusqués', () => {
-  assert.ok(antisensitiveService.analyze('regarde xvideos . com', emptyConfig));
-  assert.ok(antisensitiveService.analyze('xvideos(dot)com', emptyConfig));
+test('matcher : contournements (leet, espaces, points, www)', () => {
+  assert.ok(matcher.analyze('regarde xvideos . com', cfg()));
+  assert.ok(matcher.analyze('xvideos(dot)com', cfg()));
+  assert.equal(matcher.analyze('du p0rn ici', cfg()).method, 'keyword'); // leet
+  assert.equal(matcher.analyze('pr0n gratuit', cfg()).category, 'porn'); // pr0n → pron
+  assert.ok(matcher.analyze('p o r n h u b .com', cfg())); // condensé
+  assert.equal(matcher.analyze('https://www.pornhub.com/x', cfg()).category, 'porn'); // www.
 });
 
-test('analyze : ignore les domaines ordinaires', () => {
-  assert.equal(antisensitiveService.analyze('coucou example.com', emptyConfig), null);
-  assert.equal(antisensitiveService.analyze('https://github.com/x', emptyConfig), null);
-  assert.equal(antisensitiveService.analyze('', emptyConfig), null);
+test('matcher : redirections / paramètres d’URL', () => {
+  const r = matcher.analyze('safe https://safe.com/r?url=https%3A%2F%2Fpornhub.com', cfg());
+  assert.equal(r.category, 'porn');
+  assert.equal(r.method, 'domain');
 });
 
-test('analyze : domaines autorisés (whitelist) et bloqués (configurable)', () => {
-  const withAllow = { ...emptyConfig, allowedDomains: ['pornhub.com'] };
-  assert.equal(antisensitiveService.analyze('https://pornhub.com/x', withAllow), null);
-  const withBlock = { ...emptyConfig, blockedDomains: ['badsite.net'] };
-  assert.equal(antisensitiveService.analyze('badsite.net/x', withBlock).category, 'shock');
+test('matcher : expressions (arnaques, défis dangereux)', () => {
+  assert.equal(matcher.analyze('free discord nitro ici', cfg()).category, 'danger');
+  assert.equal(matcher.analyze('blackout challenge tuto', cfg()).category, 'danger');
 });
 
-test('setEnabled / whitelist : persistants', async () => {
+test('matcher : ignore les contenus ordinaires (pas de faux positif)', () => {
+  assert.equal(matcher.analyze('coucou example.com', cfg()), null);
+  assert.equal(matcher.analyze('https://github.com/x', cfg()), null);
+  assert.equal(matcher.analyze('go read the book before class', cfg()), null);
+  assert.equal(matcher.analyze('', cfg()), null);
+});
+
+test('matcher : catégories désactivées, domaines/mots autorisés et bloqués', () => {
+  assert.equal(matcher.analyze('xvideos.com', { categories: { porn: false } }), null);
+  assert.equal(matcher.analyze('https://pornhub.com/x', { ...cfg(), allowedDomains: ['pornhub.com'] }), null);
+  assert.equal(matcher.analyze('badsite.net/x', { ...cfg(), blockedDomains: ['badsite.net'] }).category, 'custom');
+  assert.equal(matcher.analyze('un motinterdit ici', { ...cfg(), blockedKeywords: ['motinterdit'] }).category, 'custom');
+  assert.equal(matcher.analyze('nsfw art', { ...cfg(), allowedKeywords: ['nsfw'] }), null); // faux positif supprimé
+});
+
+test('setEnabled / catégorie / action / exemptions : persistants', async () => {
   const guild = { id: G, name: 'T' };
   assert.equal(antisensitiveService.isEnabled(G), false);
   await antisensitiveService.setEnabled(guild, true, user('admin1'));
   assert.equal(antisensitiveService.isEnabled(G), true);
   assert.equal(repository.getConfig(G).lastModifiedBy, 'admin1');
 
-  const add = await antisensitiveService.addExemptChannel(guild, { id: 'c1' }, user('admin1'));
-  assert.equal(add.added, true);
-  assert.deepEqual(antisensitiveService.listExemptChannels(G), ['c1']);
-  const rm = await antisensitiveService.removeExemptChannel(guild, 'c1', user('admin1'));
-  assert.equal(rm.removed, true);
+  await antisensitiveService.setCategory(guild, 'gore', false, user('admin1'));
+  assert.equal(repository.getConfig(G).categories.gore, false);
+
+  await antisensitiveService.setAction(guild, 'notify', user('admin1'));
+  assert.equal(repository.getConfig(G).action, 'notify');
+
+  const addRole = await antisensitiveService.exemptRoles.add(guild, 'role1', user('admin1'));
+  assert.equal(addRole.added, true);
+  assert.deepEqual(repository.getConfig(G).exemptRoles, ['role1']);
+  const addDom = await antisensitiveService.blockedDomains.add(guild, 'BadSite.NET', user('admin1'));
+  assert.equal(addDom.added, true);
+  assert.deepEqual(repository.getConfig(G).blockedDomains, ['badsite.net']); // normalisé
+  const rmDom = await antisensitiveService.blockedDomains.remove(guild, 'badsite.net', user('admin1'));
+  assert.equal(rmDom.removed, true);
 });
 
-test('checkOutgoing : bloque selon l\'état et les exemptions', async () => {
+test('checkOutgoing : bloque selon l’état et les exemptions', async () => {
   const guild = { id: G, name: 'T' };
   await antisensitiveService.setEnabled(guild, false, user('admin1'));
   assert.equal(antisensitiveService.checkOutgoing(guild, { id: 'c' }, 'xvideos.com'), null);
   await antisensitiveService.setEnabled(guild, true, user('admin1'));
   assert.ok(antisensitiveService.checkOutgoing(guild, { id: 'c' }, 'xvideos.com'));
-  assert.equal(antisensitiveService.checkOutgoing(guild, { id: 'c' }, 'du texte'), null);
-  await antisensitiveService.addExemptChannel(guild, { id: 'nsfw' }, user('admin1'));
-  assert.equal(antisensitiveService.checkOutgoing(guild, { id: 'nsfw' }, 'xvideos.com'), null);
 });

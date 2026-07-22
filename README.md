@@ -209,9 +209,13 @@ préfixes par serveur** dans une future mise à jour.
 | `antipub whitelist add <salon>` | Exempte un salon (invitations autorisées) | Administrateur | `!antipub whitelist add #partenariats` |
 | `antipub whitelist remove <salon>` | Retire un salon des exemptions | Administrateur | `!antipub whitelist remove #partenariats` |
 | `antipub whitelist list` | Liste les salons exemptés | Administrateur | `!antipub whitelist list` |
-| `antisensitive <on\|off>` | Active/désactive l'anti-contenus sensibles (sites adultes/violents) | Administrateur | `!antisensitive on` |
-| `antisensitive status` | État, salons exemptés (paginés), statistiques, boutons | Administrateur | `!antisensitive status` |
-| `antisensitive whitelist add\|remove\|list <salon>` | Gère les salons exemptés | Administrateur | `!antisensitive whitelist add #nsfw` |
+| `antisensitive <on\|off>` | Active/désactive l'anti-contenus sensibles (adultes/gore/violence/danger) | Administrateur | `!antisensitive on` |
+| `antisensitive status` | État, catégories, réaction, exceptions, listes personnalisées, événements récents (paginés), boutons | Administrateur | `!antisensitive status` |
+| `antisensitive whitelist\|category\|role\|user add\|remove\|list <cible>` | Exceptions : salons, catégories de salons, rôles, membres ignorés | Administrateur | `!antisensitive role add @Mods` |
+| `antisensitive blacklist\|allow\|keyword add\|remove\|list <valeur>` | Domaines interdits, domaines autorisés, mots-clés personnalisés | Administrateur | `!antisensitive blacklist add badsite.net` |
+| `antisensitive filter <catégorie> <on\|off>` | Active/désactive une catégorie (porn/gore/violence/danger) | Administrateur | `!antisensitive filter gore off` |
+| `antisensitive reaction <delete\|notify\|log>` | Réaction du bot en cas de détection | Administrateur | `!antisensitive reaction notify` |
+| `antisensitive warn <message\|reset>` / `antisensitive test <texte>` | Message d'avertissement personnalisé ; test de détection | Administrateur | `!antisensitive test regarde xvideos.com` |
 
 Protections indépendantes, **désactivées par défaut**, configurées par
 serveur et persistantes (`database/data/protections.json`).
@@ -264,32 +268,46 @@ séparément, **désactivée par défaut**, persistante par serveur
 
 #### 🔞 Anti-contenus sensibles (sites adultes / violents)
 
-Protection **dédiée et indépendante**, activable séparément, **désactivée par
-défaut**, persistante par serveur (`database/data/antisensitive.json`).
+Protection **dédiée, modulaire et indépendante**, activable séparément,
+**désactivée par défaut**, persistante par serveur
+(`database/data/antisensitive.json`). Conçue pour un bot **public
+multi-serveurs** : détection **hors ligne** (aucune requête réseau), en cache
+mémoire, entièrement asynchrone et **jamais bloquante** (une erreur est
+journalisée dans les logs internes du bot, le message et le bot continuent).
 
-- **Détection** : liens vers des sites pour **adultes**, **violents/gore** ou
-  **choquants** (listes fermées par catégorie dans
-  `utils/constants/sensitiveDomains.js`), par **domaine et sous-domaine**, y
-  compris **dissimulés** (espaces, « (dot) », caractères invisibles) et dans un
-  **embed**. S'applique aux messages classiques, **modifiés**, aux réponses et
-  aux commandes de type `say`. **Domaines configurables** par serveur
-  (`blockedDomains`) et **domaines autorisés** (`allowedDomains`).
-- **Extensible** : `analyze` applique une chaîne de matchers ; l'architecture
-  prévoit l'ajout d'**API de réputation**, de **listes noires externes**, de
-  **modèles d'analyse** et la résolution des **liens raccourcis / redirections**.
-- **Réaction** : suppression du message, **notification discrète** de
-  l'utilisateur (auto-supprimée), journalisation (`protections`) et
-  statistiques (détections, suppressions, erreurs). Warns/sanctions automatiques
-  et notifications aux modérateurs prévus (extensions).
-- **Salons exemptés** : liste persistante, éditable et consultable
-  (`whitelist add`/`remove`/`list`).
-- **Exceptions futures** : rôles et utilisateurs exemptés prévus (repository +
-  middleware).
-- **Status** : `antisensitive status` — état, salons exemptés (paginés),
-  statistiques et date de dernière modification (embed + boutons).
-- **Intégration** : l'état apparaît dans le tableau de bord `protections`
-  (anti-spam, anti-link, anti-bot, anti-publicité, anti-contenus sensibles).
-  **Interface web** : `/api/guilds/:id/antisensitive`.
+- **4 catégories** (activables indépendamment) : **`porn`** (pornographie,
+  plateformes, sites de rencontres adultes, NSFW), **`gore`** (gore, torture,
+  décapitations), **`violence`** (violences extrêmes, contenus choquants),
+  **`danger`** (défis dangereux, automutilation, arnaques évidentes).
+- **Base locale** versionnée : `data/protections/sensitiveBlacklist.json`
+  (domaines + mots-clés par catégorie) + expressions régulières dans
+  `utils/constants/sensitiveContent.js`. Enrichissable par serveur (domaines,
+  mots-clés) sans toucher au code.
+- **3 méthodes combinées** (`services/antisensitive/sensitiveMatcher`, fonctions
+  pures, regex précompilées) : **domaines** (hôte, sous-domaines, **paramètres
+  d'URL / redirections**, `www.` retiré) ; **mots-clés** (mots entiers) ;
+  **expressions** (formulations, arnaques). Détection des **contournements** :
+  leet-speak (`p0rn`, `pr0n`), homoglyphes, accents, séparateurs (`p.o.r.n`,
+  `p o r n`), caractères invisibles.
+- **Cibles** : messages classiques, **modifiés**, **embeds** et **webhooks**.
+  Anti-double-action (un message n'est jamais traité deux fois) et
+  raccourcisseurs d'URL reconnus (jamais résolus par le réseau, par sûreté).
+- **Réaction configurable** (`reaction delete|notify|log`) : suppression +
+  **avertissement discret personnalisable** (`warn`), ou avertir sans supprimer,
+  ou journaliser seulement. Journalisation `protections` (utilisateur, salon,
+  **contenu détecté**, **catégorie**, **méthode**, action, date) + statistiques.
+- **Exceptions** : salons, **catégories de salons**, rôles, membres ignorés ;
+  **domaines autorisés** et **mots-clés autorisés** (suppression de faux
+  positifs). Commandes `whitelist`/`category`/`role`/`user`/`allow` +
+  `blacklist`/`keyword` (domaines/mots interdits personnalisés).
+- **Test** : `antisensitive test <texte>` analyse un texte et renvoie la
+  catégorie/méthode/correspondance (mise au point sans risque).
+- **Status** : état, catégories, réaction, exceptions, listes personnalisées,
+  **événements récents paginés**, date de dernière modification (embed +
+  boutons).
+- **Intégration** : tableau de bord `protections`. **Interface web** :
+  `/api/guilds/:id/antisensitive` (catégories, réaction, exceptions, listes,
+  détections récentes).
 
 #### 🚨 Mode urgence
 
@@ -1307,7 +1325,7 @@ OAuth2 est complète.
 │   ├── contact/         #   contactowner, respond, contactlist+contactinfo
 │   ├── protections/     #   antispam+antilink+antibot, protections (tableau de bord)
 │   ├── antipub/         #   antipub (on/off/status/whitelist — invitations Discord)
-│   ├── antisensitive/   #   antisensitive (on/off/status/whitelist — sites sensibles)
+│   ├── antisensitive/   #   antisensitive (on/off/status/whitelist/category/role/user/blacklist/allow/keyword/filter/reaction/warn/test)
 │   ├── emergency/       #   urgence (verrouillage on/off/status)
 │   ├── welcome/         #   setwelcome, welcomestatus+welcomepreview
 │   ├── backup/          #   backup (create/load/delete/list)
@@ -1384,7 +1402,7 @@ OAuth2 est complète.
 │   ├── antilink/        #   antilinkService (moteur de détection)
 │   ├── antibot/         #   antibotService (arrivées de bots, raids)
 │   ├── antipub/         #   antipubService (invitations Discord, indépendant)
-│   ├── antisensitive/   #   antisensitiveService (sites sensibles, indépendant)
+│   ├── antisensitive/   #   antisensitiveService (orchestration) + sensitiveMatcher (moteur pur, 3 méthodes)
 │   ├── emergency/       #   emergencyService (verrouillage/restauration)
 │   ├── welcome/         #   welcomeService + welcomeCardService (modèles)
 │   ├── backup/          #   backupService + botConfigBackup (structure + config)
@@ -1431,6 +1449,7 @@ OAuth2 est complète.
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
 ├── config/              # Configuration (env), permissions, émojis officiels (messages), logos de catégories (Unicode)
 ├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps, dossiers membres…
+├── data/                # Données versionnées (base locale) : protections/sensitiveBlacklist.json
 ├── locales/             # Textes utilisateur (fr.json)
 ├── scripts/             # Utilitaires hors ligne (checkCommandParity.js → npm run audit ; auditEmojis.js → npm run audit:emojis)
 ├── .githooks/           # Hooks Git versionnés (pre-commit : parité slash/préfixe)
