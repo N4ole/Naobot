@@ -24,8 +24,10 @@ const client = new Client({
     GatewayIntentBits.GuildModeration,
     // Événements liés aux émojis (catégorie de logs « serveur »).
     GatewayIntentBits.GuildExpressions,
-    // Activité vocale (système de surveillance de modération).
+    // Activité vocale (surveillance de modération + logs d'activité vocale).
     GatewayIntentBits.GuildVoiceStates,
+    // Invitations créées/supprimées (logs des invitations).
+    GatewayIntentBits.GuildInvites,
     // Nécessaire aux commandes préfixées (lecture du contenu des messages).
     // Doit aussi être activé dans le Discord Developer Portal (onglet Bot).
     GatewayIntentBits.MessageContent,

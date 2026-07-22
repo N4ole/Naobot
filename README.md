@@ -1016,19 +1016,27 @@ Tous les émojis de marque de NaoBot sont **centralisés** dans
 importe ce fichier ; ajouter un émoji = une entrée, sans modifier les commandes
 existantes.
 
-| Émoji | Clé | Usage principal |
+> **Règle de marque.** Les émojis **personnalisés** servent uniquement à donner
+> de la personnalité aux **messages** du bot (succès, erreurs, confirmations,
+> sanctions, logs, captcha, niveaux, réputation, bienvenue, notifications,
+> embeds système). Ils ne sont **jamais** utilisés comme **logos de catégories**.
+> Les logos de catégories (commande `help`, menus déroulants, interface web,
+> onglets, navigation) restent des émojis **Discord standards (Unicode)**,
+> centralisés dans **`config/categoryEmojis.js`** (voir plus bas).
+
+| Émoji | Clé | Usage (messages uniquement) |
 |---|---|---|
-| 🤖 | `basic` | Icône principale du bot (help) |
+| 🤖 | `basic` | Identité du bot dans un message (ex. `botinfo`, dossier consulté) |
 | 👍 | `thumb` | Succès : confirmations, validations, sauvegardes, créations, logs de succès |
 | ⚠️ | `glitch` | Erreurs : exceptions, permissions insuffisantes, problèmes internes, logs d'erreur |
-| 🎉 | `party` | Captcha validé, bienvenue, **montée de niveau** |
-| ❤️ | `love` | Réputation excellente, **récompense débloquée**, catégories bump/sondages |
-| 🤔 | `doubt` | Réputation moyenne, avertissements (logs), surveillance |
-| 😠 | `angry` | Sanction (ban/kick), réputation mauvaise, captcha échoué, modération |
-| 😢 | `crying` | Sanction (mute/timeout), échec de captcha |
-| 😉 | `wink` | Tickets, formulaires |
-| 😄 | `happy` | Rôles réactions, salons vocaux |
-| 😴 | `sleepy` | Rappels |
+| 🎉 | `party` | Captcha validé, bienvenue, **montée de niveau**, création de salon vocal |
+| ❤️ | `love` | Réputation excellente, **récompense débloquée** |
+| 🤔 | `doubt` | Réputation moyenne, avertissement (warn 1), captcha expiré |
+| 😠 | `angry` | Sanction ban/kick, réputation mauvaise, warns 2-4 |
+| 😢 | `crying` | Sanction mute/timeout, échec de captcha, warns 5-6, suppression de note |
+| 😉 | `wink` | Ticket ouvert, ajout de note |
+| 😄 | `happy` | Renommage de salon vocal, profil de niveau |
+| 😴 | `sleepy` | Ticket fermé, suppression de salon vocal, protection inactive |
 | 😲 | `shocked` | Réservé (extensible) |
 
 - **Formes** : `emojis.thumb` / `emojis.get('thumb')` (chaîne, pour texte et
@@ -1042,10 +1050,32 @@ existantes.
 - **Intégration** : les constructeurs partagés `successEmbed`/`errorEmbed`
   utilisent `thumb`/`glitch` par défaut (override via `{ emoji }`), ce qui
   applique la charte à **tous** les succès et erreurs du projet ; sont aussi
-  câblés le help (icône + émoji par catégorie), le captcha, la réputation, les
-  niveaux, les sanctions et les logs de commandes.
+  câblés le captcha, la réputation, les niveaux, les tickets, les salons vocaux,
+  les dossiers, les sanctions et les logs de commandes.
 
-### Conventions graphiques (par module)
+### Logos de catégories (`config/categoryEmojis.js`)
+
+Les **logos de catégories** sont des émojis **Discord standards (Unicode)**,
+sobres et universels, centralisés dans **`config/categoryEmojis.js`** (clés =
+dossiers de `commands/`). Ils sont utilisés par la commande `help` (titre de
+catégorie, liste d'accueil, menu déroulant) et l'interface web. Modifier un logo
+= changer une valeur dans ce fichier.
+
+| Catégorie | Logo | Catégorie | Logo |
+|---|---|---|---|
+| Modération | 🛡️ | Réputation | 📊 |
+| Tickets | 🎫 | Dossiers | 🗂️ |
+| Surveillance | 👁️ | Formulaires | 📋 |
+| Protections | 🔒 | Salons vocaux | 🎙️ |
+| Captcha | 🤖 | Sondages | 📈 |
+| Bump | 📢 | Rappels | ⏰ |
+| Rôles réactions | 🏷️ | Utilitaires | 🧰 |
+| Niveaux | ⭐ | Owners | 👑 |
+
+Un émoji **personnalisé** réintroduit comme logo de catégorie est traité comme
+une **incohérence** par l'audit (voir plus bas).
+
+### Conventions graphiques (par module — messages du bot)
 
 - **Succès / validation / création** → `thumb` · **erreur / permission / panne**
   → `glitch` · **information** → `basic`.
@@ -1072,14 +1102,16 @@ existantes.
 
 ### Audit d'usage des émojis
 
-Un audit vérifie la cohérence graphique et interdit tout identifiant d'émoji
-écrit en dur (`services/audit/emojiAuditService.js`) :
+Un audit vérifie la cohérence graphique (`services/audit/emojiAuditService.js`).
+Il interdit deux incohérences : tout **identifiant d'émoji écrit en dur** hors
+`config/emojis.js`, et tout **émoji personnalisé réutilisé comme logo de
+catégorie** (les logos doivent rester Unicode) :
 
 | Usage | Détail |
 |---|---|
-| `emojiaudit` (owner) | `/emojiaudit` = `!emojiaudit` : couverture des embeds, modules non conformes, identifiants en dur, date du dernier audit |
-| `npm run audit:emojis` | Rapport console ; **sort en erreur** si un identifiant d'émoji est écrit en dur hors `config/emojis.js` |
-| `npm test` | `tests/emojiAudit.test.js` garantit l'absence d'identifiant en dur |
+| `emojiaudit` (owner) | `/emojiaudit` = `!emojiaudit` : couverture des embeds, modules non conformes, identifiants en dur, **émojis perso en logo de catégorie**, date du dernier audit |
+| `npm run audit:emojis` | Rapport console ; **sort en erreur** sur un identifiant en dur **ou** un émoji perso utilisé comme logo de catégorie |
+| `npm test` | `tests/emojiAudit.test.js` garantit l'absence des deux incohérences ; les logos de catégories restent Unicode |
 
 La couverture n'a **pas** vocation à atteindre 100 % : tous les embeds n'ont pas
 besoin d'un émoji de marque (info brute, journaux à icône de module…), afin de
@@ -1094,10 +1126,10 @@ possible de créer d'autres catégories sans modifier le code.
 
 | Clé | Contenu | Salon |
 |---|---|---|
-| `moderation` | Kick, ban, unban, mute, unmute, timeout, retrait de timeout, suppressions massives, renommage de salons, commandes de modération | `#moderation-logs` |
+| `moderation` | Sanctions (kick/ban/mute/timeout…), **messages** (supprimés/modifiés/en masse), **salons** (création/modification/suppression), **serveur** (nom/icône/bannière/vérification/communauté), **émojis**, **stickers**, **invitations**, commandes de modération | `#moderation-logs` |
 | `sanctions` | Warns, retrait/remise à zéro, évolution de la réputation globale, sanctions automatiques | `#sanctions-logs` |
-| `members` | Arrivée, départ volontaire, expulsion, bannissement, validation et échec du captcha (pseudo, ID, création du compte, ancienneté, nombre de membres) | `#members-logs` |
-| `roles` | Ajout/retrait de rôle, rôles réactions, rôles automatiques | `#roles-logs` |
+| `members` | Arrivée, départ, expulsion, bannissement, captcha (pseudo, ID, ancienneté), **activité vocale** (arrivée/départ/déplacement, durée de session, membres présents) | `#members-logs` |
+| `roles` | **Création/modification/suppression de rôle** (nom, couleur, permissions, position), ajout/retrait de rôle, rôles réactions/automatiques | `#roles-logs` |
 | `tickets` | Ouverture, fermeture, suppression, transfert, attribution, renommage, transcript | `#tickets-logs` |
 | `watch` | Surveillance : lancement, arrêt, expiration automatique, reprise, statistiques | `#watch-logs` |
 | `protections` | Détection de spam/raid/liens/bots, mode urgence, événements captcha, actions automatiques | `#protection-logs` |
@@ -1109,6 +1141,7 @@ possible de créer d'autres catégories sans modifier le code.
 | `logs` | Panneau interactif (menu de catégories + boutons) |
 | `logs setup` | Crée la catégorie « Logs » et les sept salons (réutilise l'existant), active tout |
 | `logs status` | État détaillé : catégorie, état, salon, **date et auteur** de la dernière modification |
+| `logs stats` | **Statistiques** : nombre d'événements récents consignés, par catégorie |
 | `logs enable <catégories\|tout>` | Active une, plusieurs, ou toutes les catégories |
 | `logs disable <catégories\|tout>` | Désactive une, plusieurs, ou toutes les catégories |
 
@@ -1116,6 +1149,43 @@ possible de créer d'autres catégories sans modifier le code.
 Discord `📁 Logs` et les salons manquants (privés : invisibles pour
 `@everyone`) ; les salons existants sont **réutilisés** — jamais de doublon.
 La désactivation conserve les salons.
+
+### Journalisation détaillée des événements serveur
+
+Chaque événement important est consigné en **embed** avec **date et heure**,
+**membre concerné**, **identifiant Discord** des objets, **émoji système** et,
+lorsque Discord le fournit, le **modérateur responsable** (via les *audit logs*,
+avec un **cache** pour éviter les requêtes inutiles). Événements couverts :
+
+- **Messages** : suppression (auteur, salon, contenu, **fichiers**, identifiant),
+  modification (avant/après ; un simple aperçu de lien ne crée **aucun** log),
+  suppression en masse (nombre, salon, modérateur).
+- **Salons** : création (nom, type, catégorie parente), modification (seules les
+  propriétés réellement changées : nom, sujet, catégorie, slowmode, NSFW, débit,
+  limite, permissions), suppression.
+- **Rôles** : création (nom, couleur, permissions, position), modification
+  (nom, couleur, permissions ajoutées/retirées), suppression.
+- **Serveur** : nom, icône, bannière, niveau de vérification, paramètres
+  communautaires.
+- **Émojis** et **stickers** : création, renommage, suppression.
+- **Invitations** : création (durée, utilisations max, créateur), suppression.
+- **Activité vocale** : arrivée, départ (avec **durée de session**), déplacement,
+  nombre de membres présents.
+
+**Optimisation** : un anti-doublon (`services/logs/logThrottle`) regroupe les
+événements identiques rapprochés et ignore les modifications invisibles ; les
+logs restent centralisés — **aucun module n'envoie d'embed de log directement**,
+tout passe par `services/logs/logService` (`record`/`log`). Chaque événement est
+aussi archivé dans un **journal borné** par serveur
+(`database/data/logStore.json`) pour `logs stats` et l'interface web.
+
+**Interface web** (owners uniquement) : section « Logs serveur » —
+consultation du journal, **filtres** par catégorie, utilisateur, plage de dates
+et **recherche** texte (`/api/guilds/:id/logs`).
+
+> Intents requis : `Guilds`, `GuildMessages`, `GuildExpressions` (émojis/stickers),
+> `GuildVoiceStates`, `GuildInvites`, plus la permission **Voir les logs
+> d'audit** pour attribuer le modérateur responsable.
 
 **Migration automatique** : au démarrage, les serveurs configurés avec l'ancien
 système (nombreuses catégories) sont migrés vers ces sept catégories
@@ -1257,10 +1327,16 @@ OAuth2 est complète.
 │   ├── client/          #   ready (enregistrement des commandes slash)
 │   ├── logs/            #   ready (migration auto vers les 7 catégories)
 │   ├── errors/          #   ready (init des logs d'erreurs internes du bot)
-│   ├── guild/           #   logs des salons et du serveur
+│   ├── guild/           #   logs du serveur (nom/icône/bannière/vérification/communauté)
+│   ├── channels/        #   logs des salons (création/modification/suppression + exécuteur)
+│   ├── roles/           #   logs des rôles serveur (création/modification/suppression)
+│   ├── emojis/          #   logs des émojis (création/renommage/suppression)
+│   ├── stickers/        #   logs des stickers (création/renommage/suppression)
+│   ├── invites/         #   logs des invitations (création/suppression)
+│   ├── voice/           #   logs d'activité vocale (arrivée/départ/déplacement + durée)
 │   ├── interaction/     #   interactionCreate (slash + composants interactifs)
-│   ├── member/          #   logs des arrivées/départs et des rôles
-│   ├── message/         #   messageCreate (préfixe) + logs des messages
+│   ├── member/          #   logs des arrivées/départs et des rôles des membres
+│   ├── message/         #   messageCreate (préfixe) + logs des messages (suppr./modif./masse)
 │   ├── dm/              #   directMessage (commandes préfixées en messages privés)
 │   ├── reactionRoles/   #   ready (panneaux persistés opérationnels)
 │   ├── contact/         #   ready (conversations de contact persistées)
@@ -1286,7 +1362,7 @@ OAuth2 est complète.
 │   └── temporaryVoice/  #   voiceStateUpdate (create/delete) + ready (nettoyage)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
-│   ├── logs/            #   logService (7 catégories + alias) + modLogService + logMigration
+│   ├── logs/            #   logService (record/log, 7 catégories + alias) + auditLogService (exécuteur) + logThrottle (anti-doublon) + logMigration
 │   ├── owners/          #   ownerService (owners globaux + rôle décoratif)
 │   ├── reputation/      #   reputationService (serveurs) + globalReputationService (utilisateurs, inter-serveurs)
 │   ├── tracking/        #   guildStatsService, ownerNotifier (arrivées/départs)
@@ -1353,7 +1429,7 @@ OAuth2 est complète.
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
-├── config/              # Configuration (env), permissions par commande, émojis officiels
+├── config/              # Configuration (env), permissions, émojis officiels (messages), logos de catégories (Unicode)
 ├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps, dossiers membres…
 ├── locales/             # Textes utilisateur (fr.json)
 ├── scripts/             # Utilitaires hors ligne (checkCommandParity.js → npm run audit ; auditEmojis.js → npm run audit:emojis)

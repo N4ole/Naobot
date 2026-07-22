@@ -26,8 +26,8 @@ const permissionsConfig = require('../../config/permissions');
 const ownerService = require('../../services/owners/ownerService');
 const prefixService = require('../../services/prefix/prefixService');
 const categories = require('../../utils/constants/categories');
+const categoryEmojis = require('../../config/categoryEmojis');
 const permissionLabels = require('../../utils/constants/permissionLabels');
-const emojis = require('../../config/emojis');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
 const { t } = require('../../utils/helpers/i18n');
 const { version: botVersion } = require('../../package.json');
@@ -42,19 +42,13 @@ function categoryMeta(key) {
 }
 
 /**
- * Émoji d'une catégorie sous forme de **texte** (pour les descriptions
- * d'embeds) : émoji officiel NaoBot si la catégorie est mappée
- * (config/emojis.js), sinon l'émoji Unicode de `categories.js`.
+ * Émoji **logo** d'une catégorie — toujours un émoji Discord standard (Unicode),
+ * jamais un émoji personnalisé (règle de marque). Source : `config/categoryEmojis.js`,
+ * avec repli sur l'émoji de `categories.js`. Le même Unicode sert pour le texte
+ * et pour les composants (les émojis Unicode sont des `setEmoji` valides).
  */
-function categoryEmojiText(key) {
-  const mapped = emojis.CATEGORY_EMOJIS[key];
-  return mapped ? emojis.get(mapped) : categoryMeta(key).emoji;
-}
-
-/** Émoji d'une catégorie pour un **composant** (option de menu déroulant). */
-function categoryEmojiComponent(key) {
-  const mapped = emojis.CATEGORY_EMOJIS[key];
-  return mapped ? emojis.component(mapped) : categoryMeta(key).emoji;
+function categoryEmoji(key) {
+  return categoryEmojis[key] ?? categoryMeta(key).emoji;
 }
 
 /** Libellés des permissions requises par une commande (vide si aucune). */
@@ -99,10 +93,10 @@ function homeEmbed(client, cats, prefix) {
   const commands = totalCommandCount(cats);
   const lines = cats.map((cat) => {
     const meta = categoryMeta(cat.key);
-    return t('help.homeCategory', { emoji: categoryEmojiText(cat.key), label: meta.label, count: cat.commands.length });
+    return t('help.homeCategory', { emoji: categoryEmoji(cat.key), label: meta.label, count: cat.commands.length });
   });
   const embed = infoEmbed(
-    `${emojis.get('basic')} ${t('help.title', { bot: client.user.username })}`,
+    `📖 ${t('help.title', { bot: client.user.username })}`,
     `${t('help.mainDescription', { prefix })}\n\n${lines.join('\n')}`,
   ).addFields(
     { name: t('help.stats.servers'), value: String(client.guilds.cache.size), inline: true },
@@ -125,7 +119,7 @@ function categoryEmbed(cat, page, pageCount, prefix) {
     if (command.examples?.length) parts.push(`💡 ${command.examples.map((e) => `\`${prefix}${e}\``).join(' · ')}`);
     return parts.join('\n');
   });
-  return infoEmbed(`${categoryEmojiText(cat.key)} ${meta.label}`, blocks.join('\n\n')).setFooter({
+  return infoEmbed(`${categoryEmoji(cat.key)} ${meta.label}`, blocks.join('\n\n')).setFooter({
     text: t('help.categoryFooter', { page: page + 1, pages: pageCount, count: cat.commands.length }),
   });
 }
@@ -148,7 +142,7 @@ function selectRow(userId, cats, selectedKey) {
         return {
           label: meta.label,
           value: cat.key,
-          emoji: categoryEmojiComponent(cat.key),
+          emoji: categoryEmoji(cat.key),
           description: t('help.categoryOption', { count: cat.commands.length }).slice(0, 100),
           default: cat.key === selectedKey,
         };

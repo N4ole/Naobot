@@ -20,7 +20,7 @@ function json(res, status, payload) {
 /**
  * @returns {boolean} true si la requête a été prise en charge (chemin /api/*)
  */
-function route(req, res, { client, session, pathname }) {
+function route(req, res, { client, session, pathname, searchParams }) {
   if (!pathname.startsWith('/api/')) return false;
   if (req.method !== 'GET') {
     json(res, 405, { error: 'method_not_allowed' });
@@ -108,6 +108,17 @@ function route(req, res, { client, session, pathname }) {
     if (section === 'snipe') return void json(res, 200, webService.snipe(guildId)) || true;
     if (section === 'antisensitive') return void json(res, 200, webService.antisensitive(guildId)) || true;
     if (section === 'levels') return void json(res, 200, webService.levels(guildId)) || true;
+    // /api/guilds/:id/logs?category=&userId=&since=&until=&q= (journal filtrable)
+    if (section === 'logs') {
+      const filters = {
+        category: searchParams?.get('category') || undefined,
+        userId: searchParams?.get('userId') || undefined,
+        since: searchParams?.get('since') || undefined,
+        until: searchParams?.get('until') || undefined,
+        query: searchParams?.get('q') || undefined,
+      };
+      return void json(res, 200, webService.serverLogs(guildId, filters)) || true;
+    }
     if (section === 'profile' && parts[4]) return void json(res, 200, webService.profile(client, guildId, parts[4])) || true;
   }
 

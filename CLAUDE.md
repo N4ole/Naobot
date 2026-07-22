@@ -34,12 +34,12 @@ Respecter l'organisation :
 
 ```
 commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, snipe/, dm/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, levels/ [rank+level+leaderboard+levelconfig], reputation/, memberFiles/ [dossiers globaux : file+fileinfo+filelist+filedelete], watch/, owner/, administration/)
-events/        # écouteurs Discord, par famille (client/, guild/, member/, message/, messageActivity/ [XP messages], voiceActivity/ [XP vocal], dm/ [commandes préfixées en DM], interaction/, logs/, errors/, audit/ [parité slash/préfixe au démarrage], emoji/ [disponibilité des émojis officiels + secours Unicode], snipe/, memberFiles/, watch/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
-services/      # logique métier (moderation/, logs/ [logService + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], audit/ [commandParityService : audit de parité slash/préfixe], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [sites sensibles adultes/violents, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
+events/        # écouteurs Discord, par famille (client/, guild/ [serveur], channels/, roles/, emojis/, stickers/, invites/, voice/ [logs d'activité vocale], member/, message/, messageActivity/ [XP messages], voiceActivity/ [XP vocal], dm/ [commandes préfixées en DM], interaction/, logs/, errors/, audit/ [parité slash/préfixe au démarrage], emoji/ [disponibilité des émojis officiels + secours Unicode], snipe/, memberFiles/, watch/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
+services/      # logique métier (moderation/, logs/ [logService (record/log) + auditLogService (exécuteur, cache) + logThrottle (anti-doublon) + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], audit/ [commandParityService : audit de parité slash/préfixe], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [sites sensibles adultes/violents, indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, dm/, levels/, memberFiles/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
-config/        # config.js (env), permissions.js (permissions par commande), emojis.js (émojis officiels + secours Unicode)
+config/        # config.js (env), permissions.js (permissions par commande), emojis.js (émojis personnalisés des messages + secours Unicode), categoryEmojis.js (logos de catégories, Unicode)
 database/      # jsonStore.js + repositories ; données dans database/data/*.json (gitignoré)
 locales/       # textes utilisateur (fr.json) — tout texte visible passe par t()/tList()
 scripts/       # utilitaires hors ligne (checkCommandParity.js → npm run audit)
@@ -184,6 +184,16 @@ Tous les émojis de marque de NaoBot sont centralisés dans **`config/emojis.js`
 ailleurs** : tout module qui affiche un émoji importe ce fichier. Ajouter un
 émoji = une entrée dans `DEFS` (aucune commande existante à modifier).
 
+**Règle de marque (importante).** Les émojis **personnalisés** servent
+uniquement à donner de la personnalité aux **messages** du bot (succès, erreurs,
+confirmations, sanctions, logs, captcha, niveaux, réputation, bienvenue,
+notifications, embeds système). Ils ne doivent **jamais** servir de **logo de
+catégorie**. Les logos de catégories (commande `help`, menus déroulants,
+interface web, onglets, navigation) restent des émojis **Discord standards
+(Unicode)**, centralisés dans **`config/categoryEmojis.js`** (clés = dossiers de
+`commands/`, repli sur `utils/constants/categories.js`). L'audit des émojis
+signale tout émoji personnalisé réintroduit comme logo de catégorie.
+
 - `emojis.thumb` / `emojis.get('thumb')` → **chaîne** pour un texte ou une
   description d'embed ; `emojis.component('thumb')` → valeur pour `setEmoji`
   (boutons/menus) ; `emojis.fallback('thumb')` → secours Unicode seul.
@@ -192,9 +202,12 @@ ailleurs** : tout module qui affiche un émoji importe ce fichier. Ajouter un
   vérifie les émojis réellement disponibles (émojis d'application + cache) ;
   un émoji supprimé bascule **automatiquement** sur son secours, sans toucher
   au code.
-- **Usages câblés** : `successEmbed`/`errorEmbed` (défaut `thumb`/`glitch`,
-  override par `{ emoji }`) → propagation à **tous** les succès/erreurs ; help
-  (icône `basic` + `CATEGORY_EMOJIS` par catégorie) ; captcha (`party` / `crying`
+- **Logos de catégories** : jamais d'émoji personnalisé ; Unicode via
+  `config/categoryEmojis.js` (help : titre de catégorie, liste d'accueil, menu
+  déroulant ; interface web ; onglets).
+- **Usages câblés (messages)** : `successEmbed`/`errorEmbed` (défaut
+  `thumb`/`glitch`, override par `{ emoji }`) → propagation à **tous** les
+  succès/erreurs ; captcha (`party` / `crying`
   / `doubt`) ; réputation par plage de score (`scoreEmojiKey` : 80-100 `love`,
   50-79 `thumb`, 20-49 `doubt`, 0-19 `angry`) ; warns par gravité
   (`warnSeverityEmojiKey` : 1 `doubt`, 2-4 `angry`, 5-6 `crying`, 7 `glitch`) ;
@@ -207,8 +220,9 @@ ailleurs** : tout module qui affiche un émoji importe ce fichier. Ajouter un
 - **Règles** : un seul émoji par bouton, pas d'émoji dans les longs paragraphes,
   aucune décoration « au hasard » (rester professionnel).
 - **Audit** (`services/audit/emojiAuditService.js`) : commande owner
-  `emojiaudit` (= `/emojiaudit`), `npm run audit:emojis` (échoue sur un
-  identifiant d'émoji en dur) et `tests/emojiAudit.test.js`. La couverture des
+  `emojiaudit` (= `/emojiaudit`), `npm run audit:emojis` et
+  `tests/emojiAudit.test.js`. Échoue sur un **identifiant d'émoji en dur** ou un
+  **émoji personnalisé réutilisé comme logo de catégorie**. La couverture des
   embeds n'a pas à atteindre 100 % (ne pas surcharger).
 
 # Permissions
@@ -249,19 +263,38 @@ Toutes les fonctionnalités importantes doivent intégrer le système de logs
 Le système est limité à **sept catégories fixes** (`utils/constants/logCategories.js`) :
 `moderation`, `sanctions`, `members`, `roles`, `tickets`, `watch`,
 `protections`. **Aucune nouvelle catégorie ne peut être créée sans modifier le
-code.** Les anciennes clés sont fusionnées vers ces sept catégories (ou
-supprimées) par la table `LEGACY_ALIASES` de `logService` : appeler
-`logService.log(guild, '<clé ou ancienne clé>', logEventEmbed({...}))` route
-automatiquement vers la bonne catégorie (ou ignore l'événement).
+code.** Les clés sémantiques (`salons`, `serveur`, `messages-supprimes`,
+`emojis`, `stickers`, `invitations`, `vocaux`…) sont **routées** vers ces sept
+catégories par `LEGACY_ALIASES` de `logService` (journalisation serveur détaillée
+→ `moderation` ; activité vocale → `members`).
+
+**Deux points d'entrée, aucun envoi direct d'embed de log** :
+
+- `logService.log(guild, '<clé>', logEventEmbed({...}))` — historique (embed
+  pré-construit) ; persiste aussi une entrée compacte au journal.
+- `logService.record(guild, '<clé>', { title, emoji, color, fields, user,
+  moderator, signature })` — **point d'entrée enrichi** des événements serveur :
+  émoji système, horodatage, membre, modérateur, **anti-doublon**
+  (`logThrottle`), persistance au **journal borné** (`logStore`) et envoi.
+
+Le **modérateur responsable** est résolu via les audit logs Discord
+(`services/logs/auditLogService`, avec **cache** ; nécessite la permission « Voir
+les logs d'audit »). Chaque nouveau listener d'événement doit passer par
+`record` (jamais `channel.send` directement).
 
 Les logs doivent rester :
 
-- configurables (commande `logs` : panneau, `setup`, `status`, `enable`,
-  `disable`) ;
+- configurables (commande `logs` : panneau, `setup`, `status`, `stats`,
+  `enable`, `disable`) ;
 - activables/désactivables (par catégorie et en masse, persistant, avec date
   et auteur de la dernière modification) ;
+- consultables (`logs stats` + interface web « Logs serveur » : filtres
+  catégorie/utilisateur/date/recherche, `/api/guilds/:id/logs`, owners) ;
 - migrés automatiquement au démarrage depuis l'ancien système
   (`services/logs/logMigration.js`).
+
+Intents requis pour la journalisation complète : `Guilds`, `GuildMessages`,
+`GuildExpressions`, `GuildVoiceStates`, `GuildInvites` (+ partial `Message`).
 
 Ajouter une catégorie (rare, volontairement fermé) = une entrée dans
 `logCategories.js` + le routage des appels concernés ; le panneau, la

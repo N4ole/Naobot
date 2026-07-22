@@ -145,7 +145,7 @@ function createServer(client) {
       }
 
       // --- API ---
-      if (apiRouter.route(req, res, { client, session, pathname })) return undefined;
+      if (apiRouter.route(req, res, { client, session, pathname, searchParams: url.searchParams })) return undefined;
 
       // --- Frontend statique ---
       return serveStatic(res, pathname);

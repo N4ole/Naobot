@@ -377,6 +377,54 @@ function connectRealtime(isOwner) {
   source.onerror = () => {}; // reconnexion automatique par le navigateur
 }
 
+let slogsCategoriesLoaded = false;
+
+async function loadServerLogs(id) {
+  const box = $('#slogs-detail');
+  if (!id) return (box.innerHTML = '<p class="muted">Sélectionnez un serveur.</p>');
+  box.innerHTML = '<p class="muted">Chargement…</p>';
+  const params = new URLSearchParams();
+  const cat = $('#slogs-category').value;
+  const user = $('#slogs-user').value.trim();
+  const since = $('#slogs-since').value;
+  const until = $('#slogs-until').value;
+  const q = $('#slogs-search').value.trim();
+  if (cat) params.set('category', cat);
+  if (user) params.set('userId', user);
+  if (since) params.set('since', since);
+  if (until) params.set('until', `${until}T23:59:59`);
+  if (q) params.set('q', q);
+  try {
+    const data = await api(`/api/guilds/${id}/logs?${params.toString()}`);
+    // Remplit la liste des catégories (une seule fois).
+    if (!slogsCategoriesLoaded && data.categories) {
+      const sel = $('#slogs-category');
+      for (const [key, label] of Object.entries(data.categories)) sel.append(el('option', { value: key }, label));
+      slogsCategoriesLoaded = true;
+    }
+    box.innerHTML = '';
+    box.append(kv(Object.entries(data.stats).map(([k, v]) => [data.categories[k] ?? k, v])));
+    if (!data.entries.length) {
+      box.append(el('p', { className: 'muted' }, 'Aucune entrée pour ces filtres.'));
+      return;
+    }
+    const table = el('table', { className: 'table' });
+    table.append(el('tr', {}, [el('th', {}, 'Date'), el('th', {}, 'Catégorie'), el('th', {}, 'Événement'), el('th', {}, 'Membre'), el('th', {}, 'Responsable')]));
+    for (const e of data.entries) {
+      table.append(el('tr', {}, [
+        el('td', {}, new Date(e.at).toLocaleString('fr-FR')),
+        el('td', {}, data.categories[e.category] ?? e.category),
+        el('td', {}, `${e.title}${e.summary ? ` — ${e.summary}` : ''}`),
+        el('td', {}, e.userTag ?? (e.userId ?? '—')),
+        el('td', {}, e.moderatorTag ?? '—'),
+      ]));
+    }
+    box.append(table);
+  } catch (e) {
+    box.innerHTML = `<p class="muted">Erreur de chargement (${e}).</p>`;
+  }
+}
+
 async function init() {
   let me;
   try {
@@ -390,7 +438,7 @@ async function init() {
   $('#dash-view').classList.remove('hidden');
   renderUser(me);
   renderGuildList();
-  for (const sel of ['#mod-guild', '#tickets-guild', '#voice-guild', '#levels-guild', '#antipub-guild', '#profile-guild']) fillGuildSelect($(sel));
+  for (const sel of ['#mod-guild', '#tickets-guild', '#voice-guild', '#levels-guild', '#antipub-guild', '#profile-guild', '#slogs-guild']) fillGuildSelect($(sel));
   setupTabs();
 
   try {
@@ -413,6 +461,8 @@ async function init() {
     $('#rep-stats').addEventListener('click', loadReputationStats);
   }
   $('#profile-load').addEventListener('click', () => loadProfile($('#profile-guild').value, $('#profile-user').value.trim()));
+  $('#slogs-guild').addEventListener('change', (e) => { slogsCategoriesLoaded = false; $('#slogs-category').innerHTML = '<option value="">Toutes catégories</option>'; loadServerLogs(e.target.value); });
+  $('#slogs-load').addEventListener('click', () => loadServerLogs($('#slogs-guild').value));
 }
 
 init();

@@ -26,10 +26,19 @@ test('resolveKey : les anciennes clés sont fusionnées ou supprimées', () => {
   // Réelles (inchangées)
   assert.equal(logService.resolveKey('moderation'), 'moderation');
   assert.equal(logService.resolveKey('tickets'), 'tickets');
-  // Supprimées
-  assert.equal(logService.resolveKey('messages-supprimes'), null);
-  assert.equal(logService.resolveKey('salons'), null);
+  // Journalisation serveur détaillée → « Modération »
+  assert.equal(logService.resolveKey('messages-supprimes'), 'moderation');
+  assert.equal(logService.resolveKey('messages-modifies'), 'moderation');
+  assert.equal(logService.resolveKey('salons'), 'moderation');
+  assert.equal(logService.resolveKey('serveur'), 'moderation');
+  assert.equal(logService.resolveKey('emojis'), 'moderation');
+  assert.equal(logService.resolveKey('stickers'), 'moderation');
+  assert.equal(logService.resolveKey('invitations'), 'moderation');
+  // Activité vocale → « Arrivées et départs »
+  assert.equal(logService.resolveKey('vocaux'), 'members');
+  // Réellement supprimées (événement ignoré)
   assert.equal(logService.resolveKey('bumps'), null);
+  assert.equal(logService.resolveKey('web'), null);
   // Inconnue
   assert.equal(logService.resolveKey('nawak'), null);
 });

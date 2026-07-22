@@ -26,6 +26,7 @@ const ACTIONS = {
   disable: 'disable', desactiver: 'disable', off: 'disable',
   status: 'status', statut: 'status', liste: 'status', list: 'status',
   setup: 'setup', config: 'setup', configurer: 'setup',
+  stats: 'stats', statistiques: 'stats', stat: 'stats',
 };
 
 function normalizeAction(input) {
@@ -55,6 +56,17 @@ function buildStatusEmbed(guild) {
   return infoEmbed(t('logs.command.statusTitle'), statusLines(guild));
 }
 
+/** Statistiques d'événements consignés, par catégorie (journal persistant). */
+function buildStatsEmbed(guild) {
+  const counts = logService.stats(guild.id);
+  const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+  if (total === 0) return infoEmbed(t('logs.command.statsTitle'), t('logs.command.statsEmpty'));
+  const lines = Object.entries(logCategories)
+    .map(([key, def]) => `${def.emoji} **${def.label}** — ${counts[key] ?? 0}`)
+    .join('\n');
+  return infoEmbed(t('logs.command.statsTitle'), `${lines}\n\n${t('logs.command.statsTotal', { total })}`);
+}
+
 /** Panneau interactif : menu de sélection + boutons tout activer/désactiver. */
 function buildPanel(guild) {
   const status = logService.getStatus(guild.id);
@@ -76,13 +88,13 @@ function buildPanel(guild) {
 
 const logs = {
   name: 'logs',
-  description: 'Configure le système de logs (7 catégories) : panneau, setup, status, enable, disable',
-  usage: 'logs [enable|disable|setup|status] [catégories…|tout]',
-  examples: ['logs', 'logs setup', 'logs status', 'logs enable tout', 'logs enable sanctions moderation', 'logs disable protections'],
+  description: 'Configure le système de logs (7 catégories) : panneau, setup, status, stats, enable, disable',
+  usage: 'logs [enable|disable|setup|status|stats] [catégories…|tout]',
+  examples: ['logs', 'logs setup', 'logs status', 'logs stats', 'logs enable tout', 'logs enable sanctions moderation', 'logs disable protections'],
   aliases: [],
   cooldown: 3,
   args: [
-    { name: 'action', type: 'string', required: false, choices: ['enable', 'disable', 'setup', 'status'], description: 'Action (sans action : panneau interactif)' },
+    { name: 'action', type: 'string', required: false, choices: ['enable', 'disable', 'setup', 'status', 'stats'], description: 'Action (sans action : panneau interactif)' },
     { name: 'categories', type: 'string', required: false, rest: true, description: 'Catégories visées (séparées par des espaces), ou « tout »' },
   ],
 
@@ -96,6 +108,7 @@ const logs = {
     }
 
     if (action === 'status') return ctx.reply({ embeds: [buildStatusEmbed(ctx.guild)] });
+    if (action === 'stats') return ctx.reply({ embeds: [buildStatsEmbed(ctx.guild)] });
 
     if (action === 'setup') {
       await ctx.defer();

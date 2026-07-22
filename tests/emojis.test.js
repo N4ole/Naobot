@@ -59,11 +59,10 @@ test('fallback() renvoie l’émoji Unicode de secours', () => {
   assert.equal(emojis.fallback('basic'), '🤖');
 });
 
-test('CATEGORY_EMOJIS ne référence que des clés d’émojis valides', () => {
-  const keys = new Set(emojis.keys());
-  for (const [category, key] of Object.entries(emojis.CATEGORY_EMOJIS)) {
-    assert.ok(keys.has(key), `Catégorie ${category} → clé inconnue "${key}"`);
-  }
+test('les émojis personnalisés ne servent plus de logos de catégories', () => {
+  // Règle de marque : plus aucune table associant une catégorie à un émoji
+  // personnalisé (les logos de catégories vivent dans config/categoryEmojis.js).
+  assert.equal(emojis.CATEGORY_EMOJIS, undefined);
 });
 
 test('aucune clé ne renvoie de chaîne vide', () => {

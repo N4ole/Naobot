@@ -18,7 +18,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..', '..');
-const SCAN_DIRS = ['commands', 'services', 'events'];
+const SCAN_DIRS = ['commands', 'services', 'events', 'config'];
 
 /** Constructeurs d'embeds : leur présence indique un module « visuel ». */
 const EMBED_BUILDERS = /\b(successEmbed|errorEmbed|infoEmbed|logEventEmbed|modLogEmbed|new EmbedBuilder)\b/;
@@ -28,6 +28,17 @@ const AUTO_EMOJI_BUILDERS = /\b(successEmbed|errorEmbed)\b/;
 const EMOJI_IMPORT = /config\/emojis/;
 /** Identifiant d'émoji personnalisé écrit en dur. */
 const HARDCODED_EMOJI = /<a?:[a-zA-Z0-9_]+:\d{17,20}>/;
+/**
+ * Marqueur d'un émoji **personnalisé** réutilisé comme **logo de catégorie**
+ * (interdit) : toute table associant une catégorie à un émoji personnalisé.
+ * Les logos de catégories doivent être des émojis Discord standards
+ * (config/categoryEmojis.js).
+ */
+const CUSTOM_CATEGORY_MAP = /CATEGORY_EMOJIS/;
+/** Fichier des logos de catégories (doit rester en Unicode pur). */
+const CATEGORY_EMOJIS_FILE = path.join('config', 'categoryEmojis.js');
+/** Ce service référence lui-même le marqueur : il ne doit pas s'auto-signaler. */
+const SELF_FILE = path.join('services', 'audit', 'emojiAuditService.js');
 
 /** Liste récursive des fichiers .js d'un dossier. */
 function listJsFiles(dir) {
@@ -48,10 +59,17 @@ function listJsFiles(dir) {
  */
 function analyzeFile(file) {
   const source = fs.readFileSync(file, 'utf8');
+  const rel = path.relative(ROOT, file);
   const buildsEmbed = EMBED_BUILDERS.test(source);
   const usesOfficial = EMOJI_IMPORT.test(source) || AUTO_EMOJI_BUILDERS.test(source);
   const hardcoded = HARDCODED_EMOJI.test(source);
-  return { file: path.relative(ROOT, file), buildsEmbed, usesOfficial, hardcoded };
+  // Émoji personnalisé utilisé comme logo de catégorie (incohérence) :
+  //  - une table `CATEGORY_EMOJIS` (réintroduction de l'ancien mapping) ;
+  //  - ou un identifiant d'émoji personnalisé dans le fichier des logos.
+  const categoryLogoMisuse =
+    rel !== SELF_FILE &&
+    (CUSTOM_CATEGORY_MAP.test(source) || (rel === CATEGORY_EMOJIS_FILE && HARDCODED_EMOJI.test(source)));
+  return { file: rel, buildsEmbed, usesOfficial, hardcoded, categoryLogoMisuse };
 }
 
 /**
@@ -69,6 +87,8 @@ function runEmojiAudit() {
   const nonCompliant = embedModules.filter((a) => !a.usesOfficial);
   // Interdits : identifiant d'émoji en dur hors config/emojis.js.
   const hardcoded = analyses.filter((a) => a.hardcoded && a.file !== path.join('config', 'emojis.js'));
+  // Interdits : émoji personnalisé réutilisé comme logo de catégorie.
+  const categoryLogoViolations = analyses.filter((a) => a.categoryLogoMisuse);
 
   const byCategory = {};
   for (const a of embedModules) {
@@ -84,6 +104,7 @@ function runEmojiAudit() {
     officialUsageModules: compliant.length,
     nonCompliantModules: nonCompliant.map((a) => a.file),
     hardcodedEmojiFiles: hardcoded.map((a) => a.file),
+    categoryLogoViolations: categoryLogoViolations.map((a) => a.file),
     coverage: embedModules.length ? Math.round((compliant.length / embedModules.length) * 100) : 100,
     byCategory,
   };
@@ -99,6 +120,7 @@ function formatEmojiReport(report) {
   lines.push(`  Modules construisant des embeds : ${report.totalEmbedModules}`);
   lines.push(`  Utilisant les émojis officiels  : ${report.officialUsageModules} (${report.coverage} %)`);
   lines.push(`  Identifiants d'émoji en dur      : ${report.hardcodedEmojiFiles.length ? report.hardcodedEmojiFiles.join(', ') : 'aucun'}`);
+  lines.push(`  Émojis perso en logo de catégorie : ${report.categoryLogoViolations.length ? report.categoryLogoViolations.join(', ') : 'aucun'}`);
   if (report.nonCompliantModules.length) {
     lines.push('  Modules sans émoji officiel :');
     for (const file of report.nonCompliantModules) lines.push(`    - ${file}`);

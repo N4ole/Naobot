@@ -13,6 +13,17 @@ test('audit projet : structure du rapport + aucun identifiant en dur', () => {
   assert.ok(report.coverage >= 0 && report.coverage <= 100);
   // Convention : aucun identifiant d'émoji écrit en dur hors config/emojis.js.
   assert.deepEqual(report.hardcodedEmojiFiles, []);
+  // Convention : aucun émoji personnalisé réutilisé comme logo de catégorie.
+  assert.deepEqual(report.categoryLogoViolations, []);
+});
+
+test('logos de catégories : uniquement des émojis Discord standards', () => {
+  const categoryEmojis = require('../config/categoryEmojis');
+  const CUSTOM = /<a?:[a-zA-Z0-9_]+:\d{17,20}>/;
+  for (const [category, emoji] of Object.entries(categoryEmojis)) {
+    assert.ok(typeof emoji === 'string' && emoji.length > 0, `Catégorie ${category} sans émoji`);
+    assert.ok(!CUSTOM.test(emoji), `Catégorie ${category} : émoji personnalisé interdit comme logo`);
+  }
 });
 
 test('analyzeFile : détecte embed, usage officiel et identifiant en dur', () => {

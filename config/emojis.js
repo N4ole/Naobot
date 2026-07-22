@@ -38,28 +38,10 @@ const DEFS = {
   shocked: { id: '1528863387092783185', name: 'choque', fallback: '😲' },
 };
 
-/**
- * Émoji recommandé par catégorie de commandes (clé de dossier `commands/`).
- * Utilisé par la commande `help` ; toute catégorie absente garde l'émoji
- * Unicode déclaré dans `utils/constants/categories.js`.
- */
-const CATEGORY_EMOJIS = {
-  moderation: 'angry',
-  tickets: 'wink',
-  watch: 'doubt',
-  protections: 'glitch',
-  captcha: 'party',
-  bump: 'love',
-  reactionRoles: 'happy',
-  levels: 'party',
-  reputation: 'thumb',
-  forms: 'wink',
-  utility: 'basic',
-  temporaryVoice: 'happy',
-  polls: 'love',
-  reminders: 'sleepy',
-  owner: 'glitch',
-};
+// NB : les **logos de catégories** ne sont volontairement plus définis ici.
+// Les émojis personnalisés servent uniquement à la personnalité des *messages*
+// du bot ; les logos de catégories (help, menus, web, onglets) restent des
+// émojis Discord standards, centralisés dans `config/categoryEmojis.js`.
 
 /** Clés résolues comme disponibles après vérification au démarrage. */
 const available = new Set();
@@ -153,7 +135,6 @@ for (const [name, fn] of Object.entries({
   Object.defineProperty(emojis, name, { enumerable: false, value: fn });
 }
 Object.defineProperty(emojis, 'keys', { enumerable: false, value: () => Object.keys(DEFS) });
-Object.defineProperty(emojis, 'CATEGORY_EMOJIS', { enumerable: false, value: CATEGORY_EMOJIS });
 Object.defineProperty(emojis, 'DEFS', { enumerable: false, value: DEFS });
 
 module.exports = emojis;

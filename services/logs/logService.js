@@ -16,6 +16,12 @@
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const logCategories = require('../../utils/constants/logCategories');
 const repository = require('../../database/logSettingsRepository');
+const logStore = require('../../database/logStoreRepository');
+const logThrottle = require('./logThrottle');
+const emojis = require('../../config/emojis');
+const { logEventEmbed } = require('../../utils/embeds/embeds');
+const COLORS = require('../../utils/constants/colors');
+const { t } = require('../../utils/helpers/i18n');
 
 const LOGS_PARENT_NAME = 'Logs';
 const REAL_KEYS = new Set(Object.keys(logCategories));
@@ -39,11 +45,18 @@ const LEGACY_ALIASES = {
   surveillance: 'watch',
   // Protections (+ mode urgence).
   urgence: 'protections',
-  // Catégories secondaires supprimées.
-  'messages-supprimes': null,
-  'messages-modifies': null,
-  salons: null,
-  serveur: null,
+  // Journalisation serveur détaillée → catégorie « Modération » (catch-all
+  // d'administration : salons, serveur, émojis, stickers, invitations, messages).
+  'messages-supprimes': 'moderation',
+  'messages-modifies': 'moderation',
+  salons: 'moderation',
+  serveur: 'moderation',
+  emojis: 'moderation',
+  stickers: 'moderation',
+  invitations: 'moderation',
+  // Activité vocale (arrivées/départs des salons vocaux) → « Arrivées et départs ».
+  vocaux: 'members',
+  // Catégories secondaires réellement supprimées (événement ignoré).
   commandes: null,
   erreurs: null,
   bumps: null,
@@ -54,7 +67,6 @@ const LEGACY_ALIASES = {
   rappels: null,
   sondages: null,
   web: null,
-  vocaux: null,
 };
 
 /** Résout une clé (réelle ou héritée) vers une catégorie réelle, ou null. */
@@ -152,11 +164,8 @@ async function disableCategories(guild, keys, byUserId = null) {
   repository.saveSettings(guild.id, settings);
 }
 
-/** Consigne un embed dans le salon de la catégorie résolue, si elle est activée. */
-async function log(guild, key, embed) {
-  const resolved = resolveKey(key);
-  if (!resolved || !isEnabled(guild.id, resolved)) return;
-
+/** Envoie l'embed dans le salon de la catégorie résolue (déjà vérifiée activée). */
+async function dispatch(guild, resolved, embed) {
   const settings = repository.getSettings(guild.id);
   let channel = settings.channels[resolved] ? guild.channels.cache.get(settings.channels[resolved]) : null;
   if (!channel) {
@@ -167,6 +176,87 @@ async function log(guild, key, embed) {
   await channel.send({ embeds: [embed] }).catch(() => null);
 }
 
+/**
+ * Consigne un embed pré-construit (compatibilité : point d'entrée historique).
+ * Persiste aussi une entrée compacte dans le journal (stats + interface web).
+ */
+async function log(guild, key, embed) {
+  const resolved = resolveKey(key);
+  if (!resolved || !guild || !isEnabled(guild.id, resolved)) return;
+
+  logStore.append(guild.id, {
+    category: resolved,
+    title: embed?.data?.title ?? '',
+    summary: embed?.data?.description ?? '',
+    userTag: embed?.data?.author?.name ?? null,
+  });
+  await dispatch(guild, resolved, embed);
+}
+
+/**
+ * Point d'entrée **enrichi** des logs d'événements serveur : construit un embed
+ * homogène (émoji système + horodatage + membre + modérateur), applique
+ * l'anti-doublon, persiste au journal et envoie dans le salon de la catégorie.
+ *
+ * Aucun module ne doit envoyer d'embed de log directement : tout passe par ici
+ * (ou par `log`).
+ *
+ * @param {import('discord.js').Guild} guild
+ * @param {string} key - Clé de catégorie (réelle ou héritée).
+ * @param {object} opts
+ * @param {string} opts.title
+ * @param {string} [opts.emoji] - Clé d'émoji système (config/emojis).
+ * @param {number} [opts.color]
+ * @param {string} [opts.description]
+ * @param {{name:string,value:string,inline?:boolean}[]} [opts.fields]
+ * @param {import('discord.js').User} [opts.user] - Membre concerné.
+ * @param {import('discord.js').User} [opts.moderator] - Modérateur responsable (audit).
+ * @param {string} [opts.moderatorReason]
+ * @param {string} [opts.signature] - Clé d'anti-doublon (défaut : titre+cible).
+ */
+async function record(guild, key, opts) {
+  const resolved = resolveKey(key);
+  if (!resolved || !guild || !isEnabled(guild.id, resolved)) return;
+
+  const target = opts.user ?? null;
+  const signature = opts.signature ?? `${guild.id}:${resolved}:${opts.title}:${target?.id ?? ''}`;
+  if (!logThrottle.shouldLog(signature)) return;
+
+  const fields = [...(opts.fields ?? [])];
+  if (opts.moderator) {
+    fields.push({
+      name: t('logs.events.moderator'),
+      value: `${opts.moderator.tag} (\`${opts.moderator.id}\`)${opts.moderatorReason ? ` — ${opts.moderatorReason}` : ''}`,
+      inline: true,
+    });
+  }
+
+  const title = opts.emoji ? `${emojis.get(opts.emoji)} ${opts.title}` : opts.title;
+  const embed = logEventEmbed({
+    title,
+    color: opts.color ?? COLORS.LOG_NEUTRAL,
+    description: opts.description ?? null,
+    fields,
+    user: target,
+  });
+
+  logStore.append(guild.id, {
+    category: resolved,
+    title: opts.title,
+    summary: opts.description ?? '',
+    userId: target?.id ?? null,
+    userTag: target?.tag ?? null,
+    moderatorId: opts.moderator?.id ?? null,
+    moderatorTag: opts.moderator?.tag ?? null,
+  });
+  await dispatch(guild, resolved, embed);
+}
+
+/** Compteurs d'événements par catégorie (journal persistant). */
+function stats(guildId) {
+  return logStore.statsByCategory(guildId);
+}
+
 module.exports = {
   isControlled,
   isEnabled,
@@ -174,6 +264,8 @@ module.exports = {
   enableCategories,
   disableCategories,
   log,
+  record,
+  stats,
   resolveKey,
   LEGACY_ALIASES,
   LOGS_PARENT_NAME,

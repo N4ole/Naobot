@@ -37,6 +37,7 @@
           <button class="tab" data-tab="antipub">📢 Anti-pub</button>
           <button class="tab" data-tab="reputation">🌐 Réputation</button>
           <button class="tab" data-tab="files">🗂️ Dossiers</button>
+          <button class="tab" data-tab="serverlogs">📄 Logs serveur</button>
           <button class="tab" data-tab="profiles">👤 Profils</button>
         </nav>
 
@@ -100,6 +101,19 @@
             <input id="files-filter" class="input" placeholder="Filtrer les notes (texte, serveur, auteur)…" />
           </div>
           <div id="files-detail"><p class="muted">Réservé aux owners du bot. Saisissez un identifiant utilisateur pour consulter son dossier.</p></div>
+        </div>
+
+        <div class="panel hidden" id="panel-serverlogs">
+          <div class="toolbar">
+            <select id="slogs-guild" class="select"></select>
+            <select id="slogs-category" class="select"><option value="">Toutes catégories</option></select>
+            <input id="slogs-user" class="input" placeholder="Identifiant utilisateur" />
+            <input id="slogs-since" class="input" type="date" title="Depuis" />
+            <input id="slogs-until" class="input" type="date" title="Jusqu'à" />
+            <input id="slogs-search" class="input" placeholder="Recherche…" />
+            <button id="slogs-load" class="btn">Filtrer</button>
+          </div>
+          <div id="slogs-detail"><p class="muted">Réservé aux owners du bot. Choisissez un serveur pour consulter son journal.</p></div>
         </div>
 
         <div class="panel hidden" id="panel-profiles">
