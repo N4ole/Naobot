@@ -39,7 +39,7 @@ services/      # logique métier (moderation/, logs/ [logService + modLogService
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, dm/, levels/, memberFiles/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
-config/        # config.js (env), permissions.js (permissions par commande), emojis.js (émojis officiels + secours Unicode)
+config/        # config.js (env), permissions.js (permissions par commande), emojis.js (émojis personnalisés des messages + secours Unicode), categoryEmojis.js (logos de catégories, Unicode)
 database/      # jsonStore.js + repositories ; données dans database/data/*.json (gitignoré)
 locales/       # textes utilisateur (fr.json) — tout texte visible passe par t()/tList()
 scripts/       # utilitaires hors ligne (checkCommandParity.js → npm run audit)
@@ -184,6 +184,16 @@ Tous les émojis de marque de NaoBot sont centralisés dans **`config/emojis.js`
 ailleurs** : tout module qui affiche un émoji importe ce fichier. Ajouter un
 émoji = une entrée dans `DEFS` (aucune commande existante à modifier).
 
+**Règle de marque (importante).** Les émojis **personnalisés** servent
+uniquement à donner de la personnalité aux **messages** du bot (succès, erreurs,
+confirmations, sanctions, logs, captcha, niveaux, réputation, bienvenue,
+notifications, embeds système). Ils ne doivent **jamais** servir de **logo de
+catégorie**. Les logos de catégories (commande `help`, menus déroulants,
+interface web, onglets, navigation) restent des émojis **Discord standards
+(Unicode)**, centralisés dans **`config/categoryEmojis.js`** (clés = dossiers de
+`commands/`, repli sur `utils/constants/categories.js`). L'audit des émojis
+signale tout émoji personnalisé réintroduit comme logo de catégorie.
+
 - `emojis.thumb` / `emojis.get('thumb')` → **chaîne** pour un texte ou une
   description d'embed ; `emojis.component('thumb')` → valeur pour `setEmoji`
   (boutons/menus) ; `emojis.fallback('thumb')` → secours Unicode seul.
@@ -192,9 +202,12 @@ ailleurs** : tout module qui affiche un émoji importe ce fichier. Ajouter un
   vérifie les émojis réellement disponibles (émojis d'application + cache) ;
   un émoji supprimé bascule **automatiquement** sur son secours, sans toucher
   au code.
-- **Usages câblés** : `successEmbed`/`errorEmbed` (défaut `thumb`/`glitch`,
-  override par `{ emoji }`) → propagation à **tous** les succès/erreurs ; help
-  (icône `basic` + `CATEGORY_EMOJIS` par catégorie) ; captcha (`party` / `crying`
+- **Logos de catégories** : jamais d'émoji personnalisé ; Unicode via
+  `config/categoryEmojis.js` (help : titre de catégorie, liste d'accueil, menu
+  déroulant ; interface web ; onglets).
+- **Usages câblés (messages)** : `successEmbed`/`errorEmbed` (défaut
+  `thumb`/`glitch`, override par `{ emoji }`) → propagation à **tous** les
+  succès/erreurs ; captcha (`party` / `crying`
   / `doubt`) ; réputation par plage de score (`scoreEmojiKey` : 80-100 `love`,
   50-79 `thumb`, 20-49 `doubt`, 0-19 `angry`) ; warns par gravité
   (`warnSeverityEmojiKey` : 1 `doubt`, 2-4 `angry`, 5-6 `crying`, 7 `glitch`) ;
@@ -207,8 +220,9 @@ ailleurs** : tout module qui affiche un émoji importe ce fichier. Ajouter un
 - **Règles** : un seul émoji par bouton, pas d'émoji dans les longs paragraphes,
   aucune décoration « au hasard » (rester professionnel).
 - **Audit** (`services/audit/emojiAuditService.js`) : commande owner
-  `emojiaudit` (= `/emojiaudit`), `npm run audit:emojis` (échoue sur un
-  identifiant d'émoji en dur) et `tests/emojiAudit.test.js`. La couverture des
+  `emojiaudit` (= `/emojiaudit`), `npm run audit:emojis` et
+  `tests/emojiAudit.test.js`. Échoue sur un **identifiant d'émoji en dur** ou un
+  **émoji personnalisé réutilisé comme logo de catégorie**. La couverture des
   embeds n'a pas à atteindre 100 % (ne pas surcharger).
 
 # Permissions

@@ -19,5 +19,11 @@ if (report.hardcodedEmojiFiles.length > 0) {
   process.exit(1);
 }
 
-console.log(`\n✔ Aucun identifiant d'émoji en dur. Couverture des embeds : ${report.coverage} %.`);
+if (report.categoryLogoViolations.length > 0) {
+  console.error(`\n✖ Émoji(s) personnalisé(s) réutilisé(s) comme logo de catégorie : ${report.categoryLogoViolations.join(', ')}.`);
+  console.error('  Les logos de catégories doivent rester des émojis Discord standards (config/categoryEmojis.js).');
+  process.exit(1);
+}
+
+console.log(`\n✔ Aucun identifiant d'émoji en dur, aucun émoji perso en logo de catégorie. Couverture des embeds : ${report.coverage} %.`);
 process.exit(0);

@@ -32,7 +32,8 @@ module.exports = {
     const report = runEmojiAudit();
     auditRepository.saveSummary(report);
 
-    const color = report.hardcodedEmojiFiles.length ? COLORS.ERROR : report.coverage >= 60 ? COLORS.SUCCESS : COLORS.INFO;
+    const hasViolation = report.hardcodedEmojiFiles.length || report.categoryLogoViolations.length;
+    const color = hasViolation ? COLORS.ERROR : COLORS.SUCCESS;
     const embed = new EmbedBuilder()
       .setColor(color)
       .setTitle(`${emojis.get('basic')} ${t('emojiAudit.title')}`)
@@ -54,6 +55,14 @@ module.exports = {
       value: report.hardcodedEmojiFiles.length
         ? report.hardcodedEmojiFiles.map((f) => `\`${f}\``).join(', ').slice(0, 1024)
         : t('emojiAudit.hardcodedNone'),
+    });
+
+    // Émojis personnalisés réutilisés comme logos de catégories (interdit).
+    embed.addFields({
+      name: t('emojiAudit.categoryLogoField'),
+      value: report.categoryLogoViolations.length
+        ? report.categoryLogoViolations.map((f) => `\`${f}\``).join(', ').slice(0, 1024)
+        : t('emojiAudit.categoryLogoNone'),
     });
 
     // Modules non conformes (embeds sans émoji officiel).

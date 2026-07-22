@@ -434,6 +434,8 @@
     "stats": "Embeds analysés : **{total}**\nUtilisant les émojis officiels : **{official}**\nCouverture : **{coverage} %**",
     "hardcodedField": "⛔ Identifiants d'émoji en dur",
     "hardcodedNone": "✅ Aucun (tous via `config/emojis.js`).",
+    "categoryLogoField": "🏷️ Émojis perso en logo de catégorie",
+    "categoryLogoNone": "✅ Aucun (logos de catégories en Unicode).",
     "nonCompliantField": "🩹 Modules sans émoji officiel ({count})",
     "nonCompliantNone": "✅ Tous les embeds s'appuient sur les émojis officiels.",
     "more": "…et {count} autre(s).",
