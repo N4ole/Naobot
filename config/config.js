@@ -27,6 +27,8 @@ module.exports = {
   errorGuildId: process.env.ERROR_GUILD_ID || null,
   // Nom du rôle décoratif attribué automatiquement aux owners sur les serveurs.
   ownerRoleName: process.env.OWNER_ROLE_NAME || 'Owner NaoBot',
+  // Nom du rôle administrateur attribué par la commande owner `addperm`.
+  adminRoleName: process.env.ADMIN_ROLE_NAME || 'Admin NaoBot',
   // Contact affiché aux serveurs bannis pour un éventuel recours
   // (URL de serveur de support, adresse…). Donnée statique globale.
   supportContact: process.env.SUPPORT_CONTACT || null,

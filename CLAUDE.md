@@ -135,7 +135,7 @@ Le `.env` doit **uniquement** contenir :
 - l'owner principal (`OWNER_ID`) ;
 - le serveur des logs d'erreurs internes (`ERROR_GUILD_ID`) ;
 - des données statiques globales (`CLIENT_ID`, `GUILD_ID`, `PREFIX`,
-  `LOCALE`, `MUTED_ROLE_NAME`, `OWNER_ROLE_NAME`) ;
+  `LOCALE`, `MUTED_ROLE_NAME`, `OWNER_ROLE_NAME`, `ADMIN_ROLE_NAME`) ;
 - la configuration **statique** de l'interface web et de l'authentification
   OAuth2 (`WEB_ENABLED`, `WEB_PORT`, `WEB_URL`, `DISCORD_CLIENT_ID`,
   `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, `WEB_SESSION_SECRET`) —
@@ -253,7 +253,15 @@ Discord**) :
   `middlewares/permissions/ownerCheck.js` fait le reste, y compris pour
   les composants via `checkOwner(interaction.user.id)`) ;
 - rôle décoratif « Owner NaoBot » attribué automatiquement
-  (`services/owners/ownerService.js`).
+  (`services/owners/ownerService.js`) ;
+- distinguer **owner principal** et owners secondaires quand un privilège doit
+  rester exclusif au principal : `ownerService.isPrimaryOwner(userId)` (ex. :
+  `permserver add/remove` — modification de la liste des serveurs autorisés à
+  `addperm`, `database/data/authorizedGuilds.json`). `addperm`
+  (`services/owners/permGrantService`) attribue un rôle **administrateur**
+  (`config.adminRoleName`) à l'owner exécutant, uniquement sur un serveur
+  autorisé, puis notifie par MP tous les owners **et** le propriétaire du serveur
+  (transparence) — le bot doit lui-même posséder Administrateur.
 
 # Logs
 

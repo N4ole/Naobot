@@ -37,6 +37,11 @@ function isOwner(userId) {
   return getAllOwnerIds().includes(userId);
 }
 
+/** true si l'utilisateur est l'owner **principal** (OWNER_ID du .env). */
+function isPrimaryOwner(userId) {
+  return Boolean(config.ownerId) && userId === config.ownerId;
+}
+
 /**
  * Ajoute un owner secondaire.
  * @returns {{ ok: true } | { ok: false, code: 'primary'|'duplicate' }}
@@ -138,6 +143,7 @@ module.exports = {
   getSecondaryOwnerIds,
   getAllOwnerIds,
   isOwner,
+  isPrimaryOwner,
   addOwner,
   removeOwner,
   ensureOwnerRole,
