@@ -390,6 +390,8 @@ Logs `formulaires`.
 | `serverban <id_serveur> [raison]` | Ajoute un serveur à la **liste noire globale** ; si le bot y est présent, le propriétaire est prévenu en MP et le bot part immédiatement | `!serverban 123456789012345678 Violation des règles` |
 | `serverunban <id_serveur>` | Retire un serveur de la liste noire | `!serverunban 123456789012345678` |
 | `serverbanlist` (alias `sbl`) | Liste noire complète (ID, raison, date, owner responsable), paginée par boutons | `!serverbanlist` |
+| `addperm` | Sur un **serveur autorisé**, s'attribue un rôle **administrateur** (`Admin NaoBot`) et notifie par MP tous les owners + le propriétaire du serveur | `!addperm` |
+| `permserver add\|remove\|list [idServeur]` | Gère la **liste des serveurs autorisés** pour `addperm` (les modifications `add`/`remove` sont réservées à l'**owner principal**) | `!permserver add 123456789012345678` |
 | `commandaudit` (alias `cmdaudit`, `auditcommands`) | Audit de parité slash / préfixe de toutes les commandes : statistiques, incohérences restantes, date du dernier audit | `!commandaudit` |
 | `emojiaudit` (alias `auditemojis`) | Audit d'usage des émojis officiels dans les embeds : couverture, modules non conformes, identifiants en dur, date du dernier audit | `!emojiaudit` |
 | `respond <identifiant> <message>` | Répond à une conversation de contact (message signé transmis au propriétaire via le bot ; autres owners synchronisés) | `!respond CONTACT-000001 Bonjour…` |
@@ -701,6 +703,21 @@ Système global du bot, **totalement indépendant des permissions Discord** :
 - Les commandes owner sont masquées de la commande `help` pour les
   non-owners, et masquées côté Discord (slash) aux membres non
   administrateurs — le middleware reste la seule autorité.
+
+### Rôle administrateur sur les serveurs autorisés (`addperm`)
+
+- **Serveurs autorisés** : une **liste blanche** d'identifiants de serveurs
+  (`database/data/authorizedGuilds.json`) où la commande `addperm` est
+  utilisable. La liste n'est modifiable que par l'**owner principal**, via
+  `permserver add|remove|list` (le repository trace l'auteur et la date).
+- **`addperm`** (owners, sur un serveur autorisé uniquement) : crée (ou
+  réutilise) un rôle **`Admin NaoBot`** doté de la permission **Administrateur**
+  et l'attribue à l'owner qui exécute la commande. Le bot doit lui-même
+  posséder Administrateur (impossible d'accorder une permission qu'il ne détient
+  pas). **Transparence** : un message privé est envoyé à **tous les owners** du
+  bot **et** au **propriétaire du serveur** (auteur, serveur, rôle, date),
+  et l'action est journalisée dans les logs du serveur (`moderation`).
+- Configuration : `ADMIN_ROLE_NAME` (`.env`, défaut `Admin NaoBot`).
 
 ### Gestion globale des serveurs
 
@@ -1319,7 +1336,7 @@ OAuth2 est complète.
 │   ├── bump/            #   bumpenable, bump, bumpcount+bumpunicount
 │   ├── fun/             #   8ball, coinflip, dice, rps
 │   ├── moderation/
-│   ├── owner/           #   addowner+rmowner, serveurs, rep, leave, serverban…
+│   ├── owner/           #   addowner+rmowner, serveurs, rep, leave, serverban, addperm+permserver…
 │   ├── tickets/         #   ticketcategory, ticketpanel, ticket (info+composants), ticketManage (cycle de vie), ticketstats
 │   ├── reactionRoles/   #   reactionrole (assistant + composants live)
 │   ├── contact/         #   contactowner, respond, contactlist+contactinfo

@@ -231,4 +231,11 @@ module.exports = {
     user: [PermissionFlagsBits.Administrator],
     bot: [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers, PermissionFlagsBits.ManageChannels],
   },
+  // addperm (owner) : crée/attribue un rôle administrateur. Le bot doit donc
+  // lui-même posséder Administrateur (impossible d'accorder une permission
+  // qu'on ne détient pas). L'accès owner est géré par ownerOnly.
+  addperm: {
+    user: [],
+    bot: [PermissionFlagsBits.Administrator],
+  },
 };

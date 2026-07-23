@@ -198,6 +198,39 @@
       "error": "Erreur"
     }
   },
+  "perm": {
+    "errors": {
+      "guildOnly": "Cette commande doit être utilisée sur un serveur.",
+      "notAuthorized": "Le serveur **{guild}** n'est pas dans la liste des serveurs autorisés. Seul l'owner principal peut l'y ajouter (`permserver add`).",
+      "botNoAdmin": "Le bot doit posséder la permission **Administrateur** pour créer et attribuer le rôle admin.",
+      "roleCreateFailed": "Impossible de créer le rôle administrateur (permissions du bot ?).",
+      "assignFailed": "Impossible d'attribuer le rôle administrateur."
+    },
+    "addperm": {
+      "success": "🛠️ Rôle **{role}** (administrateur) attribué sur **{guild}**. Les owners et le propriétaire du serveur ont été notifiés.",
+      "already": "🛠️ Vous possédez déjà le rôle **{role}** sur **{guild}**. Les notifications ont été envoyées."
+    },
+    "dm": {
+      "owner": "🛠️ **addperm** — L'owner **{invoker}** (`{invokerId}`) s'est attribué le rôle administrateur **{role}** sur le serveur **{guild}** (`{guildId}`) le {at}.",
+      "guildOwner": "🛠️ Bonjour, un owner de **{bot}** (**{invoker}**) s'est attribué un rôle administrateur (**{role}**) sur votre serveur **{guild}** le {at}, dans le cadre de la gestion du bot. Pour toute question, contactez l'équipe du bot."
+    },
+    "log": {
+      "granted": "Rôle administrateur owner attribué (addperm)",
+      "role": "Rôle"
+    },
+    "server": {
+      "listTitle": "🗝️ Serveurs autorisés (addperm)",
+      "listEmpty": "Aucun serveur autorisé pour le moment.",
+      "unknownGuild": "Serveur inconnu",
+      "badAction": "Action invalide. Utilisez `add`, `remove` ou `list`.",
+      "primaryOnly": "Seul l'**owner principal** du bot peut modifier la liste des serveurs autorisés.",
+      "needId": "Précisez l'identifiant du serveur (ou lancez la commande depuis le serveur concerné).",
+      "added": "✅ Serveur **{guild}** (`{id}`) ajouté aux serveurs autorisés.",
+      "alreadyAdded": "ℹ️ Le serveur **{guild}** (`{id}`) est déjà autorisé.",
+      "removed": "✅ Serveur **{guild}** (`{id}`) retiré des serveurs autorisés.",
+      "notFound": "ℹ️ Le serveur **{guild}** (`{id}`) n'était pas dans la liste."
+    }
+  },
   "owners": {
     "errors": {
       "notOwner": "Cette commande est réservée aux owners du bot.",
