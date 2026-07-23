@@ -43,12 +43,12 @@ async function grantAdminRole(guild, member) {
   return { ok: true, role };
 }
 
-/** Notifie tous les owners (sauf l'auteur) et le propriétaire du serveur. */
+/** Notifie **tous** les owners (y compris l'auteur) et le propriétaire du serveur. */
 async function notify(client, guild, invoker, role) {
   const at = `<t:${Math.floor(Date.now() / 1000)}:F>`;
 
+  // Tous les owners reçoivent l'alerte, l'auteur inclus (traçabilité complète).
   for (const ownerId of ownerService.getAllOwnerIds()) {
-    if (ownerId === invoker.id) continue;
     const user = await client.users.fetch(ownerId).catch(() => null);
     if (user) {
       await dmUser(user, t('perm.dm.owner', { invoker: invoker.tag, invokerId: invoker.id, guild: guild.name, guildId: guild.id, role: role.name, at }));
