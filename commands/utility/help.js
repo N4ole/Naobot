@@ -124,31 +124,45 @@ function categoryEmbed(cat, page, pageCount, prefix) {
   });
 }
 
-/** Construit la ligne du menu déroulant à partir des catégories disponibles. */
-function selectRow(userId, cats, selectedKey) {
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId(`help:cat:${userId}`)
-    .setPlaceholder(t('help.selectPlaceholder'))
-    .addOptions(
-      {
-        label: t('help.home'),
-        value: 'home',
-        emoji: '🏠',
-        description: t('help.homeOptionDescription').slice(0, 100),
-        default: !selectedKey,
-      },
-      ...cats.slice(0, 24).map((cat) => {
-        const meta = categoryMeta(cat.key);
-        return {
-          label: meta.label,
-          value: cat.key,
-          emoji: categoryEmoji(cat.key),
-          description: t('help.categoryOption', { count: cat.commands.length }).slice(0, 100),
-          default: cat.key === selectedKey,
-        };
-      }),
-    );
-  return new ActionRowBuilder().addComponents(menu);
+/** Nombre maximal d'options par menu déroulant (limite Discord). */
+const SELECT_MAX_OPTIONS = 25;
+/**
+ * Nombre maximal de menus déroulants de catégories. Un message accepte 5 lignes
+ * de composants ; on en réserve une pour la pagination → 4 menus = jusqu'à
+ * 100 catégories. Au-delà (improbable), les dernières seraient masquées.
+ */
+const SELECT_MAX_MENUS = 4;
+
+/**
+ * Lignes des menus déroulants de catégories. Comme un menu Discord est limité à
+ * 25 options et qu'il peut y avoir davantage de catégories (l'accueil + toutes
+ * les catégories), les options sont **réparties sur plusieurs menus** pour que
+ * **toutes** les catégories restent accessibles (correctif : les dernières
+ * catégories — utilitaire, fun, owner — n'étaient plus atteignables).
+ * @returns {ActionRowBuilder[]}
+ */
+function selectRows(userId, cats, selectedKey) {
+  const options = [
+    { label: t('help.home'), value: 'home', emoji: '🏠', description: t('help.homeOptionDescription').slice(0, 100), default: !selectedKey },
+    ...cats.map((cat) => ({
+      label: categoryMeta(cat.key).label,
+      value: cat.key,
+      emoji: categoryEmoji(cat.key),
+      description: t('help.categoryOption', { count: cat.commands.length }).slice(0, 100),
+      default: cat.key === selectedKey,
+    })),
+  ];
+
+  const rows = [];
+  for (let i = 0; i < options.length && rows.length < SELECT_MAX_MENUS; i += SELECT_MAX_OPTIONS) {
+    const chunk = options.slice(i, i + SELECT_MAX_OPTIONS);
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId(`help:cat:${userId}:${rows.length}`)
+      .setPlaceholder(t('help.selectPlaceholder'))
+      .addOptions(chunk);
+    rows.push(new ActionRowBuilder().addComponents(menu));
+  }
+  return rows;
 }
 
 /** Ligne de pagination (affichée uniquement pour les longues catégories). */
@@ -177,12 +191,12 @@ function buildHelpPayload(client, userId, prefix, catKey = null, page = 0) {
   const selected = catKey && cats.find((cat) => cat.key === catKey);
 
   if (!selected) {
-    return { embeds: [homeEmbed(client, cats, prefix)], components: [selectRow(userId, cats, null)] };
+    return { embeds: [homeEmbed(client, cats, prefix)], components: selectRows(userId, cats, null) };
   }
 
   const pageCount = Math.max(1, Math.ceil(selected.commands.length / PAGE_SIZE));
   const current = Math.min(Math.max(0, page), pageCount - 1);
-  const components = [selectRow(userId, cats, selected.key)];
+  const components = selectRows(userId, cats, selected.key);
   if (pageCount > 1) components.push(navRow(userId, selected.key, current, pageCount));
   return { embeds: [categoryEmbed(selected, current, pageCount, prefix)], components };
 }
