@@ -14,6 +14,7 @@
  */
 const repository = require('../../database/antisensitiveRepository');
 const matcher = require('./sensitiveMatcher');
+const sanctionService = require('./sanctionService');
 const logService = require('../logs/logService');
 const errorLogService = require('../errors/errorLogService');
 const { logEventEmbed } = require('../../utils/embeds/embeds');
@@ -21,6 +22,8 @@ const emojis = require('../../config/emojis');
 const COLORS = require('../../utils/constants/colors');
 const { CATEGORIES } = require('../../utils/constants/sensitiveContent');
 const { isExemptChannel, isExemptCategory, isExemptMember, canModerateMessages } = require('../../middlewares/antisensitive/antisensitiveAccess');
+const { formatDuration } = require('../../utils/helpers/durationParser');
+const { MIN_TIMEOUT_MS, MAX_TIMEOUT_MS } = require('../../database/antisensitiveRepository');
 const { t } = require('../../utils/helpers/i18n');
 
 const NOTIFY_TTL_MS = 8000;
@@ -95,6 +98,30 @@ async function setAction(guild, action, byUser) {
   return { config, changed };
 }
 
+/** Active/désactive la sanction automatique (timeout natif). */
+async function setAutoTimeout(guild, enabled, byUser) {
+  const config = repository.getConfig(guild.id);
+  const changed = config.autoTimeout.enabled !== enabled;
+  config.autoTimeout.enabled = enabled;
+  persist(guild, config, byUser);
+  return { config, changed };
+}
+
+/**
+ * Définit la durée du timeout automatique (en millisecondes, bornée).
+ * @returns {{ config: object, changed: boolean, durationMs: number, tooShort?: boolean, tooLong?: boolean }}
+ */
+async function setTimeoutDuration(guild, durationMs, byUser) {
+  const config = repository.getConfig(guild.id);
+  if (!Number.isFinite(durationMs) || durationMs < MIN_TIMEOUT_MS) return { config, changed: false, durationMs: config.autoTimeout.durationMs, tooShort: true };
+  if (durationMs > MAX_TIMEOUT_MS) return { config, changed: false, durationMs: config.autoTimeout.durationMs, tooLong: true };
+  const value = Math.round(durationMs);
+  const changed = config.autoTimeout.durationMs !== value;
+  config.autoTimeout.durationMs = value;
+  persist(guild, config, byUser);
+  return { config, changed, durationMs: value };
+}
+
 /** Personnalise (ou réinitialise) le message d'avertissement. */
 async function setWarnMessage(guild, message, byUser) {
   const config = repository.getConfig(guild.id);
@@ -160,19 +187,35 @@ async function notifyUser(message, config) {
   if (sent) setTimeout(() => sent.delete().catch(() => null), NOTIFY_TTL_MS).unref?.();
 }
 
-/** Applique la réaction configurée (delete | notify | log) + logs + stats. */
+/**
+ * Applique la réaction à une détection : suppression du message, **sanction
+ * automatique** (timeout natif, déléguée à `sanctionService`), avertissement,
+ * logs et statistiques. La détection ne sanctionne jamais elle-même.
+ */
 async function applyReaction(message, detection, config) {
   const guild = message.guild;
   let deleted = false;
   let errored = false;
 
-  if (config.action === 'delete' && canModerateMessages(guild, message.channel)) {
+  // 1. Suppression : selon la réaction configurée, ou d'office si le timeout
+  //    automatique est actif — le message doit disparaître « malgré tout »,
+  //    même si le timeout échoue ensuite.
+  const shouldDelete = config.action === 'delete' || config.autoTimeout.enabled;
+  if (shouldDelete && canModerateMessages(guild, message.channel)) {
     deleted = await message.delete().then(() => true).catch(() => { errored = true; return false; });
   }
 
+  // 2. Sanction automatique (module dédié, indépendant de la détection).
+  const { timeout } = await sanctionService.applyAutoSanctions({ guild, member: message.member, config, client: message.client });
+
+  // 3. Statistiques (détections, suppressions, timeouts, échecs, par catégorie).
   config.stats.detections += 1;
   if (deleted) config.stats.deleted += 1;
   if (errored) config.stats.errors += 1;
+  if (timeout.applied) config.stats.timeouts += 1;
+  if (timeout.failed) config.stats.timeoutErrors += 1;
+  config.stats.byCategory[detection.category] = (config.stats.byCategory[detection.category] ?? 0) + 1;
+
   repository.pushDetection(config, {
     userId: message.author.id,
     userTag: message.author.tag,
@@ -182,13 +225,15 @@ async function applyReaction(message, detection, config) {
     match: detection.match,
     action: config.action,
     deleted,
+    timedOut: timeout.applied,
     at: new Date().toISOString(),
   });
   repository.saveConfig(guild.id, config);
 
-  if (config.action !== 'log') await notifyUser(message, config).catch(() => null);
-  await logDetection(guild, message, detection, config, deleted, errored).catch(() => null);
-  return { deleted };
+  // 4. Avertissement discret (sauf mode « log » seul sans timeout).
+  if (config.action !== 'log' || config.autoTimeout.enabled) await notifyUser(message, config).catch(() => null);
+  await logDetection(guild, message, detection, config, { deleted, errored, timeout }).catch(() => null);
+  return { deleted, timeout };
 }
 
 /** Point d'entrée des écouteurs (création + modification + embeds/webhooks). */
@@ -247,7 +292,15 @@ function logList(guild, action, value, user) {
   });
 }
 
-function logDetection(guild, message, detection, config, deleted, errored) {
+/** Texte du champ « sanction » (timeout) selon le résultat de l'application. */
+function timeoutFieldValue(timeout) {
+  if (timeout.applied) {
+    return `${emojis.get('angry')} ${t('antisensitive.timeout.log.applied', { duration: formatDuration(timeout.durationMs) })}`;
+  }
+  return t(`antisensitive.timeout.log.${timeout.code}`);
+}
+
+function logDetection(guild, message, detection, config, { deleted, errored, timeout }) {
   const action = deleted
     ? t('antisensitive.field.deleted')
     : errored
@@ -261,11 +314,13 @@ function logDetection(guild, message, detection, config, deleted, errored) {
     color: COLORS.WARNING,
     user: message.author,
     fields: [
+      { name: t('antisensitive.field.server'), value: `${guild.name} (\`${guild.id}\`)`, inline: true },
       { name: t('common.channel'), value: `${message.channel}`, inline: true },
       { name: t('antisensitive.field.category'), value: cat ? `${cat.emoji} ${cat.label}` : detection.category, inline: true },
       { name: t('antisensitive.field.method'), value: t(`antisensitive.method.${detection.method}`), inline: true },
       { name: t('antisensitive.field.detected'), value: `\`${detection.match}\``, inline: true },
       { name: t('protections.field.action'), value: action, inline: true },
+      { name: t('antisensitive.field.timeout'), value: timeoutFieldValue(timeout), inline: true },
     ],
   });
   // Une détection est à la fois un événement de protection (feature) et un acte
@@ -287,6 +342,8 @@ module.exports = {
   setEnabled,
   setCategory,
   setAction,
+  setAutoTimeout,
+  setTimeoutDuration,
   setWarnMessage,
   exemptChannels,
   exemptCategories,

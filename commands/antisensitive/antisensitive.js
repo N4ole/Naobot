@@ -27,6 +27,7 @@ const { canConfigure } = require('../../middlewares/antisensitive/antisensitiveA
 const { successEmbed, errorEmbed, infoEmbed } = require('../../utils/embeds/embeds');
 const { CATEGORIES } = require('../../utils/constants/sensitiveContent');
 const { CONTENT_CATEGORIES, ACTIONS } = require('../../database/antisensitiveRepository');
+const { parseDuration, formatDuration } = require('../../utils/helpers/durationParser');
 const { t } = require('../../utils/helpers/i18n');
 
 const ON = new Set(['on', 'activer', 'enable', 'true', 'oui']);
@@ -73,6 +74,13 @@ function indicator(enabled) {
   return enabled ? '🟢' : '🔴';
 }
 
+/** Rend le décompte des détections par catégorie (0 masqué si aucune détection). */
+function statsByCategory(byCategory = {}) {
+  const parts = CONTENT_CATEGORIES.map((key) => `${CATEGORIES[key].emoji} ${byCategory[key] ?? 0}`);
+  if (byCategory.custom) parts.push(`${CATEGORIES.custom.emoji} ${byCategory.custom}`);
+  return parts.join('  ');
+}
+
 // --- Statut (embed enrichi + pagination des événements récents + boutons) ---
 
 function buildStatusPayload(guild, page = 0) {
@@ -96,7 +104,17 @@ function buildStatusPayload(guild, page = 0) {
   ).addFields(
     { name: t('antisensitive.status.categories'), value: catLine, inline: false },
     { name: t('antisensitive.status.action'), value: t(`antisensitive.action.${conf.action}`), inline: true },
-    { name: t('antisensitive.status.stats'), value: t('antisensitive.status.statsValue', { detections: conf.stats.detections, deleted: conf.stats.deleted, errors: conf.stats.errors }), inline: true },
+    {
+      name: t('antisensitive.status.timeout'),
+      value: t('antisensitive.status.timeoutValue', {
+        indicator: indicator(conf.autoTimeout.enabled),
+        state: conf.autoTimeout.enabled ? t('antisensitive.on') : t('antisensitive.off'),
+        duration: formatDuration(conf.autoTimeout.durationMs),
+      }),
+      inline: true,
+    },
+    { name: t('antisensitive.status.stats'), value: t('antisensitive.status.statsValue', { detections: conf.stats.detections, deleted: conf.stats.deleted, timeouts: conf.stats.timeouts ?? 0, timeoutErrors: conf.stats.timeoutErrors ?? 0, errors: conf.stats.errors }), inline: false },
+    { name: t('antisensitive.status.byCategory'), value: statsByCategory(conf.stats.byCategory), inline: false },
     {
       name: t('antisensitive.status.exemptions'),
       value: t('antisensitive.status.exemptionsValue', {
@@ -185,6 +203,24 @@ async function handleReaction(ctx) {
   return ctx.reply({ embeds: [successEmbed(t('antisensitive.reaction.set', { action: t(`antisensitive.action.${mode}`) }))] });
 }
 
+async function handleTimeout(ctx) {
+  const value = normalizeWord((ctx.options.sousaction ?? '').trim());
+  const enabled = ON.has(value) ? true : OFF.has(value) ? false : null;
+  if (enabled === null) return ctx.reply({ embeds: [errorEmbed(t('antisensitive.timeout.needState'))], ephemeral: true });
+  await antisensitiveService.setAutoTimeout(ctx.guild, enabled, ctx.user);
+  return ctx.reply({ embeds: [successEmbed(t(enabled ? 'antisensitive.timeout.enabled' : 'antisensitive.timeout.disabled'))] });
+}
+
+async function handleTimeoutDuration(ctx) {
+  const raw = [ctx.options.sousaction, ctx.options.cible].filter(Boolean).join('').trim();
+  const durationMs = parseDuration(raw);
+  if (!durationMs) return ctx.reply({ embeds: [errorEmbed(t('antisensitive.timeout.needDuration'))], ephemeral: true });
+  const res = await antisensitiveService.setTimeoutDuration(ctx.guild, durationMs, ctx.user);
+  if (res.tooShort) return ctx.reply({ embeds: [errorEmbed(t('antisensitive.timeout.tooShort'))], ephemeral: true });
+  if (res.tooLong) return ctx.reply({ embeds: [errorEmbed(t('antisensitive.timeout.tooLong'))], ephemeral: true });
+  return ctx.reply({ embeds: [successEmbed(t('antisensitive.timeout.durationSet', { duration: formatDuration(res.durationMs) }))] });
+}
+
 async function handleWarn(ctx) {
   const text = [ctx.options.sousaction, ctx.options.cible].filter(Boolean).join(' ').trim();
   if (!text || normalizeWord(text) === 'reset' || normalizeWord(text) === 'defaut') {
@@ -215,7 +251,7 @@ function handleTest(ctx) {
 module.exports = {
   name: 'antisensitive',
   description: 'Configure la protection anti-contenus sensibles (adultes/gore/violence/danger)',
-  usage: 'antisensitive <on|off|status|whitelist|category|role|user|blacklist|allow|keyword|filter|reaction|warn|test> …',
+  usage: 'antisensitive <on|off|status|whitelist|category|role|user|blacklist|allow|keyword|filter|reaction|timeout|timeoutduration|warn|test> …',
   examples: [
     'antisensitive on',
     'antisensitive status',
@@ -224,13 +260,15 @@ module.exports = {
     'antisensitive blacklist add badsite.net',
     'antisensitive filter gore off',
     'antisensitive reaction notify',
+    'antisensitive timeout on',
+    'antisensitive timeoutduration 10m',
     'antisensitive test regarde xvideos.com',
   ],
   aliases: ['antinsfw', 'antichoc'],
   cooldown: 3,
   args: [
-    { name: 'action', type: 'string', required: true, choices: ['on', 'off', 'status', 'whitelist', 'category', 'role', 'user', 'blacklist', 'allow', 'keyword', 'filter', 'reaction', 'warn', 'test'], description: 'Sous-commande' },
-    { name: 'sousaction', type: 'string', required: false, description: 'add/remove/list, catégorie, mode, ou texte selon la sous-commande' },
+    { name: 'action', type: 'string', required: true, choices: ['on', 'off', 'status', 'whitelist', 'category', 'role', 'user', 'blacklist', 'allow', 'keyword', 'filter', 'reaction', 'timeout', 'timeoutduration', 'warn', 'test'], description: 'Sous-commande' },
+    { name: 'sousaction', type: 'string', required: false, description: 'add/remove/list, catégorie, mode, durée, ou texte selon la sous-commande' },
     { name: 'cible', type: 'string', required: false, rest: true, description: 'Cible : salon/rôle/membre/domaine/mot/texte' },
   ],
 
@@ -240,6 +278,8 @@ module.exports = {
     if (action in LISTS) return handleList(ctx, action);
     if (action === 'filter') return handleFilter(ctx);
     if (action === 'reaction') return handleReaction(ctx);
+    if (action === 'timeout') return handleTimeout(ctx);
+    if (action === 'timeoutduration') return handleTimeoutDuration(ctx);
     if (action === 'warn') return handleWarn(ctx);
     if (action === 'test') return handleTest(ctx);
 

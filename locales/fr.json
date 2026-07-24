@@ -472,9 +472,12 @@
       "state": "{indicator} Protection **{state}**",
       "categories": "Catégories surveillées",
       "action": "Réaction",
+      "timeout": "Timeout automatique",
+      "timeoutValue": "{indicator} {state} · Durée : **{duration}**",
       "exemptCount": "Salons exemptés",
       "stats": "Statistiques",
-      "statsValue": "{detections} détection(s) · {deleted} supprimé(s) · {errors} erreur(s)",
+      "statsValue": "{detections} détection(s) · {deleted} supprimé(s) · {timeouts} timeout(s) · {timeoutErrors} échec(s) timeout · {errors} erreur(s)",
+      "byCategory": "Détections par catégorie",
       "exemptions": "Exceptions",
       "exemptionsValue": "Salons : **{channels}** · Catégories : **{categories}** · Rôles : **{roles}** · Membres : **{users}**",
       "customLists": "Listes personnalisées",
@@ -527,6 +530,24 @@
       "unknown": "Réaction inconnue. Valeurs : {actions}.",
       "set": "✅ Réaction définie : **{action}**."
     },
+    "timeout": {
+      "needState": "Précisez `on` ou `off`.",
+      "enabled": "⏳ Timeout automatique **activé** : un membre détecté recevra un timeout Discord.",
+      "disabled": "⏳ Timeout automatique **désactivé** : plus de timeout à la détection.",
+      "needDuration": "Indiquez une durée valide (ex. `5m`, `10m`, `1h`).",
+      "tooShort": "La durée du timeout doit être d'au moins **1 minute**.",
+      "tooLong": "La durée du timeout ne peut pas dépasser **28 jours** (limite Discord).",
+      "durationSet": "✅ Durée du timeout automatique définie : **{duration}**.",
+      "log": {
+        "applied": "Timeout appliqué ({duration})",
+        "disabled": "Timeout automatique désactivé",
+        "exempt": "Membre exempté (aucun timeout)",
+        "alreadyTimedOut": "Déjà sous timeout",
+        "botNoPermission": "Échec : permission « Modérer les membres » manquante",
+        "notModeratable": "Échec : hiérarchie insuffisante",
+        "error": "Échec : erreur lors de l'application"
+      }
+    },
     "warn": {
       "set": "✅ Message d'avertissement personnalisé enregistré.",
       "reset": "✅ Message d'avertissement réinitialisé (message par défaut)."
@@ -538,10 +559,12 @@
       "detected": "🚨 Détecté : {category}\nMéthode : **{method}** · Correspondance : `{match}`"
     },
     "field": {
+      "server": "Serveur",
       "category": "Catégorie",
       "domain": "Domaine",
       "method": "Méthode",
       "detected": "Contenu détecté",
+      "timeout": "Sanction",
       "deleted": "Message supprimé",
       "logged": "Journalisé (sans suppression)",
       "error": "Suppression impossible (permissions insuffisantes)"

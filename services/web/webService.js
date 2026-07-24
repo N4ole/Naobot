@@ -157,6 +157,7 @@ function antisensitive(guildId) {
         enabled: c.enabled,
         categories: c.categories,
         action: c.action,
+        autoTimeout: c.autoTimeout,
         exemptChannels: c.exemptChannels,
         exemptCategories: c.exemptCategories,
         exemptRoles: c.exemptRoles,

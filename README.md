@@ -215,6 +215,8 @@ préfixes par serveur** dans une future mise à jour.
 | `antisensitive blacklist\|allow\|keyword add\|remove\|list <valeur>` | Domaines interdits, domaines autorisés, mots-clés personnalisés | Administrateur | `!antisensitive blacklist add badsite.net` |
 | `antisensitive filter <catégorie> <on\|off>` | Active/désactive une catégorie (porn/gore/violence/danger) | Administrateur | `!antisensitive filter gore off` |
 | `antisensitive reaction <delete\|notify\|log>` | Réaction du bot en cas de détection | Administrateur | `!antisensitive reaction notify` |
+| `antisensitive timeout <on\|off>` | Active/désactive le **timeout automatique** à la détection | Administrateur | `!antisensitive timeout on` |
+| `antisensitive timeoutduration <durée>` | Durée du timeout automatique (défaut 5 min, min 1 min, max 28 j) | Administrateur | `!antisensitive timeoutduration 10m` |
 | `antisensitive warn <message\|reset>` / `antisensitive test <texte>` | Message d'avertissement personnalisé ; test de détection | Administrateur | `!antisensitive test regarde xvideos.com` |
 
 Protections indépendantes, **désactivées par défaut**, configurées par
@@ -296,8 +298,20 @@ journalisée dans les logs internes du bot, le message et le bot continuent).
   **avertissement discret personnalisable** (`warn`), ou avertir sans supprimer,
   ou journaliser seulement. Chaque détection est journalisée **à la fois** en
   `protections` (feature) **et** en `moderation` (acte de modération : contenu
-  retiré/signalé) — utilisateur, salon, **contenu détecté**, **catégorie**,
-  **méthode**, action, date — plus statistiques.
+  retiré/signalé) — serveur, utilisateur, salon, **contenu détecté**,
+  **catégorie**, **méthode**, action, **sanction (timeout + durée)**, date —
+  plus statistiques.
+- **Sanction automatique — timeout natif Discord** (`timeout on|off`,
+  `timeoutduration <durée>`, 5 min par défaut) : à la détection, le message est
+  supprimé, l'auteur averti puis **exclu temporairement** via la fonctionnalité
+  native (`Modérer les membres`), jamais un rôle/mute personnalisé. Vérifications
+  avant application : permission du bot, hiérarchie (`moderatable`), membre non
+  exempté (owner du bot, propriétaire du serveur, rôle exempté), membre pas déjà
+  sous timeout. Si le timeout échoue, le message est **supprimé malgré tout** et
+  la raison journalisée. La logique de sanction vit dans un **module dédié**
+  (`services/antisensitive/sanctionService`), indépendant de la détection, prêt
+  à accueillir de futures sanctions (warn/kick/ban). Raison d'audit
+  standardisée : « Détection automatique d'un contenu sensible (AntiSensitive). »
 - **Exceptions** : salons, **catégories de salons**, rôles, membres ignorés ;
   **domaines autorisés** et **mots-clés autorisés** (suppression de faux
   positifs). Un **domaine autorisé neutralise aussi le mot-clé de sa marque**
@@ -306,9 +320,11 @@ journalisée dans les logs internes du bot, le message et le bot continuent).
   (domaines/mots interdits personnalisés).
 - **Test** : `antisensitive test <texte>` analyse un texte et renvoie la
   catégorie/méthode/correspondance (mise au point sans risque).
-- **Status** : état, catégories, réaction, exceptions, listes personnalisées,
-  **événements récents paginés**, date de dernière modification (embed +
-  boutons).
+- **Status** : état, catégories, réaction, **timeout automatique (état +
+  durée)**, statistiques (détections, suppressions, **timeouts**, **échecs de
+  timeout**, erreurs) et **détections par catégorie**, exceptions, listes
+  personnalisées, **événements récents paginés**, date de dernière modification
+  (embed + boutons).
 - **Intégration** : tableau de bord `protections`. **Interface web** :
   `/api/guilds/:id/antisensitive` (catégories, réaction, exceptions, listes,
   détections récentes).
@@ -1423,7 +1439,7 @@ OAuth2 est complète.
 │   ├── antilink/        #   antilinkService (moteur de détection)
 │   ├── antibot/         #   antibotService (arrivées de bots, raids)
 │   ├── antipub/         #   antipubService (invitations Discord, indépendant)
-│   ├── antisensitive/   #   antisensitiveService (orchestration) + sensitiveMatcher (moteur pur, 3 méthodes)
+│   ├── antisensitive/   #   antisensitiveService (orchestration) + sensitiveMatcher (moteur pur, 3 méthodes) + sanctionService (timeout auto natif)
 │   ├── emergency/       #   emergencyService (verrouillage/restauration)
 │   ├── welcome/         #   welcomeService + welcomeCardService (modèles)
 │   ├── backup/          #   backupService + botConfigBackup (structure + config)
