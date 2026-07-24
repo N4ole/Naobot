@@ -89,3 +89,38 @@ test('checkOutgoing : bloque selon l’état et les exemptions', async () => {
   await antisensitiveService.setEnabled(guild, true, user('admin1'));
   assert.ok(antisensitiveService.checkOutgoing(guild, { id: 'c' }, 'xvideos.com'));
 });
+
+test('matcher : un domaine autorisé neutralise le mot-clé de sa marque', () => {
+  // « pornhub » est un mot-clé de la base ; autoriser « pornhub.com » ne doit
+  // bloquer ni le domaine ni le mot-clé correspondant.
+  assert.equal(matcher.analyze('pornhub best videos', { ...cfg(), allowedDomains: ['pornhub.com'] }), null);
+  // Le mot-clé générique reste bloqué (l’autorisation ne porte que sur la marque).
+  assert.equal(matcher.analyze('du porn ici', { ...cfg(), allowedDomains: ['pornhub.com'] }).category, 'porn');
+});
+
+test('handleMessage : une détection est journalisée en protections ET modération', async () => {
+  const GL = 'test-guild-antisensitive-logcat';
+  const saved = logService.log;
+  const categories = [];
+  logService.log = async (_guild, category) => { categories.push(category); };
+  try {
+    const me = { permissionsIn: () => ({ has: () => true }) };
+    const guild = { id: GL, name: 'T', members: { me } };
+    await antisensitiveService.setEnabled(guild, true, user('admin1'));
+    categories.length = 0; // ignore le log d'activation
+    const message = {
+      id: 'msg-log', guild, content: 'xvideos.com', embeds: [], member: null,
+      author: { id: 'u1', tag: 'U#1', bot: false, displayAvatarURL: () => 'https://cdn/x.png' },
+      channel: { id: 'c1', toString: () => '#c', permissionsFor: () => ({ has: () => true }), send: async () => ({ delete: async () => {} }) },
+      client: { user: { id: 'bot' } },
+      delete: async () => {},
+    };
+    const handled = await antisensitiveService.handleMessage(message);
+    assert.equal(handled, true);
+    assert.ok(categories.includes('protections'), 'catégorie protections attendue');
+    assert.ok(categories.includes('moderation'), 'catégorie modération attendue');
+  } finally {
+    logService.log = saved;
+    fs.rmSync(path.join(__dirname, '..', 'database', 'data', 'antisensitive.json'), { force: true });
+  }
+});

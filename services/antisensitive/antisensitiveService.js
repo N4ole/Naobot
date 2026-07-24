@@ -256,7 +256,8 @@ function logDetection(guild, message, detection, config, deleted, errored) {
         ? t('antisensitive.field.logged')
         : t('protections.field.notDeleted');
   const cat = CATEGORIES[detection.category];
-  return logProtection(guild, 'detection', {
+  const embed = logEventEmbed({
+    title: `${emojis.get('sleepy')} ${t('antisensitive.logs.detection')}`,
     color: COLORS.WARNING,
     user: message.author,
     fields: [
@@ -267,6 +268,13 @@ function logDetection(guild, message, detection, config, deleted, errored) {
       { name: t('protections.field.action'), value: action, inline: true },
     ],
   });
+  // Une détection est à la fois un événement de protection (feature) et un acte
+  // de **modération** (contenu retiré/signalé) : journalisé dans les deux
+  // catégories pour rester visible côté modération.
+  return Promise.all([
+    logService.log(guild, 'protections', embed),
+    logService.log(guild, 'moderation', embed),
+  ]);
 }
 
 module.exports = {

@@ -294,12 +294,16 @@ journalisée dans les logs internes du bot, le message et le bot continuent).
   raccourcisseurs d'URL reconnus (jamais résolus par le réseau, par sûreté).
 - **Réaction configurable** (`reaction delete|notify|log`) : suppression +
   **avertissement discret personnalisable** (`warn`), ou avertir sans supprimer,
-  ou journaliser seulement. Journalisation `protections` (utilisateur, salon,
-  **contenu détecté**, **catégorie**, **méthode**, action, date) + statistiques.
+  ou journaliser seulement. Chaque détection est journalisée **à la fois** en
+  `protections` (feature) **et** en `moderation` (acte de modération : contenu
+  retiré/signalé) — utilisateur, salon, **contenu détecté**, **catégorie**,
+  **méthode**, action, date — plus statistiques.
 - **Exceptions** : salons, **catégories de salons**, rôles, membres ignorés ;
   **domaines autorisés** et **mots-clés autorisés** (suppression de faux
-  positifs). Commandes `whitelist`/`category`/`role`/`user`/`allow` +
-  `blacklist`/`keyword` (domaines/mots interdits personnalisés).
+  positifs). Un **domaine autorisé neutralise aussi le mot-clé de sa marque**
+  (autoriser `pornhub.com` n'active plus le mot-clé `pornhub`). Commandes
+  `whitelist`/`category`/`role`/`user`/`allow` + `blacklist`/`keyword`
+  (domaines/mots interdits personnalisés).
 - **Test** : `antisensitive test <texte>` analyse un texte et renvoie la
   catégorie/méthode/correspondance (mise au point sans risque).
 - **Status** : état, catégories, réaction, exceptions, listes personnalisées,
