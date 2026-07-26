@@ -90,4 +90,9 @@ function allPending() {
   return result;
 }
 
-module.exports = { defaults, getConfig, saveConfig, getPending, setPending, removePending, recordStat, allPending };
+/** Configurations de tous les serveurs (statistiques globales). */
+function allConfigs() {
+  return store.all();
+}
+
+module.exports = { defaults, allConfigs, getConfig, saveConfig, getPending, setPending, removePending, recordStat, allPending };

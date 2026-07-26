@@ -23,8 +23,16 @@ const { logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');
 
+const webNotifier = require('../web/webNotifier');
+
 const LOGS_PARENT_NAME = 'Logs';
 const REAL_KEYS = new Set(Object.keys(logCategories));
+
+/**
+ * Catégories de logs dont l'interface web reçoit une notification typée
+ * (temps réel). Les autres sont diffusées sous le type générique `log`.
+ */
+const NOTIFIED_CATEGORIES = { protections: 'protection', tickets: 'ticket' };
 
 /**
  * Correspondance des ANCIENNES clés de logs vers les sept catégories (ou
@@ -165,6 +173,27 @@ async function disableCategories(guild, keys, byUserId = null) {
 }
 
 /** Envoie l'embed dans le salon de la catégorie résolue (déjà vérifiée activée). */
+/**
+ * Persiste une entrée au journal borné **et** notifie l'interface web.
+ * Point de passage unique de `log` et `record` : c'est ici que l'interface web
+ * apprend les événements (nouveau ticket, détection de protection…) sans
+ * qu'aucun module métier n'ait à la connaître.
+ */
+function persist(guild, entry) {
+  logStore.append(guild.id, entry);
+  try {
+    webNotifier.publish(NOTIFIED_CATEGORIES[entry.category] ?? 'log', {
+      guild: { id: guild.id, name: guild.name },
+      category: entry.category,
+      title: entry.title,
+      summary: entry.summary,
+      userTag: entry.userTag ?? null,
+    });
+  } catch {
+    /* la notification web ne doit jamais gêner la journalisation */
+  }
+}
+
 async function dispatch(guild, resolved, embed) {
   const settings = repository.getSettings(guild.id);
   let channel = settings.channels[resolved] ? guild.channels.cache.get(settings.channels[resolved]) : null;
@@ -184,7 +213,7 @@ async function log(guild, key, embed) {
   const resolved = resolveKey(key);
   if (!resolved || !guild || !isEnabled(guild.id, resolved)) return;
 
-  logStore.append(guild.id, {
+  persist(guild, {
     category: resolved,
     title: embed?.data?.title ?? '',
     summary: embed?.data?.description ?? '',
@@ -240,7 +269,7 @@ async function record(guild, key, opts) {
     user: target,
   });
 
-  logStore.append(guild.id, {
+  persist(guild, {
     category: resolved,
     title: opts.title,
     summary: opts.description ?? '',

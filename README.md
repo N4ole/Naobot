@@ -1304,20 +1304,75 @@ Discord** (`web/` + `services/web/`) et **sans dépendance externe** (module
 défaut** : elle ne démarre que si `WEB_ENABLED=true` et que la configuration
 OAuth2 est complète.
 
-- **Sections** : tableau de bord (serveurs, utilisateurs, tickets, bumps, état
-  du bot), serveurs (**préfixe du serveur**, protections, tickets, rôles
-  réactions, formulaires, sauvegardes, réputation…), modération (warns,
-  statistiques), tickets
-  (ouverts / fermés / catégories), vocaux temporaires (générateurs, salons
-  actifs, statistiques), captcha (état, statistiques), **anti-publicité**
-  (état, salons exemptés, statistiques, dernières détections), réputation
-  globale (score, statistiques, historique ; pondérations pour les owners),
-  **dossiers membres** (consultation, recherche, filtrage des notes,
-  statistiques — owners uniquement), profils
-  (réputation, warns, historique ; badges et succès à venir). Interface
-  **responsive**.
-- **Temps réel** : flux **SSE** (équivalent WebSocket) — statistiques
-  poussées en continu et journal web en direct (owners).
+### Architecture partagée (aucune duplication)
+
+L'interface web ne parle **jamais** aux commandes Discord : les deux
+consomment les **mêmes services métier**.
+
+```
+Commandes Discord ──┐
+                    ├──► services/ (logique métier) ──► database/
+Interface web ──────┘
+```
+
+Concrètement, `services/web/*` ne contient que de la **lecture et de la
+délégation** : envoyer un message depuis le site appelle
+`contactService.messageGuildOwner`, exactement comme la commande
+`contactowner` appelle `contactService.openConversation`. Aucune règle métier
+n'est réécrite côté web, et l'impact sur le code des commandes est minimal
+(deux points de capture mutualisés, voir « Logs du bot » ci-dessous).
+
+### Sections
+
+- **📊 Tableau de bord** — véritable page d'accueil : serveurs, utilisateurs,
+  salons, tickets ouverts/fermés, warns, sanctions, timeouts, bans, bumps,
+  salons vocaux temporaires actifs, captchas réalisés, détections AntiSpam /
+  AntiLink / AntiPub / AntiSensitive, plus l'état système (uptime, mémoire,
+  CPU, ping Discord, version du bot). **Actualisation automatique sans
+  rechargement**.
+- **🖥️ Serveurs** — vue par serveur : configuration, modération, tickets,
+  vocaux, niveaux, anti-pub, anti-sensible, captcha, et **journal de
+  modération du serveur** (filtres catégorie / membre / date / recherche).
+- **📜 Logs du bot** — journal **interne**, distinct des logs de modération :
+  - *commandes* : date, utilisateur, serveur, salon, type (slash / préfixe),
+    commande, durée d'exécution, résultat (succès / erreur) ;
+  - *erreurs* : erreurs Discord, API, base de données, WebSocket, exceptions et
+    promesses rejetées — avec module, fichier, **pile complète copiable**,
+    utilisateur / serveur / commande concernés ;
+  - *système* : démarrage, arrêt, reconnexion, mise à jour des commandes,
+    synchronisation, sauvegardes.
+  Recherche, filtres et pagination sur les trois flux.
+- **📈 Analyse** — graphiques **interactifs** (survol, légende filtrante) et
+  **exportables** (CSV / SVG) : activité (commandes par jour et par heure,
+  serveurs et utilisateurs les plus actifs, commandes les plus lentes),
+  modération (warns par jour, sanctions par type / serveur / origine),
+  protections (détections par module, évolution, répartition par serveur,
+  captcha), tickets (ouverts, temps moyen avant fermeture, catégories), bump,
+  niveaux (répartition, XP moyenne, activité textuelle et vocale) et
+  performance (RAM, CPU, latence, serveurs, utilisateurs).
+- **✉️ Messagerie** — conversations owners ↔ propriétaires de serveurs :
+  formulaire (serveur destinataire, titre, message, **pièce jointe**), embed
+  professionnel signé « Message officiel de l'équipe NaoBot », fil de
+  discussion complet, recherche, filtres et changement de statut. Les réponses
+  envoyées depuis Discord (`contactowner`) apparaissent **automatiquement**
+  ici : c'est la même conversation, le même service.
+- **⚙️ Réglages** — état du bot et de l'interface, owners déclarés, serveurs sur
+  liste noire, plus les outils de consultation globale (réputation, dossiers
+  membres). En lecture seule : la configuration reste aux commandes Discord.
+
+Interface **responsive**, thème sombre / clair.
+
+### Temps réel et notifications
+
+Flux **SSE** (équivalent WebSocket, sans dépendance). Aucun rafraîchissement
+manuel n'est nécessaire : l'interface reçoit en direct **nouvelle erreur**,
+**nouveau ticket**, **nouveau message d'un propriétaire**, **nouvelle détection
+de protection**, **serveur rejoint** et **serveur quitté**, plus les
+statistiques du tableau de bord. Une **pastille** signale sur l'onglet concerné
+les événements survenus pendant que l'on consulte une autre page.
+
+Les services publient via `services/web/webNotifier` (bus applicatif) : ils
+ignorent tout du transport, et l'interface reste totalement optionnelle.
 - **Authentification Discord OAuth2** (scopes `identify`, `guilds`) : bouton
   « Se connecter avec Discord » → `/login` (redirection vers Discord avec un
   `state` anti-CSRF) → retour sur l'URI de redirection → échange du code contre
@@ -1331,10 +1386,64 @@ OAuth2 est complète.
   et frontend : impossible de contourner le frontend, d'appeler l'API ou le
   WebSocket sans être owner. Les administrateurs de serveurs n'ont plus accès.
   Les endpoints d'administration (écriture) restent non exposés (lecture seule).
-- **Modules** : `web/frontend` (dashboard statique), `web/backend` (serveur
-  HTTP + tunnel OAuth2), `web/api` (API REST), `web/websocket` (hub SSE),
-  `services/web` (`webService` = pont de données, `webAuth` = OAuth2 +
-  permissions, `webLog` = journal). Catégorie de logs dédiée `web`.
+### Modules et extensibilité
+
+- `web/backend` — serveur HTTP + tunnel OAuth2 ; `web/websocket` — hub SSE.
+- `web/api/router.js` — cœur du routeur : **découvre automatiquement** les
+  modules de `web/api/modules/` (dashboard, guilds, logs, analytics, messaging,
+  settings), vérifie l'accès owner **une fois pour toutes les routes**, analyse
+  les corps JSON (bornés à 12 Mo) et classe les routes par spécificité.
+- `web/frontend/` — `app.js` (cœur), `lib/` (`ui.js`, `charts.js`) et
+  `modules/` (une page par fichier). Le cœur **ne connaît aucune page** : il
+  interroge `/api/settings/sections` puis importe dynamiquement le module
+  correspondant.
+- `services/web/` — `webStats` (agrégation du tableau de bord + cache),
+  `webAnalytics` (séries temporelles), `botLogService` (journal interne borné),
+  `webMessaging` (façade de la messagerie), `webNotifier` (bus de
+  notifications), `webService` (données par serveur), `webAuth` (OAuth2 +
+  permissions), `webLog` (journal de l'interface).
+
+> **Ajouter une page** = déposer `web/api/modules/<nom>.js` (routes) et
+> `web/frontend/modules/<nom>.js` (page). Aucun fichier d'infrastructure à
+> modifier : navigation, routage et sécurité suivent automatiquement.
+
+### Routes de l'API
+
+Toutes exigent une session **owner du bot** (sinon `401` / `403`).
+
+| Route | Description |
+| --- | --- |
+| `GET /api/me` | Session courante + serveurs accessibles |
+| `GET /api/dashboard` | Tous les compteurs et métriques système |
+| `GET /api/stats` | Statistiques globales (compatibilité) |
+| `GET /api/guilds` | Serveurs où le bot est présent |
+| `GET /api/logs/summary` | Compteurs des flux + valeurs de filtres |
+| `GET /api/logs/commands` | Journal des commandes (`page`, `pageSize`, `q`, `command`, `status`, `guildId`, `userId`, `since`, `until`) |
+| `GET /api/logs/errors` | Journal des erreurs (mêmes filtres + `type`) |
+| `GET /api/logs/system` | Journal système (mêmes filtres + `event`) |
+| `GET /api/logs/web` | Journal de l'interface web (`limit`) |
+| `GET /api/analytics` | Analyse complète (`days`, 1-90) |
+| `GET /api/analytics/{activity,moderation,protections,tickets,bumps,levels,performance}` | Section d'analyse |
+| `GET /api/messaging/summary` | Compteurs des conversations |
+| `GET /api/messaging/conversations` | Liste paginée (`page`, `status`, `guildId`, `q`) |
+| `GET /api/messaging/conversations/:id` | Fil complet d'une conversation |
+| `POST /api/messaging/send` | Envoi d'un message officiel (`guildId`, `title`, `message`, `attachment?`, `conversationId?`) |
+| `POST /api/messaging/conversations/:id/status` | Change le statut (`status`) |
+| `GET /api/guilds/:id/:section` | Section d'un serveur (`overview`, `moderation`, `tickets`, `tempvoice`, `levels`, `antipub`, `antisensitive`, `captcha`, `snipe`) |
+| `GET /api/guilds/:id/logs` | Journal de modération (`category`, `userId`, `since`, `until`, `q`) |
+| `GET /api/guilds/:id/profile/:userId` | Profil d'un membre |
+| `GET /api/reputation` · `/api/reputation/:userId` | Réputation globale |
+| `GET /api/files/:userId` | Dossier membre global |
+| `GET /api/settings` · `/api/settings/sections` · `/api/settings/banned-guilds` | Réglages (aucun secret exposé) |
+| `GET /events` | Flux SSE (`dashboard`, `stats`, `log`, `notify`) |
+
+### Performances
+
+Chargement rapide (une requête par page, aucun bundle à télécharger), agrégats
+coûteux **mis en cache** (10 s) côté `webStats`, **pagination** systématique des
+gros volumes (journaux, conversations), journal interne **borné en mémoire**
+(500 commandes / 300 erreurs / 200 événements système) et temps réel limité aux
+événements réellement utiles.
 - **Configuration** (statique, `.env` uniquement — jamais de config dynamique
   de serveur) : `WEB_ENABLED`, `WEB_PORT`, `WEB_URL`, `DISCORD_CLIENT_ID`,
   `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, `WEB_SESSION_SECRET`.
@@ -1413,7 +1522,7 @@ OAuth2 est complète.
 │   ├── emoji/           #   ready (disponibilité des émojis officiels + secours Unicode)
 │   ├── memberFiles/     #   ready (dossiers membres globaux disponibles)
 │   ├── snipe/           #   messageSnipe + memberSnipe (capture) + ready (purge auto)
-│   ├── web/             #   ready (démarre l'interface web si activée)
+│   ├── web/             #   ready (démarre l'interface web) + systemEvents (journal système + notifications)
 │   └── temporaryVoice/  #   voiceStateUpdate (create/delete) + ready (nettoyage)
 ├── services/            # Logique métier, partagée par slash et préfixe
 │   ├── moderation/      #   banService, kickService, muteService, timeoutService…
@@ -1447,14 +1556,19 @@ OAuth2 est complète.
 │   ├── reminders/       #   reminderService (planificateur, envoi en MP)
 │   ├── polls/           #   pollService + pollWizard (votes, modes, résultats)
 │   ├── audit/           #   commandParityService (parité slash/préfixe) + emojiAuditService (émojis)
-│   ├── web/             #   webService (données) + webAuth (OAuth2) + webLog
+│   ├── web/             #   webStats (tableau de bord) + webAnalytics (graphiques) + botLogService (journal interne)
+│   │                    #   + webMessaging (messagerie) + webNotifier (bus temps réel) + webService + webAuth + webLog
 │   ├── temporaryVoice/  #   tempVoiceService (cycle de vie) + tempVoiceWizard
 │   ├── captcha/         #   captchaService (vérification) + captchaWizard
 │   └── levels/          #   levelService (courbe XP, montées de niveau, récompenses)
 ├── web/                 # Interface web (séparée de la logique Discord)
-│   ├── frontend/        #   dashboard statique responsive (HTML/CSS/JS)
+│   ├── frontend/        #   application modulaire (modules ES, sans bundler)
+│   │   ├── app.js       #     cœur : découverte des pages, navigation, SSE
+│   │   ├── lib/         #     ui.js (composants) + charts.js (graphiques SVG)
+│   │   └── modules/     #     une page par fichier (dashboard, guilds, logs,
+│   │                    #     analytics, messaging, settings)
 │   ├── backend/         #   serveur HTTP natif + tunnel OAuth2
-│   ├── api/             #   API REST (JSON, lecture seule)
+│   ├── api/             #   routeur + modules/ (routes découvertes automatiquement)
 │   └── websocket/       #   hub temps réel SSE (équivalent WebSocket)
 ├── middlewares/
 │   ├── permissions/     # Permissions auteur/bot, hiérarchie des rôles, owners

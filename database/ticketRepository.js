@@ -128,7 +128,13 @@ function allTickets() {
   return result;
 }
 
+/** Donnees brutes de tous les serveurs : { [guildId]: { tickets, archived, stats } }. */
+function allGuildData() {
+  return store.all();
+}
+
 module.exports = {
+  allGuildData,
   getGuildData,
   saveGuildData,
   getTicket,

@@ -1489,7 +1489,11 @@
       "footer": "Réf. {id}"
     },
     "sync": {
-      "title": "🔄 Réponse envoyée — {id}"
+      "title": "🔄 Réponse envoyée — {id}",
+      "outgoingTitle": "📨 Message officiel envoyé — {id}"
+    },
+    "official": {
+      "signature": "Message officiel de l'équipe {bot} — {id}"
     },
     "list": {
       "title": "✉️ Conversations de contact",

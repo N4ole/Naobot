@@ -35,9 +35,9 @@ Respecter l'organisation :
 ```
 commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, snipe/, dm/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, levels/ [rank+level+leaderboard+levelconfig], reputation/, memberFiles/ [dossiers globaux : file+fileinfo+filelist+filedelete], watch/, owner/, administration/)
 events/        # écouteurs Discord, par famille (client/, guild/ [serveur], channels/, roles/, emojis/, stickers/, invites/, voice/ [logs d'activité vocale], member/, message/, messageActivity/ [XP messages], voiceActivity/ [XP vocal], dm/ [commandes préfixées en DM], interaction/, logs/, errors/, audit/ [parité slash/préfixe au démarrage], emoji/ [disponibilité des émojis officiels + secours Unicode], snipe/, memberFiles/, watch/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
-services/      # logique métier (moderation/, logs/ [logService (record/log) + auditLogService (exécuteur, cache) + logThrottle (anti-doublon) + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], audit/ [commandParityService : audit de parité slash/préfixe], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [antisensitiveService (orchestration) + sensitiveMatcher (moteur pur : domaines/mots-clés/expressions, anti-obfuscation) + sanctionService (sanctions automatiques : timeout natif 5 min, module dédié indépendant de la détection, extensible warn/kick/ban) ; base locale data/protections/sensitiveBlacklist.json ; indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/, temporaryVoice/, captcha/)
+services/      # logique métier (moderation/, logs/ [logService (record/log) + auditLogService (exécuteur, cache) + logThrottle (anti-doublon) + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], audit/ [commandParityService : audit de parité slash/préfixe], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [antisensitiveService (orchestration) + sensitiveMatcher (moteur pur : domaines/mots-clés/expressions, anti-obfuscation) + sanctionService (sanctions automatiques : timeout natif 5 min, module dédié indépendant de la détection, extensible warn/kick/ban) ; base locale data/protections/sensitiveBlacklist.json ; indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/ [webStats (agrégats du tableau de bord + cache) + webAnalytics (séries/répartitions) + botLogService (journal interne borné : commandes/erreurs/système) + webMessaging (façade messagerie, délègue à contactService) + webNotifier (bus de notifications temps réel) + webService + webAuth + webLog], temporaryVoice/, captcha/)
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, dm/, levels/, memberFiles/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
-web/           # interface web séparée de Discord (frontend/, backend/, api/, websocket/)
+web/           # interface web séparée de Discord (frontend/ [app.js + lib/ + modules/ : une page = un fichier], backend/, api/ [router.js + modules/ : une section = un fichier], websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
 config/        # config.js (env), permissions.js (permissions par commande), emojis.js (émojis personnalisés des messages + secours Unicode), categoryEmojis.js (logos de catégories, Unicode)
 database/      # jsonStore.js + repositories ; données dans database/data/*.json (gitignoré)
@@ -144,12 +144,52 @@ Le `.env` doit **uniquement** contenir :
 L'interface web est **strictement réservée aux owners du bot** (owner principal
 du `.env` + owners secondaires en base) : le callback OAuth2 refuse toute autre
 connexion et **toutes** les routes backend (API, SSE, frontend) vérifient
-`ownerService.isOwner(session.userId)` (`services/web/webAuth.isBotOwner`).
+`ownerService.isOwner(session.userId)` (`services/web/webAuth.isBotOwner`). Le
+contrôle est fait **une seule fois** dans `web/api/router.js`, avant tout
+dispatch : aucun module de routes ne peut l'oublier. Les administrateurs de
+serveurs n'ont **jamais** accès à l'interface.
 
 Toutes les données serveur (salons, rôles, options activables,
 statistiques, paramètres utilisateurs) sont stockées **séparément**, par
 serveur, via les repositories (`database/*.js` → `database/data/*.json`,
 écriture atomique via `JsonStore`).
+
+## Interface web : règles d'architecture
+
+L'interface web ne communique **jamais** avec les commandes Discord. Les deux
+consomment les **mêmes services métier** :
+
+```
+Commandes Discord ──┐
+                    ├──► services/ (logique métier) ──► database/
+Interface web ──────┘
+```
+
+- `services/web/*` ne fait que **lire** et **déléguer**. Ne jamais y
+  réimplémenter une règle métier : si le web a besoin d'une action, elle vit
+  dans le service concerné (ex. : envoyer un message officiel =
+  `contactService.messageGuildOwner`, appelé par `webMessaging`).
+- **Impact minimal sur le code Discord** : les données du web sont collectées
+  sur des passages déjà mutualisés — le pipeline de commandes
+  (`utils/helpers/commandExecutor.js` → `botLogService.recordCommand`),
+  `errorLogService.report` (→ `recordError`) et `logService` (→ notifications).
+  Ne jamais ajouter d'appel web dans une commande.
+- **Notifications** : les services publient sur `services/web/webNotifier`
+  (bus applicatif) ; seul `web/backend/server.js` s'y abonne pour diffuser en
+  SSE. Un service ne connaît jamais le transport, et l'interface reste
+  optionnelle.
+- **Extensibilité** : ajouter une page = déposer `web/api/modules/<nom>.js`
+  (routes déclaratives `'GET /api/x': handler`, paramètres `:id`) **et**
+  `web/frontend/modules/<nom>.js` (page exportant `{ id, label, icon, order,
+  render, onNotify? }`). Les deux couches sont découvertes automatiquement —
+  **aucun fichier d'infrastructure à modifier**.
+- **Performances** (bot public) : agrégats coûteux mis en cache (`webStats`,
+  TTL court), pagination systématique des gros volumes, journal interne borné
+  en mémoire, temps réel réservé aux événements réellement utiles.
+- **Journal interne du bot** (`botLogService`) : distinct des logs de
+  modération des serveurs (`logService`) et du journal de l'interface
+  (`webLog`). Trois flux bornés — commandes, erreurs, système — volatils par
+  nature (aucune écriture disque).
 
 # Discord
 

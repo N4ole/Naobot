@@ -117,3 +117,110 @@ th { color: var(--muted); font-weight: 600; }
   .app { padding: 14px; }
   .brand-sub { display: none; }
 }
+
+/* --- Interface modulaire : navigation, sous-onglets, badges --------------- */
+.app { max-width: 1280px; }
+.tab { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.badge {
+  background: var(--danger); color: #fff; font-size: 11px; font-weight: 700;
+  border-radius: 20px; padding: 1px 6px; min-width: 18px; text-align: center;
+}
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.subtab {
+  padding: 7px 12px; border-radius: 20px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 13px;
+}
+.subtab:hover { color: var(--text); }
+.subtab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.btn-xs { padding: 4px 9px; font-size: 12px; }
+.small { font-size: 12px; }
+.stat .hint { color: var(--muted); font-size: 11px; }
+.pager { display: flex; align-items: center; gap: 12px; justify-content: center; margin-top: 12px; }
+.row-actions { display: inline-flex; gap: 6px; }
+.ok { color: var(--accent-2); }
+.ko { color: var(--danger); }
+.tag-slash { border-color: var(--accent); color: var(--accent); }
+.tag-prefix { border-color: var(--muted); }
+.tag-error { border-color: var(--danger); color: var(--danger); }
+.stack {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px; font-size: 12px; overflow-x: auto; white-space: pre-wrap;
+  word-break: break-word; max-height: 320px; margin: 0;
+}
+code { background: var(--bg-elev); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+/* --- Santé du bot -------------------------------------------------------- */
+.health-row { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.health-facts { flex: 1; min-width: 280px; }
+.gauge { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.gauge-svg { width: 120px; height: 120px; }
+.gauge-track { stroke: var(--border); }
+.gauge-text { fill: var(--text); font-size: 18px; font-weight: 700; }
+.gauge .lbl { color: var(--muted); font-size: 13px; }
+.gauge .hint { color: var(--muted); font-size: 11px; }
+
+/* --- Graphiques ---------------------------------------------------------- */
+.chart { width: 100%; }
+.chart-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.chart-head h3 { margin: 0; font-size: 15px; }
+.chart-actions { display: flex; gap: 6px; }
+.chart-svg { width: 100%; height: auto; overflow: visible; }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-axis { fill: var(--muted); font-size: 11px; }
+.chart-value { fill: var(--text); font-size: 12px; font-weight: 600; }
+.chart-bar, .chart-dot { transition: opacity 0.15s ease; cursor: pointer; }
+.chart-bar:hover, .chart-dot:hover { opacity: 0.75; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.legend-item {
+  display: inline-flex; align-items: center; gap: 6px; background: transparent;
+  border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px;
+  color: var(--text); font-size: 12px; cursor: pointer;
+}
+.legend-item.off { opacity: 0.4; text-decoration: line-through; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.chart-tooltip {
+  position: fixed; pointer-events: none; opacity: 0; transition: opacity 0.12s ease;
+  background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 10px; font-size: 12px; color: var(--text); z-index: 100;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 30%);
+}
+
+/* --- Messagerie ---------------------------------------------------------- */
+.conv-list { display: flex; flex-direction: column; gap: 8px; max-height: 70vh; overflow-y: auto; }
+.conv-item {
+  border: 1px solid var(--border); background: var(--bg-card); border-radius: 10px;
+  padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 4px;
+}
+.conv-item:hover, .conv-item.active { border-color: var(--accent); }
+.conv-head { display: flex; justify-content: space-between; gap: 8px; }
+.conv-preview { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.pill-alert { align-self: flex-start; font-size: 11px; color: var(--accent-2); }
+.conv-pane { min-width: 0; }
+.thread { display: flex; flex-direction: column; gap: 12px; max-height: 52vh; overflow-y: auto; padding-right: 4px; }
+.bubble { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; max-width: 85%; }
+.bubble.mine { align-self: flex-end; background: color-mix(in srgb, var(--accent) 14%, var(--bg-card)); border-color: var(--accent); }
+.bubble.theirs { align-self: flex-start; background: var(--bg-elev); }
+.bubble-head { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; margin-bottom: 4px; }
+.bubble-title { font-weight: 700; margin-bottom: 4px; }
+.bubble-body { white-space: pre-wrap; word-break: break-word; font-size: 14px; }
+.tag-owner { border-color: var(--accent-2); color: var(--accent-2); }
+.tag-botOwner { border-color: var(--accent); color: var(--accent); }
+.composer { display: flex; flex-direction: column; gap: 10px; }
+.textarea { min-height: 120px; resize: vertical; font-family: inherit; width: 100%; }
+
+/* --- Notifications éphémères -------------------------------------------- */
+.toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 200; }
+.toast {
+  background: var(--bg-elev); border: 1px solid var(--border); border-left-width: 4px;
+  border-radius: 8px; padding: 10px 14px; font-size: 13px; max-width: 340px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 35%); animation: fade 0.2s ease;
+}
+.toast-success { border-left-color: var(--accent-2); }
+.toast-error { border-left-color: var(--danger); }
+.toast-info { border-left-color: var(--accent); }
+
+@media (max-width: 900px) {
+  .health-row { gap: 14px; }
+  .bubble { max-width: 100%; }
+}

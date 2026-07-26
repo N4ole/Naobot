@@ -16,6 +16,8 @@ const ownerService = require('../owners/ownerService');
 const reputationService = require('../reputation/reputationService');
 const contactStatuses = require('../../utils/constants/contactStatuses');
 const logService = require('../logs/logService');
+const webNotifier = require('../web/webNotifier');
+const emojis = require('../../config/emojis');
 const { infoEmbed, logEventEmbed } = require('../../utils/embeds/embeds');
 const COLORS = require('../../utils/constants/colors');
 const { t } = require('../../utils/helpers/i18n');
@@ -94,6 +96,20 @@ function buildOwnerNotificationEmbed(guild, conversation, content, isNew) {
     );
 }
 
+/**
+ * Embed **officiel** reçu par le propriétaire d'un serveur lorsqu'un owner du
+ * bot le contacte depuis l'interface web. Présentation professionnelle : titre,
+ * contenu, date, et signature « Message officiel de l'équipe NaoBot ».
+ * Le compte Discord de l'owner n'est jamais exposé.
+ */
+function buildOfficialEmbed({ title, content, botName, conversationId }) {
+  return infoEmbed(`${emojis.get('wink')} ${title}`, content.slice(0, 4000))
+    .setColor(COLORS.INFO)
+    .setTimestamp()
+    .addFields({ name: t('contact.field.date'), value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true })
+    .setFooter({ text: t('contact.official.signature', { bot: botName ?? 'NaoBot', id: conversationId }) });
+}
+
 /** Message signé envoyé au propriétaire du serveur (réponse d'un owner). */
 function buildOwnerReplyText(ownerName, content) {
   return [
@@ -144,7 +160,99 @@ async function openConversation(ctx, content) {
   await logContactEvent(ctx.guild, 'opened', conversation, [
     { name: t('contact.field.server'), value: `${conversation.guildName}`, inline: true },
   ]);
+  // L'interface web (section « Messagerie ») voit apparaître la conversation
+  // en direct, sans rafraîchissement.
+  webNotifier.publish('contactMessage', {
+    conversationId: conversation.id,
+    guild: { id: conversation.guildId, name: conversation.guildName },
+    from: 'owner',
+    author: conversation.ownerName,
+    preview: content.slice(0, 200),
+  });
   return { ok: true, conversation, delivered };
+}
+
+/**
+ * Message **sortant** : un owner du bot contacte le propriétaire d'un serveur
+ * depuis l'interface web. Ouvre une conversation (ou poursuit celle fournie),
+ * envoie un embed officiel en MP au propriétaire et transfère la pièce jointe.
+ *
+ * La logique vit ici — l'interface web ne fait que déléguer, exactement comme
+ * une commande Discord le ferait.
+ *
+ * @param {import('discord.js').Client} client
+ * @param {{ guildId: string, title: string, content: string, author: object,
+ *   attachment?: { name: string, data: Buffer }, conversationId?: string }} params
+ * @returns {Promise<{ ok: true, conversation: object } | { ok: false, code: string }>}
+ */
+async function messageGuildOwner(client, { guildId, title, content, author, attachment = null, conversationId = null }) {
+  const guild = client.guilds.cache.get(guildId);
+  if (!guild) return { ok: false, code: 'guildNotFound' };
+
+  const guildOwner = await guild.fetchOwner().catch(() => null);
+  if (!guildOwner) return { ok: false, code: 'ownerUnreachable' };
+
+  const now = new Date().toISOString();
+  // Poursuite d'une conversation existante, ou ouverture d'une nouvelle.
+  let conversation = conversationId ? repository.getConversation(conversationId) : null;
+  if (!conversation) {
+    conversation = {
+      id: repository.nextId(),
+      guildId: guild.id,
+      guildName: guild.name,
+      ownerId: guildOwner.id,
+      ownerName: guildOwner.user.tag,
+      status: 'handled',
+      createdAt: now,
+      lastActivityAt: now,
+      respondedBy: [],
+      messages: [],
+      initiatedBy: 'botOwner',
+    };
+  }
+
+  const embed = buildOfficialEmbed({ title, content, botName: client.user?.username, conversationId: conversation.id });
+  const payload = { embeds: [embed] };
+  if (attachment?.data) payload.files = [{ attachment: attachment.data, name: attachment.name || 'piece-jointe' }];
+
+  const sent = await guildOwner.user.send(payload).then(() => true).catch(() => false);
+  if (!sent) {
+    await logContactEvent(guild, 'error', conversation, [{ name: t('contact.field.detail'), value: t('contact.errors.dmClosed') }]);
+    return { ok: false, code: 'dmClosed' };
+  }
+
+  conversation.messages.push({
+    from: 'botOwner',
+    authorId: author.id,
+    authorName: author.tag,
+    title,
+    content,
+    attachment: attachment ? { name: attachment.name, size: attachment.data.length } : null,
+    at: now,
+  });
+  conversation.lastActivityAt = now;
+  if (!conversation.respondedBy.includes(author.id)) conversation.respondedBy.push(author.id);
+  repository.saveConversation(conversation);
+
+  // Les autres owners sont tenus informés (transparence entre owners).
+  const syncEmbed = infoEmbed(t('contact.sync.outgoingTitle', { id: conversation.id }), null)
+    .setColor(COLORS.LOG_CREATE)
+    .addFields(
+      { name: t('contact.field.respondedBy'), value: `${author.tag}`, inline: true },
+      { name: t('contact.field.server'), value: `${conversation.guildName}`, inline: true },
+      { name: t('contact.field.message'), value: `**${title}**\n${content}`.slice(0, 1024) },
+    );
+  await sendToOwners(client, syncEmbed, { exceptId: author.id });
+  await logContactEvent(guild, 'responded', conversation, [{ name: t('contact.field.respondedBy'), value: `${author.tag}`, inline: true }]);
+
+  webNotifier.publish('contactMessage', {
+    conversationId: conversation.id,
+    guild: { id: conversation.guildId, name: conversation.guildName },
+    from: 'botOwner',
+    author: author.tag,
+    preview: title,
+  });
+  return { ok: true, conversation };
 }
 
 /**
@@ -192,6 +300,13 @@ async function respond(client, conversationId, ownerUser, content) {
   await logContactEvent(guild, 'responded', conversation, [
     { name: t('contact.field.respondedBy'), value: `${ownerUser.tag}`, inline: true },
   ]);
+  webNotifier.publish('contactMessage', {
+    conversationId: conversation.id,
+    guild: { id: conversation.guildId, name: conversation.guildName },
+    from: 'botOwner',
+    author: ownerUser.tag,
+    preview: content.slice(0, 200),
+  });
   return { ok: true };
 }
 
@@ -222,7 +337,9 @@ module.exports = {
   statusLabel,
   buildOwnerNotificationEmbed,
   buildOwnerReplyText,
+  buildOfficialEmbed,
   openConversation,
+  messageGuildOwner,
   respond,
   setStatus,
   getConversation: repository.getConversation,
