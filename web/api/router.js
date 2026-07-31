@@ -1,15 +1,29 @@
 /**
- * Routeur de l'API REST du tableau de bord (JSON, lecture seule).
+ * Routeur de l'API REST de l'interface web.
  *
- * Toutes les routes exigent une session authentifiée. Les routes rattachées à
- * un serveur vérifient l'accès (admin serveur / propriétaire / owner du bot)
- * via webAuth.canAccessGuild. Les endpoints d'administration (écriture) sont
- * prévus mais non exposés dans cette itération.
+ * **Modulaire et extensible** : les routes ne sont pas écrites ici mais
+ * découvertes automatiquement dans `web/api/modules/` (même principe que les
+ * loaders de commandes et d'événements). Ajouter une section = déposer un
+ * fichier, aucun fichier d'infrastructure à modifier.
+ *
+ * Chaque module exporte :
+ *   { name: 'dashboard', routes: { 'GET /api/dashboard': (ctx) => data, … } }
+ * Les segments `:param` sont extraits dans `ctx.params`. Le handler renvoie la
+ * charge utile JSON (ou `{ status, body }` pour maîtriser le code HTTP).
+ *
+ * **Sécurité — invariant du projet** : l'interface est réservée aux **owners
+ * du bot**. La vérification est faite **ici, une seule fois, pour toutes les
+ * routes** : aucun module ne peut l'oublier. Les administrateurs de serveurs
+ * n'ont jamais accès à l'interface.
  */
-const webService = require('../../services/web/webService');
-const webAuth = require('../../services/web/webAuth');
-const webLog = require('../../services/web/webLog');
+const fs = require('node:fs');
+const path = require('node:path');
 const ownerService = require('../../services/owners/ownerService');
+const webLog = require('../../services/web/webLog');
+
+const MODULES_DIR = path.join(__dirname, 'modules');
+/** Taille maximale d'un corps de requête (protège la mémoire du processus). */
+const MAX_BODY_BYTES = 12 * 1024 * 1024;
 
 function json(res, status, payload) {
   const body = JSON.stringify(payload);
@@ -17,113 +31,172 @@ function json(res, status, payload) {
   res.end(body);
 }
 
-/**
- * @returns {boolean} true si la requête a été prise en charge (chemin /api/*)
- */
-function route(req, res, { client, session, pathname, searchParams }) {
-  if (!pathname.startsWith('/api/')) return false;
-  if (req.method !== 'GET') {
-    json(res, 405, { error: 'method_not_allowed' });
-    return true;
+// ---------------------------------------------------------------------------
+// Chargement des modules de routes
+// ---------------------------------------------------------------------------
+
+/** Compile un motif « GET /api/x/:id » en matcher. */
+function compile(pattern) {
+  const [method, template] = pattern.split(/\s+/);
+  const segments = template.split('/').filter(Boolean);
+  return {
+    method: method.toUpperCase(),
+    segments,
+    match(reqMethod, pathSegments) {
+      if (reqMethod !== this.method || pathSegments.length !== segments.length) return null;
+      const params = {};
+      for (let i = 0; i < segments.length; i += 1) {
+        const segment = segments[i];
+        if (segment.startsWith(':')) params[segment.slice(1)] = decodeURIComponent(pathSegments[i]);
+        else if (segment !== pathSegments[i]) return null;
+      }
+      return params;
+    },
+  };
+}
+
+/** Découvre et compile les routes de tous les modules (une fois au chargement). */
+function loadRoutes() {
+  const compiled = [];
+  if (!fs.existsSync(MODULES_DIR)) return compiled;
+  for (const file of fs.readdirSync(MODULES_DIR).filter((f) => f.endsWith('.js')).sort()) {
+    let module;
+    try {
+      module = require(path.join(MODULES_DIR, file));
+    } catch (error) {
+      console.error(`[web] Module d'API ignoré (${file}) :`, error.message);
+      continue;
+    }
+    for (const [pattern, handler] of Object.entries(module.routes ?? {})) {
+      compiled.push({ ...compile(pattern), handler, module: module.name ?? file.replace(/\.js$/, '') });
+    }
   }
+  // **Spécificité d'abord** : une route littérale l'emporte toujours sur une
+  // route à paramètre de même forme (`/api/guilds/:id/logs` doit gagner contre
+  // `/api/guilds/:id/:section`), quel que soit l'ordre de déclaration.
+  compiled.sort((a, b) => {
+    const params = (route) => route.segments.filter((segment) => segment.startsWith(':')).length;
+    return params(a) - params(b);
+  });
+  console.log(`[web] ${compiled.length} route(s) d'API chargée(s) depuis ${MODULES_DIR}.`);
+  return compiled;
+}
+
+const routes = loadRoutes();
+
+/** Sections exposées (utile au frontend pour construire sa navigation). */
+function sections() {
+  return [...new Set(routes.map((route) => route.module))];
+}
+
+// ---------------------------------------------------------------------------
+// Corps de requête
+// ---------------------------------------------------------------------------
+
+/**
+ * Lit et analyse un corps JSON, borné en taille.
+ * @returns {Promise<{ ok: true, body: object } | { ok: false, code: string }>}
+ */
+function readJsonBody(req) {
+  return new Promise((resolve) => {
+    const chunks = [];
+    let size = 0;
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > MAX_BODY_BYTES) {
+        resolve({ ok: false, code: 'payload_too_large' });
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (chunks.length === 0) return resolve({ ok: true, body: {} });
+      try {
+        return resolve({ ok: true, body: JSON.parse(Buffer.concat(chunks).toString('utf8')) });
+      } catch {
+        return resolve({ ok: false, code: 'invalid_json' });
+      }
+    });
+    req.on('error', () => resolve({ ok: false, code: 'read_error' }));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Dispatch
+// ---------------------------------------------------------------------------
+
+/**
+ * Traite une requête d'API.
+ * @returns {Promise<boolean>|boolean} true si la requête a été prise en charge
+ */
+async function handle(req, res, { client, session, pathname, searchParams }) {
+  // --- Authentification : session obligatoire ---
   if (!session) {
     json(res, 401, { error: 'unauthenticated' });
     return true;
   }
-  // Accès réservé aux owners du bot : toutes les routes backend sont protégées
-  // (empêche l'accès direct aux routes, le contournement du frontend et les
-  // appels API non autorisés).
+  // --- Autorisation : owners du bot uniquement, sur TOUTES les routes ---
   if (!ownerService.isOwner(session.userId)) {
+    webLog.error(`Accès API refusé (non-owner) : ${session.tag ?? session.userId}`);
     json(res, 403, { error: 'forbidden' });
     return true;
   }
 
-  const parts = pathname.split('/').filter(Boolean); // ['api', ...]
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const method = req.method.toUpperCase();
 
-  // /api/me
-  if (parts.length === 2 && parts[1] === 'me') {
-    return void json(res, 200, {
-      user: { id: session.userId, tag: session.tag, avatar: session.avatar, botOwner: ownerService.isOwner(session.userId) },
-      guilds: webAuth.accessibleGuilds(session, client),
-    }) || true;
-  }
+  // Une route existe-t-elle pour ce chemin, quelle que soit la méthode ?
+  let pathExists = false;
+  for (const route of routes) {
+    const params = route.match(method, pathSegments);
+    if (!params) {
+      if (route.match(route.method, pathSegments)) pathExists = true;
+      continue;
+    }
 
-  // /api/stats
-  if (parts.length === 2 && parts[1] === 'stats') {
-    return void json(res, 200, webService.globalStats(client)) || true;
-  }
+    let body = {};
+    if (method !== 'GET') {
+      const parsed = await readJsonBody(req);
+      if (!parsed.ok) {
+        json(res, parsed.code === 'payload_too_large' ? 413 : 400, { error: parsed.code });
+        return true;
+      }
+      body = parsed.body;
+    }
 
-  // /api/guilds
-  if (parts.length === 2 && parts[1] === 'guilds') {
-    return void json(res, 200, { guilds: webAuth.accessibleGuilds(session, client) }) || true;
-  }
-
-  // /api/reputation (statistiques + pondérations : owners du bot)
-  if (parts.length === 2 && parts[1] === 'reputation') {
-    if (!ownerService.isOwner(session.userId)) {
-      json(res, 403, { error: 'forbidden' });
+    try {
+      const result = await route.handler({ client, session, params, searchParams, body, req, res });
+      // `undefined` : le handler a déjà répondu lui-même (flux, redirection…).
+      if (result === undefined) return true;
+      if (result && typeof result === 'object' && 'status' in result && 'body' in result) {
+        json(res, result.status, result.body);
+        return true;
+      }
+      json(res, 200, result);
+      return true;
+    } catch (error) {
+      webLog.error(`Erreur API ${method} ${pathname} : ${error.message}`);
+      json(res, 500, { error: 'server_error' });
       return true;
     }
-    return void json(res, 200, webService.reputationOverview()) || true;
-  }
-  // /api/reputation/:userId (soi-même ou owner du bot — confidentialité)
-  if (parts.length === 3 && parts[1] === 'reputation') {
-    const targetId = parts[2];
-    if (session.userId !== targetId && !ownerService.isOwner(session.userId)) {
-      json(res, 403, { error: 'forbidden' });
-      return true;
-    }
-    return void json(res, 200, webService.reputationProfile(targetId) ?? { error: 'not_found' }) || true;
   }
 
-  // /api/files/:userId (dossier membre global — owners du bot uniquement,
-  // déjà garanti par le contrôle d'accès global ci-dessus).
-  if (parts.length === 3 && parts[1] === 'files') {
-    return void json(res, 200, webService.memberFile(parts[2]) ?? { error: 'not_found' }) || true;
-  }
-
-  // /api/logs (owner du bot uniquement — journal global sensible)
-  if (parts.length === 2 && parts[1] === 'logs') {
-    if (!ownerService.isOwner(session.userId)) {
-      json(res, 403, { error: 'forbidden' });
-      return true;
-    }
-    return void json(res, 200, { entries: webLog.recent(80) }) || true;
-  }
-
-  // /api/guilds/:id/*
-  if (parts.length >= 4 && parts[1] === 'guilds') {
-    const guildId = parts[2];
-    if (!webAuth.canAccessGuild(session, guildId, client)) {
-      json(res, 403, { error: 'forbidden' });
-      return true;
-    }
-    const section = parts[3];
-    if (section === 'overview') return void json(res, 200, webService.guildOverview(client, guildId) ?? { error: 'not_found' }) || true;
-    if (section === 'moderation') return void json(res, 200, webService.moderation(guildId)) || true;
-    if (section === 'tickets') return void json(res, 200, webService.tickets(guildId)) || true;
-    if (section === 'tempvoice') return void json(res, 200, webService.tempVoice(guildId)) || true;
-    if (section === 'captcha') return void json(res, 200, webService.captcha(guildId)) || true;
-    if (section === 'antipub') return void json(res, 200, webService.antipub(guildId)) || true;
-    if (section === 'snipe') return void json(res, 200, webService.snipe(guildId)) || true;
-    if (section === 'antisensitive') return void json(res, 200, webService.antisensitive(guildId)) || true;
-    if (section === 'levels') return void json(res, 200, webService.levels(guildId)) || true;
-    // /api/guilds/:id/logs?category=&userId=&since=&until=&q= (journal filtrable)
-    if (section === 'logs') {
-      const filters = {
-        category: searchParams?.get('category') || undefined,
-        userId: searchParams?.get('userId') || undefined,
-        since: searchParams?.get('since') || undefined,
-        until: searchParams?.get('until') || undefined,
-        query: searchParams?.get('q') || undefined,
-      };
-      return void json(res, 200, webService.serverLogs(guildId, filters)) || true;
-    }
-    if (section === 'profile' && parts[4]) return void json(res, 200, webService.profile(client, guildId, parts[4])) || true;
-  }
-
-  json(res, 404, { error: 'not_found' });
+  json(res, pathExists ? 405 : 404, { error: pathExists ? 'method_not_allowed' : 'not_found' });
   return true;
 }
 
-module.exports = { route, json };
+/**
+ * Point d'entrée appelé par le serveur HTTP.
+ * @returns {Promise<boolean>|boolean} true si le chemin relève de l'API
+ */
+function route(req, res, context) {
+  if (!context.pathname.startsWith('/api/')) return false;
+  // Traitement asynchrone : le serveur sait que la requête est prise en charge.
+  handle(req, res, context).catch(() => {
+    if (!res.headersSent) json(res, 500, { error: 'server_error' });
+  });
+  return true;
+}
+
+module.exports = { route, json, sections, readJsonBody, MAX_BODY_BYTES };

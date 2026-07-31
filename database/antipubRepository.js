@@ -67,4 +67,9 @@ function pushDetection(config, entry) {
   config.recentDetections = [entry, ...config.recentDetections].slice(0, RECENT_LIMIT);
 }
 
-module.exports = { getConfig, saveConfig, pushDetection, RECENT_LIMIT };
+/** Configurations de tous les serveurs (statistiques globales). */
+function allConfigs() {
+  return store.all();
+}
+
+module.exports = { getConfig, saveConfig, pushDetection, allConfigs, RECENT_LIMIT };

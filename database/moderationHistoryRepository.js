@@ -43,4 +43,21 @@ function totalEvents() {
   return Object.values(store.all()).reduce((sum, list) => sum + list.length, 0);
 }
 
-module.exports = { generateId, getHistory, addEvent, countRecent, totalEvents, HISTORY_LIMIT };
+/** Nombre d'evenements par type d'action, tous utilisateurs confondus. */
+function countByAction() {
+  const counts = {};
+  for (const history of Object.values(store.all())) {
+    for (const event of history ?? []) {
+      if (!event?.action) continue;
+      counts[event.action] = (counts[event.action] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+/** Tous les evenements de tous les utilisateurs (analyse). */
+function allEvents() {
+  return Object.entries(store.all()).flatMap(([userId, history]) => (history ?? []).map((event) => ({ userId, ...event })));
+}
+
+module.exports = { generateId, getHistory, addEvent, countRecent, totalEvents, countByAction, allEvents, HISTORY_LIMIT };

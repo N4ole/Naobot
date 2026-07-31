@@ -111,8 +111,14 @@ function getAllWarns(guildId) {
   return result;
 }
 
+/** Tous les warns de tous les serveurs : { [guildId]: { [userId]: Warn[] } }. */
+function getAllGuildWarns() {
+  return store.all();
+}
+
 module.exports = {
   addWarn,
+  getAllGuildWarns,
   updateWarnSanction,
   getWarns,
   getActiveWarns,

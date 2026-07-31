@@ -3,11 +3,13 @@ const { after } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { PermissionFlagsBits, Collection } = require('discord.js');
 
 const logService = require('../services/logs/logService');
 logService.log = async () => {};
 
 const antisensitiveService = require('../services/antisensitive/antisensitiveService');
+const sanctionService = require('../services/antisensitive/sanctionService');
 const matcher = require('../services/antisensitive/sensitiveMatcher');
 const repository = require('../database/antisensitiveRepository');
 
@@ -88,4 +90,103 @@ test('checkOutgoing : bloque selon l’état et les exemptions', async () => {
   assert.equal(antisensitiveService.checkOutgoing(guild, { id: 'c' }, 'xvideos.com'), null);
   await antisensitiveService.setEnabled(guild, true, user('admin1'));
   assert.ok(antisensitiveService.checkOutgoing(guild, { id: 'c' }, 'xvideos.com'));
+});
+
+test('matcher : un domaine autorisé neutralise le mot-clé de sa marque', () => {
+  // « pornhub » est un mot-clé de la base ; autoriser « pornhub.com » ne doit
+  // bloquer ni le domaine ni le mot-clé correspondant.
+  assert.equal(matcher.analyze('pornhub best videos', { ...cfg(), allowedDomains: ['pornhub.com'] }), null);
+  // Le mot-clé générique reste bloqué (l’autorisation ne porte que sur la marque).
+  assert.equal(matcher.analyze('du porn ici', { ...cfg(), allowedDomains: ['pornhub.com'] }).category, 'porn');
+});
+
+test('handleMessage : une détection est journalisée en protections ET modération', async () => {
+  const GL = 'test-guild-antisensitive-logcat';
+  const saved = logService.log;
+  const categories = [];
+  logService.log = async (_guild, category) => { categories.push(category); };
+  try {
+    const me = { permissionsIn: () => ({ has: () => true }) };
+    const guild = { id: GL, name: 'T', members: { me } };
+    await antisensitiveService.setEnabled(guild, true, user('admin1'));
+    categories.length = 0; // ignore le log d'activation
+    const message = {
+      id: 'msg-log', guild, content: 'xvideos.com', embeds: [], member: null,
+      author: { id: 'u1', tag: 'U#1', bot: false, displayAvatarURL: () => 'https://cdn/x.png' },
+      channel: { id: 'c1', toString: () => '#c', permissionsFor: () => ({ has: () => true }), send: async () => ({ delete: async () => {} }) },
+      client: { user: { id: 'bot' } },
+      delete: async () => {},
+    };
+    const handled = await antisensitiveService.handleMessage(message);
+    assert.equal(handled, true);
+    assert.ok(categories.includes('protections'), 'catégorie protections attendue');
+    assert.ok(categories.includes('moderation'), 'catégorie modération attendue');
+  } finally {
+    logService.log = saved;
+    fs.rmSync(path.join(__dirname, '..', 'database', 'data', 'antisensitive.json'), { force: true });
+  }
+});
+
+// --- Sanction automatique (timeout natif) ---
+
+const memberMock = (over = {}) => ({
+  id: over.id ?? 'u1',
+  user: { id: over.id ?? 'u1', tag: 'U#1', bot: false },
+  moderatable: over.moderatable ?? true,
+  roles: { cache: over.roles ?? new Collection() },
+  isCommunicationDisabled: () => over.timedOut ?? false,
+  timeout: async (ms, reason) => { over.calls?.push({ ms, reason }); },
+});
+
+const guildMock = (over = {}) => ({
+  id: 'g-sanction', name: 'S', ownerId: over.ownerId ?? 'owner',
+  members: { me: { permissions: { has: (p) => (over.botCanTimeout ?? true) && p === PermissionFlagsBits.ModerateMembers } } },
+});
+
+const clientMock = { user: { id: 'bot', tag: 'Nao#0' } };
+
+test('sanctionService : applique un timeout à un membre éligible', async () => {
+  const calls = [];
+  const member = memberMock({ calls });
+  const res = await sanctionService.applyTimeout(guildMock(), member, { autoTimeout: { enabled: true, durationMs: 300000 }, exemptRoles: [] }, clientMock);
+  assert.equal(res.applied, true);
+  assert.equal(calls[0].ms, 300000);
+  assert.match(calls[0].reason, /AntiSensitive/);
+});
+
+test('sanctionService : exemptions (désactivé, propriétaire, rôle exempté, hiérarchie, déjà timeout)', async () => {
+  const base = { autoTimeout: { enabled: true, durationMs: 300000 }, exemptRoles: ['exemptRole'] };
+  // désactivé
+  assert.equal((await sanctionService.applyTimeout(guildMock(), memberMock(), { ...base, autoTimeout: { enabled: false } }, clientMock)).code, 'disabled');
+  // propriétaire du serveur
+  assert.equal((await sanctionService.applyTimeout(guildMock({ ownerId: 'u1' }), memberMock({ id: 'u1' }), base, clientMock)).code, 'exempt');
+  // rôle exempté
+  const roles = new Collection(); roles.set('exemptRole', {});
+  assert.equal((await sanctionService.applyTimeout(guildMock(), memberMock({ roles }), base, clientMock)).code, 'exempt');
+  // déjà sous timeout
+  assert.equal((await sanctionService.applyTimeout(guildMock(), memberMock({ timedOut: true }), base, clientMock)).code, 'alreadyTimedOut');
+  // hiérarchie insuffisante (échec comptabilisé)
+  const notMod = await sanctionService.applyTimeout(guildMock(), memberMock({ moderatable: false }), base, clientMock);
+  assert.equal(notMod.code, 'notModeratable');
+  assert.equal(notMod.failed, true);
+  // bot sans permission (échec)
+  const noPerm = await sanctionService.applyTimeout(guildMock({ botCanTimeout: false }), memberMock(), base, clientMock);
+  assert.equal(noPerm.code, 'botNoPermission');
+  assert.equal(noPerm.failed, true);
+});
+
+test('setAutoTimeout / setTimeoutDuration : persistants et bornés', async () => {
+  const GT = 'test-guild-antisensitive-timeout';
+  const guild = { id: GT, name: 'T' };
+  await antisensitiveService.setAutoTimeout(guild, false, user('admin1'));
+  assert.equal(repository.getConfig(GT).autoTimeout.enabled, false);
+  await antisensitiveService.setAutoTimeout(guild, true, user('admin1'));
+  assert.equal(repository.getConfig(GT).autoTimeout.enabled, true);
+
+  const ok = await antisensitiveService.setTimeoutDuration(guild, 10 * 60 * 1000, user('admin1'));
+  assert.equal(ok.durationMs, 10 * 60 * 1000);
+  assert.equal(repository.getConfig(GT).autoTimeout.durationMs, 10 * 60 * 1000);
+  assert.equal((await antisensitiveService.setTimeoutDuration(guild, 1000, user('admin1'))).tooShort, true);
+  assert.equal((await antisensitiveService.setTimeoutDuration(guild, repository.MAX_TIMEOUT_MS + 1, user('admin1'))).tooLong, true);
+  fs.rmSync(path.join(__dirname, '..', 'database', 'data', 'antisensitive.json'), { force: true });
 });

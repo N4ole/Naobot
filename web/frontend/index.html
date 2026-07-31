@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NaoBot — Tableau de bord</title>
+    <title>NaoBot — Interface owner</title>
     <link rel="stylesheet" href="/style.css" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🤖%3C/text%3E%3C/svg%3E" />
   </head>
   <body>
     <header class="topbar">
-      <div class="brand"><span class="brand-logo">🤖</span> <strong>NaoBot</strong> <span class="brand-sub">Tableau de bord</span></div>
+      <div class="brand"><span class="brand-logo">🤖</span> <strong>NaoBot</strong> <span class="brand-sub">Interface owner</span></div>
       <div id="user-area" class="user-area"></div>
     </header>
 
@@ -18,116 +18,25 @@
       <section id="login-view" class="login-view hidden">
         <div class="login-card">
           <div class="login-logo">🤖</div>
-          <h1>Tableau de bord NaoBot</h1>
-          <p>Connectez-vous avec Discord pour administrer vos serveurs.</p>
+          <h1>Interface NaoBot</h1>
+          <p>Espace strictement réservé aux <strong>owners du bot</strong>.</p>
           <a class="btn btn-primary" href="/login">Se connecter avec Discord</a>
           <p id="login-error" class="login-error"></p>
         </div>
       </section>
 
-      <!-- Application authentifiée -->
+      <!--
+        Application authentifiée. La navigation et les pages sont construites
+        dynamiquement à partir des modules découverts : aucune page n'est
+        déclarée en dur ici, ajouter une section ne modifie pas ce fichier.
+      -->
       <section id="dash-view" class="dash-view hidden">
-        <nav class="tabs" id="tabs">
-          <button class="tab active" data-tab="dashboard">📊 Tableau de bord</button>
-          <button class="tab" data-tab="servers">🖥️ Serveurs</button>
-          <button class="tab" data-tab="moderation">🛡️ Modération</button>
-          <button class="tab" data-tab="tickets">🎫 Tickets</button>
-          <button class="tab" data-tab="voice">🔊 Vocaux</button>
-          <button class="tab" data-tab="levels">⭐ Niveaux</button>
-          <button class="tab" data-tab="antipub">📢 Anti-pub</button>
-          <button class="tab" data-tab="reputation">🌐 Réputation</button>
-          <button class="tab" data-tab="files">🗂️ Dossiers</button>
-          <button class="tab" data-tab="serverlogs">📄 Logs serveur</button>
-          <button class="tab" data-tab="profiles">👤 Profils</button>
-        </nav>
-
-        <div class="panel" id="panel-dashboard">
-          <div class="stat-grid" id="stat-grid"></div>
-          <div class="card">
-            <h2>État du bot</h2>
-            <div id="bot-status" class="status-row"></div>
-          </div>
-          <div class="card" id="log-card" hidden>
-            <h2>Journal web (temps réel)</h2>
-            <ul id="log-list" class="log-list"></ul>
-          </div>
-        </div>
-
-        <div class="panel hidden" id="panel-servers">
-          <div class="split">
-            <aside class="guild-list" id="guild-list"></aside>
-            <div class="guild-detail" id="guild-detail"><p class="muted">Sélectionnez un serveur.</p></div>
-          </div>
-        </div>
-
-        <div class="panel hidden" id="panel-moderation">
-          <div class="toolbar"><select id="mod-guild" class="select"></select></div>
-          <div id="mod-detail"><p class="muted">Sélectionnez un serveur.</p></div>
-        </div>
-
-        <div class="panel hidden" id="panel-tickets">
-          <div class="toolbar"><select id="tickets-guild" class="select"></select></div>
-          <div id="tickets-detail"><p class="muted">Sélectionnez un serveur.</p></div>
-        </div>
-
-        <div class="panel hidden" id="panel-voice">
-          <div class="toolbar"><select id="voice-guild" class="select"></select></div>
-          <div id="voice-detail"><p class="muted">Sélectionnez un serveur.</p></div>
-        </div>
-
-        <div class="panel hidden" id="panel-levels">
-          <div class="toolbar"><select id="levels-guild" class="select"></select></div>
-          <div id="levels-detail"><p class="muted">Sélectionnez un serveur.</p></div>
-        </div>
-
-        <div class="panel hidden" id="panel-antipub">
-          <div class="toolbar"><select id="antipub-guild" class="select"></select></div>
-          <div id="antipub-detail"><p class="muted">Sélectionnez un serveur.</p></div>
-        </div>
-
-        <div class="panel hidden" id="panel-reputation">
-          <div class="toolbar">
-            <input id="rep-user" class="input" placeholder="Identifiant utilisateur (le vôtre par défaut)" />
-            <button id="rep-load" class="btn">Consulter</button>
-            <button id="rep-stats" class="btn btn-ghost" hidden>Statistiques globales (owner)</button>
-          </div>
-          <div id="rep-detail"><p class="muted">Consultez votre réputation globale, ou celle d'un utilisateur (owners).</p></div>
-        </div>
-
-        <div class="panel hidden" id="panel-files">
-          <div class="toolbar">
-            <input id="files-user" class="input" placeholder="Identifiant utilisateur" />
-            <button id="files-load" class="btn">Consulter le dossier</button>
-            <input id="files-filter" class="input" placeholder="Filtrer les notes (texte, serveur, auteur)…" />
-          </div>
-          <div id="files-detail"><p class="muted">Réservé aux owners du bot. Saisissez un identifiant utilisateur pour consulter son dossier.</p></div>
-        </div>
-
-        <div class="panel hidden" id="panel-serverlogs">
-          <div class="toolbar">
-            <select id="slogs-guild" class="select"></select>
-            <select id="slogs-category" class="select"><option value="">Toutes catégories</option></select>
-            <input id="slogs-user" class="input" placeholder="Identifiant utilisateur" />
-            <input id="slogs-since" class="input" type="date" title="Depuis" />
-            <input id="slogs-until" class="input" type="date" title="Jusqu'à" />
-            <input id="slogs-search" class="input" placeholder="Recherche…" />
-            <button id="slogs-load" class="btn">Filtrer</button>
-          </div>
-          <div id="slogs-detail"><p class="muted">Réservé aux owners du bot. Choisissez un serveur pour consulter son journal.</p></div>
-        </div>
-
-        <div class="panel hidden" id="panel-profiles">
-          <div class="toolbar">
-            <select id="profile-guild" class="select"></select>
-            <input id="profile-user" class="input" placeholder="Identifiant utilisateur (ID)" />
-            <button id="profile-load" class="btn">Charger</button>
-          </div>
-          <div id="profile-detail"><p class="muted">Choisissez un serveur et un identifiant utilisateur.</p></div>
-        </div>
+        <nav class="tabs" id="tabs"></nav>
+        <div class="panel" id="page"></div>
       </section>
     </main>
 
-    <footer class="footer">NaoBot — interface web · mises à jour en temps réel (SSE)</footer>
-    <script src="/app.js"></script>
+    <footer class="footer">NaoBot — interface owner · mises à jour en temps réel (SSE)</footer>
+    <script type="module" src="/app.js"></script>
   </body>
 </html>

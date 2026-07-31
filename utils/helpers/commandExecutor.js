@@ -10,6 +10,7 @@ const { checkCooldown } = require('../../middlewares/cooldowns/cooldowns');
 const serverBanRepository = require('../../database/serverBanRepository');
 const logService = require('../../services/logs/logService');
 const errorLogService = require('../../services/errors/errorLogService');
+const botLogService = require('../../services/web/botLogService');
 const statsService = require('../../services/tracking/guildStatsService');
 const { errorEmbed, logEventEmbed } = require('../embeds/embeds');
 const emojis = require('../../config/emojis');
@@ -53,8 +54,25 @@ async function executeCommand(ctx, command) {
     });
   }
 
+  // Journal interne du bot (section « Logs du bot » de l'interface web) :
+  // point de capture unique, partagé par les 2 points d'entrée et toutes les
+  // commandes — aucune commande n'a à s'en préoccuper.
+  const startedAt = Date.now();
+  const recordExecution = (ok, error) =>
+    botLogService.recordCommand({
+      command: command.name,
+      user: ctx.user,
+      guild: ctx.guild,
+      channel: ctx.channel,
+      type: ctx.isSlash ? 'slash' : 'prefix',
+      durationMs: Date.now() - startedAt,
+      ok,
+      error,
+    });
+
   try {
     await command.execute(ctx);
+    recordExecution(true);
     // Suivi et journalisation propres au serveur (ignorés en message privé).
     if (ctx.guild) {
       statsService.recordCommand(ctx.guild.id);
@@ -71,6 +89,7 @@ async function executeCommand(ctx, command) {
     }
   } catch (error) {
     console.error(`[commands] Erreur dans "${command.name}" :`, error);
+    recordExecution(false, error?.message ?? error);
     // Journalisation interne (serveur privé #bot-errors), avec contexte complet.
     errorLogService.report({
       type: 'commandError',

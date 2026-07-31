@@ -139,7 +139,16 @@ function enabledCategories(config) {
 function analyze(content, config = {}) {
   if (!content || typeof content !== 'string') return null;
   const enabled = enabledCategories(config);
-  const allowedKeywords = (config.allowedKeywords ?? []).map((k) => k.toLowerCase());
+  // Mots-clés explicitement autorisés + **noms de marque des domaines autorisés** :
+  // autoriser un domaine (« pornhub.com ») doit aussi neutraliser le mot-clé
+  // correspondant (« pornhub »), sans quoi le message serait bloqué malgré la
+  // liste blanche. On ajoute chaque étiquette (>= 3 caractères) du domaine.
+  const allowedKeywords = new Set((config.allowedKeywords ?? []).map((k) => k.toLowerCase()));
+  for (const domain of config.allowedDomains ?? []) {
+    for (const label of String(domain).toLowerCase().split('.')) {
+      if (label.length >= 3) allowedKeywords.add(label);
+    }
+  }
 
   // 1. Domaines (texte brut, dé-obfusqué, et paramètres d'URL décodés).
   const domainTexts = [content, normalizeForDomains(content), decodeParams(content)];
@@ -175,7 +184,7 @@ function analyze(content, config = {}) {
   for (const cat of CONTENT_CATEGORIES) {
     if (!enabled.has(cat) || !KEYWORD_REGEX[cat]) continue;
     const m = KEYWORD_REGEX[cat].exec(normalized);
-    if (m && !allowedKeywords.includes(m[0].toLowerCase())) return { category: cat, method: 'keyword', match: m[0].slice(0, 100) };
+    if (m && !allowedKeywords.has(m[0].toLowerCase())) return { category: cat, method: 'keyword', match: m[0].slice(0, 100) };
   }
 
   // 5. Mots-clés personnalisés du serveur → catégorie « custom » (normalisés).
@@ -183,7 +192,7 @@ function analyze(content, config = {}) {
   if (custom.length) {
     const re = new RegExp(`\\b(?:${custom.map(escapeRegex).join('|')})\\b`, 'iu');
     const m = re.exec(normalized);
-    if (m && !allowedKeywords.includes(m[0].toLowerCase())) return { category: 'custom', method: 'keyword', match: m[0].slice(0, 100) };
+    if (m && !allowedKeywords.has(m[0].toLowerCase())) return { category: 'custom', method: 'keyword', match: m[0].slice(0, 100) };
   }
 
   return null;

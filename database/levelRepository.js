@@ -122,7 +122,13 @@ function allSessions() {
   return all;
 }
 
+/** Donnees brutes de tous les serveurs : { [guildId]: { config, users } }. */
+function allGuildData() {
+  return store.all();
+}
+
 module.exports = {
+  allGuildData,
   defaultConfig,
   getConfig,
   saveConfig,

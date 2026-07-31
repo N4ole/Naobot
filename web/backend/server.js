@@ -16,7 +16,11 @@ const apiRouter = require('../api/router');
 const realtime = require('../websocket/realtime');
 const webAuth = require('../../services/web/webAuth');
 const webService = require('../../services/web/webService');
+const webStats = require('../../services/web/webStats');
+const webAnalytics = require('../../services/web/webAnalytics');
+const webNotifier = require('../../services/web/webNotifier');
 const webLog = require('../../services/web/webLog');
+const botLogService = require('../../services/web/botLogService');
 const ownerService = require('../../services/owners/ownerService');
 
 const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
@@ -56,17 +60,28 @@ function redirect(res, location) {
   res.end();
 }
 
+/**
+ * Sert le frontend statique, y compris les sous-dossiers `lib/` et `modules/`
+ * (modules ES chargés dynamiquement par l'application).
+ */
 function serveStatic(res, pathname) {
-  const rel = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
-  const filePath = path.join(FRONTEND_DIR, rel);
-  // Anti-traversée : le fichier doit rester dans FRONTEND_DIR.
-  if (!filePath.startsWith(FRONTEND_DIR)) {
+  const rel = pathname === '/' ? 'index.html' : decodeURIComponent(pathname).replace(/^\/+/, '');
+  const filePath = path.resolve(FRONTEND_DIR, rel);
+  // Anti-traversée : le fichier doit rester **dans** FRONTEND_DIR (le
+  // séparateur évite qu'un dossier voisin au nom proche passe le test).
+  if (filePath !== FRONTEND_DIR && !filePath.startsWith(FRONTEND_DIR + path.sep)) {
     res.writeHead(403).end('Forbidden');
     return;
   }
   fs.readFile(filePath, (err, data) => {
     if (err) {
-      // Repli SPA : sert index.html pour les routes inconnues.
+      // Une ressource manquante (module, feuille de style…) doit renvoyer un
+      // vrai 404 : servir index.html provoquerait une erreur de type MIME.
+      if (path.extname(filePath)) {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Not found');
+        return;
+      }
+      // Repli SPA : sert index.html pour les routes de navigation inconnues.
       fs.readFile(path.join(FRONTEND_DIR, 'index.html'), (err2, index) => {
         if (err2) return res.writeHead(404).end('Not found');
         res.writeHead(200, { 'Content-Type': CONTENT_TYPES['.html'] });
@@ -174,11 +189,22 @@ function start(client) {
   server.listen(port, () => {
     console.log(`[web] Tableau de bord NaoBot démarré sur ${config.web.baseUrl} (port ${port}).`);
     console.log(`[web] OAuth2 — URI de redirection à déclarer dans le portail Discord : ${webAuth.redirectUri()}`);
+    botLogService.recordSystem('webStart', `Interface web démarrée sur le port ${port}.`, { port });
   });
 
-  // Temps réel : pousse les statistiques globales et relaie le journal web.
-  realtime.start({ onTick: (broadcast) => broadcast('stats', webService.globalStats(client)) });
+  // Temps réel : statistiques du tableau de bord, échantillon de performance,
+  // journal web, et **toutes** les notifications applicatives (nouvelle erreur,
+  // ticket, message d'un propriétaire, détection de protection, serveur
+  // rejoint/quitté) publiées par les services via `webNotifier`.
+  realtime.start({
+    onTick: (broadcast) => {
+      webAnalytics.samplePerformance(client);
+      broadcast('stats', webService.globalStats(client));
+      broadcast('dashboard', webStats.dashboard(client));
+    },
+  });
   webLog.subscribe((entry) => realtime.broadcast('log', entry));
+  webNotifier.subscribe((notification) => realtime.broadcast('notify', notification));
   return server;
 }
 

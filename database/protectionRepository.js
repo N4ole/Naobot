@@ -40,4 +40,9 @@ function saveConfig(guildId, config) {
   store.set(guildId, config);
 }
 
-module.exports = { getConfig, saveConfig };
+/** Configurations de tous les serveurs (statistiques globales). */
+function allConfigs() {
+  return store.all();
+}
+
+module.exports = { getConfig, saveConfig, allConfigs };

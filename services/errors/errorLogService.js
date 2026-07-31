@@ -91,6 +91,14 @@ function buildEmbed({ type, error, guild, channel, user, command, module: module
  *   user?: object, command?: string, module?: string }} context
  */
 async function report(context = {}) {
+  // Miroir dans le journal interne consultable depuis l'interface web
+  // (section « Logs du bot »). Point de capture unique : toutes les familles
+  // d'erreurs passent déjà par `report`.
+  try {
+    require('../web/botLogService').recordError(context);
+  } catch {
+    /* la journalisation web ne doit jamais gêner la journalisation Discord */
+  }
   try {
     const channel = await ensureChannel();
     if (!channel) return;
