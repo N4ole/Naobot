@@ -1399,9 +1399,17 @@ n'est réécrite côté web, et l'impact sur le code des commandes est minimal
   discussion complet, recherche, filtres et changement de statut. Les réponses
   envoyées depuis Discord (`contactowner`) apparaissent **automatiquement**
   ici : c'est la même conversation, le même service.
+- **🗄️ Archives** — serveurs que le bot a **quittés**, dont les données restent
+  consultables : séjour (arrivées/départs, commandes, sanctions, réputation),
+  modération, tickets, niveaux, protections, conversations et **journal de
+  modération filtrable**. Rien n'est supprimé au départ d'un serveur — les
+  repositories sont indexés par `guildId` et conservent leur contenu ; les
+  archives rendent simplement ces données de nouveau accessibles. Un serveur
+  parti pour cause de **liste noire** est signalé comme tel.
 - **⚙️ Réglages** — état du bot et de l'interface, owners déclarés, serveurs sur
-  liste noire, plus les outils de consultation globale (réputation, dossiers
-  membres). En lecture seule : la configuration reste aux commandes Discord.
+  liste noire, ressources allouées, plus les outils de consultation globale
+  (réputation, dossiers membres). En lecture seule : la configuration reste aux
+  commandes Discord.
 
 Interface **responsive**, thème sombre / clair.
 
@@ -1477,6 +1485,10 @@ Toutes exigent une session **owner du bot** (sinon `401` / `403`).
 | `GET /api/guilds/:id/profile/:userId` | Profil d'un membre |
 | `GET /api/reputation` · `/api/reputation/:userId` | Réputation globale |
 | `GET /api/files/:userId` | Dossier membre global |
+| `GET /api/archives/summary` | Compteurs (archivés / actifs / connus) |
+| `GET /api/archives` | Serveurs quittés (`page`, `pageSize`, `q`, `sort` : `recent`\|`name`\|`data`) |
+| `GET /api/archives/:id` | Données retenues d'un serveur quitté (toutes sections) |
+| `GET /api/archives/:id/logs` | Journal de modération conservé (mêmes filtres qu'un serveur actif) |
 | `GET /api/settings` · `/api/settings/sections` · `/api/settings/banned-guilds` | Réglages (aucun secret exposé) |
 | `GET /events` | Flux SSE (`dashboard`, `stats`, `log`, `notify`) |
 
@@ -1608,8 +1620,8 @@ gros volumes (journaux, conversations), journal interne **borné en mémoire**
 │   ├── frontend/        #   application modulaire (modules ES, sans bundler)
 │   │   ├── app.js       #     cœur : découverte des pages, navigation, SSE
 │   │   ├── lib/         #     ui.js (composants) + charts.js (graphiques SVG)
-│   │   └── modules/     #     une page par fichier (dashboard, guilds, logs,
-│   │                    #     analytics, messaging, settings)
+│   │   └── modules/     #     une page par fichier (dashboard, guilds, archives,
+│   │                    #     logs, analytics, messaging, settings)
 │   ├── backend/         #   serveur HTTP natif + tunnel OAuth2
 │   ├── api/             #   routeur + modules/ (routes découvertes automatiquement)
 │   └── websocket/       #   hub temps réel SSE (équivalent WebSocket)
