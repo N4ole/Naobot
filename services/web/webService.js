@@ -110,7 +110,7 @@ function guildOverview(client, guildId) {
     forms: safe(() => formRepository.getForms(guildId).length, 0),
     backups: safe(() => backupRepository.getBackups(guildId).length, 0),
     logs: safe(() => logService.getStatus(guildId), {}),
-    reputation: safe(() => reputationService.getEffective(guild), null),
+    reputation: safe(() => reputationService.getEffective(guildStatsRepository.getStats(guildId)), null),
     tickets: ticketSummary(guildId),
     tempVoice: safe(() => ({ generators: tempVoiceRepository.listGenerators(guildId).length, active: tempVoiceRepository.listTemps(guildId).length }), { generators: 0, active: 0 }),
     captcha: captcha(guildId),
@@ -264,11 +264,14 @@ function tickets(guildId) {
     () => {
       const all = ticketRepository.listTickets(guildId);
       const categories = ticketCategoryRepository.listCategories(guildId).map((c) => ({ id: c.id, name: c.name, emoji: c.emoji, counter: c.counter }));
+      const stats = ticketRepository.getStats(guildId);
       return {
         open: all.filter((t) => t.status === 'open').map((t) => ({ id: t.id, name: t.channelName, categoryId: t.categoryId, user: t.userId, assignedTo: t.assignedTo, createdAt: t.createdAt })),
-        closed: all.filter((t) => t.status === 'closed').length,
+        // Un ticket fermé quitte `tickets` (il part en archive) : le décompte
+        // fiable est celui des compteurs persistants par catégorie.
+        closed: Object.values(stats).reduce((sum, stat) => sum + (stat?.closed ?? 0), 0),
         categories,
-        stats: ticketRepository.getStats(guildId),
+        stats,
       };
     },
     { open: [], closed: 0, categories: [], stats: {} },
@@ -298,8 +301,9 @@ function moderation(guildId) {
  * Les badges/succès sont prévus mais non encore alimentés (placeholders).
  */
 function profile(client, guildId, userId) {
-  const guild = client?.guilds?.cache?.get(guildId);
-  const reputation = safe(() => (guild ? reputationService.getEffective(guild) : null), null);
+  // `getEffective` attend les **statistiques** du serveur (c'est là qu'est
+  // persistée la réputation), pas l'objet Guild de discord.js.
+  const reputation = safe(() => reputationService.getEffective(guildStatsRepository.getStats(guildId)), null);
   return {
     userId,
     reputation,

@@ -36,15 +36,23 @@ function render(container, data) {
 
   const grid = el('div', { className: 'stat-grid' }, TILES.map((tile) => statTile({ icon: tile.icon, label: tile.label, value: read(data, tile.path) ?? 0 })));
 
+  const allocation = system.allocation ?? {};
   const health = el('div', { className: 'health-row' }, [
-    gauge('CPU', system.cpu?.percent ?? 0, { hint: `${system.cpu?.cores ?? 1} cœur(s)` }),
-    gauge('Mémoire (heap)', memory.heapTotalBytes ? (memory.heapUsedBytes / memory.heapTotalBytes) * 100 : 0, { hint: fmtBytes(memory.heapUsedBytes) }),
+    gauge('CPU', system.cpu?.percent ?? 0, { hint: `${allocation.cores ?? system.cpu?.cores ?? 1} cœur(s)` }),
+    // Taux d'occupation du tas **alloué** : c'est la marge réellement
+    // disponible, pas la portion déjà réservée par V8.
+    gauge('Mémoire allouée', memory.heapLimitBytes ? (memory.heapUsedBytes / memory.heapLimitBytes) * 100 : 0, {
+      hint: `${fmtBytes(memory.heapUsedBytes)} / ${fmtBytes(memory.heapLimitBytes)}`,
+    }),
     el('div', { className: 'health-facts' }, [
       kv([
         ['État', el('span', {}, [el('span', { className: `dot ${system.ready ? 'on' : 'off'}` }), system.ready ? 'En ligne' : 'Hors ligne'])],
         ['Ping Discord', `${system.ping ?? 0} ms`],
         ['Uptime', fmtDuration(system.uptimeMs)],
         ['Mémoire (RSS)', fmtBytes(memory.rssBytes)],
+        ['Tas alloué', `${fmtNumber(allocation.heapLimitMb ?? 0)} Mo${allocation.heapConfigured === 'auto' ? ' (auto)' : ''}`],
+        ['Pool E/S', `${fmtNumber(allocation.threadPoolSize ?? 0)} threads`],
+        ['RAM machine', `${fmtNumber(allocation.systemMemoryMb ?? 0)} Mo`],
         ['Version du bot', system.version ?? '—'],
         ['Node.js', system.node ?? '—'],
         ['Commandes', fmtNumber(data.discord?.commands ?? 0)],

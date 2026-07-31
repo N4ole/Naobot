@@ -77,6 +77,49 @@ cp .env.example .env   # puis renseigner DISCORD_TOKEN (et les options)
 npm start
 ```
 
+### Ressources allouées au processus (mémoire, CPU)
+
+`npm start` passe par `scripts/start.js`, un lanceur minimal qui applique les
+ressources déclarées dans **`config/resources.js`** puis démarre `index.js`.
+Il ne peut évidemment pas ajouter de RAM ou de cœurs à la machine — cela relève
+de l'hébergement — mais il détermine **quelle part** de la machine le processus
+a le droit d'utiliser, de façon explicite et versionnée.
+
+| Réglage | Défaut | Effet |
+|---|---|---|
+| `heapMb` | `'auto'` | Tas V8 maximal (`--max-old-space-size`), appliqué au **lancement** |
+| `threadPoolSize` | `'auto'` | Pool de threads libuv (`UV_THREADPOOL_SIZE`) : E/S fichiers, DNS, compression de la passerelle |
+
+- **`'auto'` pour `heapMb` = ne pas passer le drapeau.** V8 dimensionne alors
+  lui-même le tas d'après la RAM de la machine, ce qui est déjà généreux
+  (par exemple ~8 Go sur une machine de 16 Go). ⚠️ Forcer une valeur
+  **inférieure** à ce défaut *réduirait* les ressources : le lanceur refuse ce
+  cas et conserve le défaut, avec un avertissement.
+- **Garde-fou anti-OOM** : une valeur supérieure à **75 % de la RAM** est
+  écrêtée (au-delà, la machine se met à *swapper* ou le noyau tue le processus).
+- **`'auto'` pour `threadPoolSize`** = deux threads par cœur logique, borné à
+  `[4, 16]` — au lieu du défaut libuv de 4.
+
+L'état effectif est affiché au démarrage, et consultable dans l'interface web
+(**Tableau de bord** → jauge « Mémoire allouée », et **Réglages** → « Ressources
+allouées »).
+
+```bash
+npm start           # lanceur : applique config/resources.js
+npm run start:direct # démarre index.js sans lanceur (PM2, systemd, Docker…)
+```
+
+Sous un superviseur (PM2, systemd, Docker), `start:direct` est souvent
+préférable : les limites y sont déjà déclarées côté hébergeur, et
+`NODE_OPTIONS` / `UV_THREADPOOL_SIZE` fournis par l'environnement sont
+respectés par le bot.
+
+> **Monter en charge côté CPU** : Node exécute le JavaScript sur un seul thread.
+> Au-delà de quelques milliers de serveurs, la vraie réponse n'est pas
+> d'allouer plus de CPU à un processus unique mais de **sharder** le bot
+> (plusieurs processus, `ShardingManager` de discord.js). Ce n'est pas encore
+> mis en place : l'interface web devrait alors être démarrée par un seul shard.
+
 ### Variables d'environnement (`.env`)
 
 Le `.env` ne contient **que des données statiques et globales**. Les
@@ -1356,9 +1399,17 @@ n'est réécrite côté web, et l'impact sur le code des commandes est minimal
   discussion complet, recherche, filtres et changement de statut. Les réponses
   envoyées depuis Discord (`contactowner`) apparaissent **automatiquement**
   ici : c'est la même conversation, le même service.
+- **🗄️ Archives** — serveurs que le bot a **quittés**, dont les données restent
+  consultables : séjour (arrivées/départs, commandes, sanctions, réputation),
+  modération, tickets, niveaux, protections, conversations et **journal de
+  modération filtrable**. Rien n'est supprimé au départ d'un serveur — les
+  repositories sont indexés par `guildId` et conservent leur contenu ; les
+  archives rendent simplement ces données de nouveau accessibles. Un serveur
+  parti pour cause de **liste noire** est signalé comme tel.
 - **⚙️ Réglages** — état du bot et de l'interface, owners déclarés, serveurs sur
-  liste noire, plus les outils de consultation globale (réputation, dossiers
-  membres). En lecture seule : la configuration reste aux commandes Discord.
+  liste noire, ressources allouées, plus les outils de consultation globale
+  (réputation, dossiers membres). En lecture seule : la configuration reste aux
+  commandes Discord.
 
 Interface **responsive**, thème sombre / clair.
 
@@ -1434,6 +1485,10 @@ Toutes exigent une session **owner du bot** (sinon `401` / `403`).
 | `GET /api/guilds/:id/profile/:userId` | Profil d'un membre |
 | `GET /api/reputation` · `/api/reputation/:userId` | Réputation globale |
 | `GET /api/files/:userId` | Dossier membre global |
+| `GET /api/archives/summary` | Compteurs (archivés / actifs / connus) |
+| `GET /api/archives` | Serveurs quittés (`page`, `pageSize`, `q`, `sort` : `recent`\|`name`\|`data`) |
+| `GET /api/archives/:id` | Données retenues d'un serveur quitté (toutes sections) |
+| `GET /api/archives/:id/logs` | Journal de modération conservé (mêmes filtres qu'un serveur actif) |
 | `GET /api/settings` · `/api/settings/sections` · `/api/settings/banned-guilds` | Réglages (aucun secret exposé) |
 | `GET /events` | Flux SSE (`dashboard`, `stats`, `log`, `notify`) |
 
@@ -1565,8 +1620,8 @@ gros volumes (journaux, conversations), journal interne **borné en mémoire**
 │   ├── frontend/        #   application modulaire (modules ES, sans bundler)
 │   │   ├── app.js       #     cœur : découverte des pages, navigation, SSE
 │   │   ├── lib/         #     ui.js (composants) + charts.js (graphiques SVG)
-│   │   └── modules/     #     une page par fichier (dashboard, guilds, logs,
-│   │                    #     analytics, messaging, settings)
+│   │   └── modules/     #     une page par fichier (dashboard, guilds, archives,
+│   │                    #     logs, analytics, messaging, settings)
 │   ├── backend/         #   serveur HTTP natif + tunnel OAuth2
 │   ├── api/             #   routeur + modules/ (routes découvertes automatiquement)
 │   └── websocket/       #   hub temps réel SSE (équivalent WebSocket)
@@ -1598,11 +1653,13 @@ gros volumes (journaux, conversations), journal interne **borné en mémoire**
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
-├── config/              # Configuration (env), permissions, émojis officiels (messages), logos de catégories (Unicode)
+├── config/              # Configuration (env), permissions, émojis officiels (messages), logos de catégories (Unicode),
+│                        # resources.js (ressources du processus : tas V8 + pool de threads)
 ├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps, dossiers membres…
 ├── data/                # Données versionnées (base locale) : protections/sensitiveBlacklist.json
 ├── locales/             # Textes utilisateur (fr.json)
-├── scripts/             # Utilitaires hors ligne (checkCommandParity.js → npm run audit ; auditEmojis.js → npm run audit:emojis)
+├── scripts/             # start.js (lanceur : applique config/resources.js) + utilitaires hors ligne
+│                        # (checkCommandParity.js → npm run audit ; auditEmojis.js → npm run audit:emojis)
 ├── .githooks/           # Hooks Git versionnés (pre-commit : parité slash/préfixe)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login

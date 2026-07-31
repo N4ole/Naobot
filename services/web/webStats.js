@@ -24,6 +24,7 @@ const antisensitiveRepository = require('../../database/antisensitiveRepository'
 const captchaRepository = require('../../database/captchaRepository');
 const tempVoiceRepository = require('../../database/tempVoiceRepository');
 const moderationHistoryRepository = require('../../database/moderationHistoryRepository');
+const resources = require('../../config/resources');
 const botLogService = require('./botLogService');
 
 /** Version du bot (package.json) — lue une seule fois. */
@@ -213,6 +214,7 @@ function cpuPercent() {
 /** Mémoire, CPU, uptime, version — état du processus et du bot. */
 function systemMetrics(client) {
   const memory = process.memoryUsage();
+  const limits = resources.effective();
   return {
     version: VERSION,
     node: process.version,
@@ -224,9 +226,21 @@ function systemMetrics(client) {
       rssBytes: memory.rss,
       heapUsedBytes: memory.heapUsed,
       heapTotalBytes: memory.heapTotal,
+      // Plafond réellement alloué au processus : c'est lui qui donne du sens
+      // au taux d'occupation (heapTotal n'est que le tas déjà réservé).
+      heapLimitBytes: limits.heapLimitMb * 1048576,
       systemTotalBytes: os.totalmem(),
     },
-    cpu: { percent: cpuPercent(), cores: os.cpus()?.length ?? 1, loadAvg1: os.loadavg?.()[0] ?? 0 },
+    cpu: { percent: cpuPercent(), cores: limits.cores, loadAvg1: os.loadavg?.()[0] ?? 0 },
+    // Ressources allouées au processus (config/resources.js).
+    allocation: {
+      heapLimitMb: limits.heapLimitMb,
+      heapConfigured: limits.heapConfigured,
+      heapCeilingMb: limits.heapCeilingMb,
+      threadPoolSize: limits.threadPoolSize,
+      cores: limits.cores,
+      systemMemoryMb: limits.systemMemoryMb,
+    },
   };
 }
 

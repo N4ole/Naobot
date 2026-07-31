@@ -110,6 +110,16 @@ export default {
           ['Total', fmtNumber(settings.owners.total)],
           ['Identifiants', settings.owners.ids.join(', ') || '—'],
         ])),
+        card('Ressources allouées', kv([
+          ['Tas V8 maximal', `${fmtNumber(settings.resources?.heapLimitMb ?? 0)} Mo`],
+          ['Réglage', settings.resources?.heapConfigured === 'auto' ? 'auto (dimensionné par V8)' : `${settings.resources?.heapConfigured} Mo`],
+          ['Plafond sûr', `${fmtNumber(settings.resources?.heapCeilingMb ?? 0)} Mo (75 % de la RAM)`],
+          ['Pool de threads E/S', `${fmtNumber(settings.resources?.threadPoolSize ?? 0)} threads`],
+          ['Cœurs disponibles', fmtNumber(settings.resources?.cores ?? 0)],
+          ['RAM de la machine', `${fmtNumber(settings.resources?.systemMemoryMb ?? 0)} Mo`],
+        ]), (settings.resources?.warnings ?? []).length
+          ? el('div', { className: 'muted small' }, settings.resources.warnings.map((w) => el('p', {}, `⚠️ ${w}`)))
+          : el('p', { className: 'muted small' }, 'Configuration : config/resources.js — appliquée au lancement par npm start.')),
         card('Logs d’erreurs internes', kv([
           ['Configuré', settings.errorLogging.configured ? '✅' : '❌ (ERROR_GUILD_ID non défini)'],
           ['Serveur dédié', settings.errorLogging.guildId ?? '—'],
