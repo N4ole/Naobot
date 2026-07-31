@@ -4,7 +4,8 @@
   "description": "Bot Discord multi-tâche : modération, administration, utilitaires.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node scripts/start.js",
+    "start:direct": "node index.js",
     "test": "node --test",
     "audit": "node scripts/checkCommandParity.js",
     "audit:emojis": "node scripts/auditEmojis.js"

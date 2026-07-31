@@ -39,10 +39,10 @@ services/      # logique métier (moderation/, logs/ [logService (record/log) + 
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, dm/, levels/, memberFiles/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/ [app.js + lib/ + modules/ : une page = un fichier], backend/, api/ [router.js + modules/ : une section = un fichier], websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
-config/        # config.js (env), permissions.js (permissions par commande), emojis.js (émojis personnalisés des messages + secours Unicode), categoryEmojis.js (logos de catégories, Unicode)
+config/        # config.js (env), permissions.js (permissions par commande), emojis.js (émojis personnalisés des messages + secours Unicode), categoryEmojis.js (logos de catégories, Unicode), resources.js (ressources du processus : tas V8 + pool de threads)
 database/      # jsonStore.js + repositories ; données dans database/data/*.json (gitignoré)
 locales/       # textes utilisateur (fr.json) — tout texte visible passe par t()/tList()
-scripts/       # utilitaires hors ligne (checkCommandParity.js → npm run audit)
+scripts/       # utilitaires hors ligne (checkCommandParity.js → npm run audit) + start.js (lanceur : applique config/resources.js)
 .githooks/     # hooks Git versionnés (pre-commit : parité slash/préfixe)
 tests/         # tests unitaires node:test (npm test)
 ```

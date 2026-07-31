@@ -77,6 +77,49 @@ cp .env.example .env   # puis renseigner DISCORD_TOKEN (et les options)
 npm start
 ```
 
+### Ressources allouées au processus (mémoire, CPU)
+
+`npm start` passe par `scripts/start.js`, un lanceur minimal qui applique les
+ressources déclarées dans **`config/resources.js`** puis démarre `index.js`.
+Il ne peut évidemment pas ajouter de RAM ou de cœurs à la machine — cela relève
+de l'hébergement — mais il détermine **quelle part** de la machine le processus
+a le droit d'utiliser, de façon explicite et versionnée.
+
+| Réglage | Défaut | Effet |
+|---|---|---|
+| `heapMb` | `'auto'` | Tas V8 maximal (`--max-old-space-size`), appliqué au **lancement** |
+| `threadPoolSize` | `'auto'` | Pool de threads libuv (`UV_THREADPOOL_SIZE`) : E/S fichiers, DNS, compression de la passerelle |
+
+- **`'auto'` pour `heapMb` = ne pas passer le drapeau.** V8 dimensionne alors
+  lui-même le tas d'après la RAM de la machine, ce qui est déjà généreux
+  (par exemple ~8 Go sur une machine de 16 Go). ⚠️ Forcer une valeur
+  **inférieure** à ce défaut *réduirait* les ressources : le lanceur refuse ce
+  cas et conserve le défaut, avec un avertissement.
+- **Garde-fou anti-OOM** : une valeur supérieure à **75 % de la RAM** est
+  écrêtée (au-delà, la machine se met à *swapper* ou le noyau tue le processus).
+- **`'auto'` pour `threadPoolSize`** = deux threads par cœur logique, borné à
+  `[4, 16]` — au lieu du défaut libuv de 4.
+
+L'état effectif est affiché au démarrage, et consultable dans l'interface web
+(**Tableau de bord** → jauge « Mémoire allouée », et **Réglages** → « Ressources
+allouées »).
+
+```bash
+npm start           # lanceur : applique config/resources.js
+npm run start:direct # démarre index.js sans lanceur (PM2, systemd, Docker…)
+```
+
+Sous un superviseur (PM2, systemd, Docker), `start:direct` est souvent
+préférable : les limites y sont déjà déclarées côté hébergeur, et
+`NODE_OPTIONS` / `UV_THREADPOOL_SIZE` fournis par l'environnement sont
+respectés par le bot.
+
+> **Monter en charge côté CPU** : Node exécute le JavaScript sur un seul thread.
+> Au-delà de quelques milliers de serveurs, la vraie réponse n'est pas
+> d'allouer plus de CPU à un processus unique mais de **sharder** le bot
+> (plusieurs processus, `ShardingManager` de discord.js). Ce n'est pas encore
+> mis en place : l'interface web devrait alors être démarrée par un seul shard.
+
 ### Variables d'environnement (`.env`)
 
 Le `.env` ne contient **que des données statiques et globales**. Les
@@ -1598,11 +1641,13 @@ gros volumes (journaux, conversations), journal interne **borné en mémoire**
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
-├── config/              # Configuration (env), permissions, émojis officiels (messages), logos de catégories (Unicode)
+├── config/              # Configuration (env), permissions, émojis officiels (messages), logos de catégories (Unicode),
+│                        # resources.js (ressources du processus : tas V8 + pool de threads)
 ├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps, dossiers membres…
 ├── data/                # Données versionnées (base locale) : protections/sensitiveBlacklist.json
 ├── locales/             # Textes utilisateur (fr.json)
-├── scripts/             # Utilitaires hors ligne (checkCommandParity.js → npm run audit ; auditEmojis.js → npm run audit:emojis)
+├── scripts/             # start.js (lanceur : applique config/resources.js) + utilitaires hors ligne
+│                        # (checkCommandParity.js → npm run audit ; auditEmojis.js → npm run audit:emojis)
 ├── .githooks/           # Hooks Git versionnés (pre-commit : parité slash/préfixe)
 ├── tests/               # Tests unitaires (node:test)
 └── index.js             # Point d'entrée : client, loaders, login

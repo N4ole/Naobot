@@ -7,6 +7,7 @@
  * second chemin de configuration à maintenir.
  */
 const config = require('../../../config/config');
+const resources = require('../../../config/resources');
 const ownerService = require('../../../services/owners/ownerService');
 const serverBanRepository = require('../../../database/serverBanRepository');
 const webStats = require('../../../services/web/webStats');
@@ -37,6 +38,9 @@ module.exports = {
         ids: ownerService.getAllOwnerIds(),
       },
       errorLogging: { configured: Boolean(config.errorGuildId), guildId: config.errorGuildId ?? null },
+      // Ressources allouées au processus (config/resources.js) + avertissements
+      // éventuels de configuration.
+      resources: { ...resources.effective(), warnings: resources.warnings() },
     }),
 
     /** Sections d'API disponibles (le frontend construit sa navigation dessus). */
