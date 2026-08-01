@@ -17,8 +17,27 @@
 import { el, download, fmtNumber } from './ui.js';
 
 const NS = 'http://www.w3.org/2000/svg';
-/** Palette : contrastée et lisible sur fond sombre comme clair. */
-const PALETTE = ['#5865f2', '#57f287', '#fee75c', '#eb459e', '#00b0f4', '#f2994a', '#9b6dff', '#ff6b6b'];
+
+/**
+ * Palette des séries, **lue depuis les variables CSS** (`--chart-1..8`) plutôt
+ * que redéclarée ici : la feuille de style est la source unique côté web, et
+ * une couleur de marque modifiée se propage sans toucher à ce fichier.
+ *
+ * Les huit teintes sont ordonnées par écart de luminance croissant : deux
+ * séries voisines restent distinguables en niveaux de gris, donc en vision
+ * dichromatique.
+ */
+const FALLBACK_PALETTE = ['#2569E8', '#46D97F', '#F5C542', '#F0453C', '#68E8F8', '#F2994A', '#9B6DFF', '#FF8FA3'];
+
+const PALETTE = (() => {
+  try {
+    const styles = getComputedStyle(document.documentElement);
+    const read = FALLBACK_PALETTE.map((fallback, i) => styles.getPropertyValue(`--chart-${i + 1}`).trim() || fallback);
+    return read.every(Boolean) ? read : FALLBACK_PALETTE;
+  } catch {
+    return FALLBACK_PALETTE;
+  }
+})();
 
 const svgEl = (tag, attrs = {}) => {
   const node = document.createElementNS(NS, tag);
@@ -150,14 +169,17 @@ export function timeChart(title, data, { type = 'line', height = 220 } = {}) {
   // Légende cliquable = filtre de séries.
   const legend = el('div', { className: 'chart-legend' });
   data.series.forEach((serie, index) => {
-    const item = el('button', { className: 'legend-item', type: 'button' }, [
-      el('span', { className: 'legend-dot', style: `background:${PALETTE[index % PALETTE.length]}` }),
+    const item = el('button', { className: 'legend-item', type: 'button', 'aria-pressed': 'true' }, [
+      el('span', { className: 'legend-dot', style: `background:${PALETTE[index % PALETTE.length]}`, 'aria-hidden': 'true' }),
       serie.name,
     ]);
     item.addEventListener('click', () => {
       if (hidden.has(serie.name)) hidden.delete(serie.name);
       else hidden.add(serie.name);
-      item.classList.toggle('off', hidden.has(serie.name));
+      const visible = !hidden.has(serie.name);
+      item.classList.toggle('off', !visible);
+      // L'état ne repose plus sur la seule opacité : il est annoncé.
+      item.setAttribute('aria-pressed', String(visible));
       const next = draw();
       svgNode.replaceWith(next);
       svgNode = next;
@@ -205,9 +227,21 @@ export function barChart(title, data, { limit = 10 } = {}) {
   return wrap;
 }
 
-/** Indicateur circulaire (jauge) pour une valeur en pourcentage. */
+/** Seuils d'état d'une jauge : le niveau n'est jamais porté par la seule couleur. */
+const GAUGE_STATES = [
+  { max: 60, key: 'normal', label: 'normal' },
+  { max: 85, key: 'high', label: 'élevé' },
+  { max: Infinity, key: 'critical', label: 'critique' },
+];
+
+/**
+ * Indicateur circulaire (jauge) pour une valeur en pourcentage.
+ * Un **mot d'état** (« normal / élevé / critique ») accompagne toujours l'arc :
+ * en vision dichromatique, le vert et l'orange de l'arc ne se distinguent pas.
+ */
 export function gauge(title, percent, { hint } = {}) {
   const value = Math.max(0, Math.min(100, percent ?? 0));
+  const state = GAUGE_STATES.find((s) => value <= s.max);
   const size = 120;
   const radius = 48;
   const circumference = 2 * Math.PI * radius;
@@ -216,7 +250,7 @@ export function gauge(title, percent, { hint } = {}) {
   svg.append(
     svgEl('circle', {
       cx: size / 2, cy: size / 2, r: radius, fill: 'none', 'stroke-width': 10, 'stroke-linecap': 'round',
-      stroke: value > 85 ? '#ff6b6b' : value > 60 ? '#f2994a' : '#57f287',
+      stroke: `var(--${state.key === 'critical' ? 'error' : state.key === 'high' ? 'warning' : 'success'})`,
       'stroke-dasharray': `${(value / 100) * circumference} ${circumference}`,
       transform: `rotate(-90 ${size / 2} ${size / 2})`,
     }),
@@ -224,7 +258,14 @@ export function gauge(title, percent, { hint } = {}) {
   const text = svgEl('text', { x: size / 2, y: size / 2 + 6, 'text-anchor': 'middle', class: 'gauge-text' });
   text.textContent = `${value.toFixed(1)} %`;
   svg.append(text);
-  return el('div', { className: 'gauge' }, [svg, el('span', { className: 'lbl' }, title), hint ? el('span', { className: 'hint' }, hint) : null]);
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', `${title} : ${value.toFixed(1)} %, ${state.label}`);
+  return el('div', { className: 'gauge' }, [
+    svg,
+    el('span', { className: 'lbl' }, title),
+    el('span', { className: `state ${state.key}` }, state.label),
+    hint ? el('span', { className: 'hint' }, hint) : null,
+  ]);
 }
 
 export { PALETTE };

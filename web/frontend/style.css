@@ -1,23 +1,137 @@
 :root {
-  --bg: #0f1117;
-  --bg-elev: #171a23;
-  --bg-card: #1c2029;
-  --border: #272c38;
-  --text: #e6e8ee;
-  --muted: #9aa2b1;
-  --accent: #5865f2;
-  --accent-2: #57f287;
-  --danger: #ed4245;
-  --radius: 12px;
+  /* ===================================================================
+     Identité graphique NaoBot — Design System v1.0 (Dark)
+     Source unique : config/designTokens.js (côté bot).
+     Toute modification ici doit être reportée là-bas — le test
+     tests/designTokens.test.js échoue si les deux divergent.
+     =================================================================== */
+
+  /* — Marque ————————————————————————————————— */
+  --primary: #2569E8;
+  --primary-hover: #1B5FDC;
+  --primary-active: #1450BE;
+  --primary-bright: #4A8BFF;   /* primaire lisible en TEXTE sur fond sombre */
+  --primary-soft: rgba(37, 105, 232, .16);
+
+  --secondary: #3FD3EE;
+  --secondary-hover: #2FBEDA;
+  --secondary-active: #22A2BC;
+  --secondary-soft: rgba(63, 211, 238, .12);
+
+  --accent-1: #F0453C;   /* Rouge Nao — marque ET danger */
+  --accent-2: #68E8F8;   /* Cyan des yeux */
+  --accent-3: #5865F2;   /* Blurple : « ceci relève de Discord » */
+  --accent-3-text: #A6AEFF;
+
+  /* — Fonctionnelles ————————————————————————— */
+  --success: #46D97F;
+  --success-soft: rgba(70, 217, 127, .12);
+  --warning: #F5C542;
+  --warning-soft: rgba(245, 197, 66, .12);
+  --error: #F0453C;
+  --error-text: #FF6B60;   /* variante lisible en texte */
+  --error-soft: rgba(240, 69, 60, .13);
+  --info: #2569E8;
+  --info-text: #4A8BFF;
+
+  /* — Neutres ————————————————————————————————— */
+  --n-50: #F5F7FB;
+  --n-100: #E7EBF3;
+  --n-200: #CBD3E1;
+  --n-300: #A7B2C6;
+  --n-400: #8592AB;
+  --n-500: #63708A;
+  --n-600: #47536B;
+  --n-700: #313C51;
+  --n-800: #1E2739;
+  --n-900: #0E1524;
+
+  /* — Surfaces ———————————————————————————————— */
+  --bg: #0B0F1A;
+  --bg-secondary: #101725;
+  --surface: #161E2E;
+  --card: #1A2334;
+  --card-hover: #1F2940;
+  --header: #101725;
+  --sidebar: #0E1522;
+  --footer: #0B0F1A;
+  --input: #131B29;
+  --input-hover: #16203A;
+  --overlay: rgba(6, 9, 16, .72);
+
+  --border: #27324A;
+  --border-strong: #37455F;
+  --border-focus: #2569E8;
+
+  /* — Texte ——————————————————————————————————— */
+  --text: #E8ECF5;
+  --text-secondary: #A7B2C6;
+  --text-muted: #8592AB;
+  --text-inverse: #0B0F1A;
+  --text-disabled: #63708A;
+  --link: #6FA8FF;
+  --link-hover: #9AC4FF;
+
+  /* — Typographie ————————————————————————————— */
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --fs-display: 40px;  --lh-display: 1.1;
+  --fs-h1: 30px;       --lh-h1: 1.2;
+  --fs-h2: 22px;       --lh-h2: 1.3;
+  --fs-h3: 17px;       --lh-h3: 1.4;
+  --fs-lg: 16px;       --lh-lg: 1.6;
+  --fs-base: 14px;     --lh-base: 1.6;
+  --fs-sm: 13px;       --lh-sm: 1.5;
+  --fs-xs: 11.5px;     --lh-xs: 1.4;
+  --fs-mono: 12.5px;
+
+  /* — Espacement (base 4) ————————————————————— */
+  --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;  --sp-5: 20px;
+  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px; --sp-14: 56px; --sp-18: 72px;
+
+  /* — Rayons —————————————————————————————————— */
+  --r-xs: 4px;  --r-sm: 8px;  --r-md: 12px;  --r-lg: 16px;  --r-xl: 24px;
+  --r-full: 999px;
+
+  /* — Ombres —————————————————————————————————— */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, .40);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, .35);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, .40);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, .50);
+  --shadow-focus: 0 0 0 3px rgba(37, 105, 232, .32);
+  --shadow-glow: 0 8px 28px rgba(37, 105, 232, .30);
+
+  /* — Mouvement ——————————————————————————————— */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+
+  /* — Graphiques (lus par charts.js) —————————— */
+  --chart-1: #2569E8;  --chart-2: #46D97F;  --chart-3: #F5C542;  --chart-4: #F0453C;
+  --chart-5: #68E8F8;  --chart-6: #F2994A;  --chart-7: #9B6DFF;  --chart-8: #FF8FA3;
+
+  /* — Alias de compatibilité (feuille existante) ——————————————————
+     Les anciens noms continuent de fonctionner : la migration se fait
+     composant par composant, sans réécriture globale.                */
+  --bg-elev: var(--bg-secondary);
+  --bg-card: var(--card);
+  --muted: var(--text-muted);
+  --accent: var(--primary);
+  --danger: var(--error);
+  --radius: var(--r-md);
 }
-:root[data-theme='light'] {
-  --bg: #f4f5f8; --bg-elev: #fff; --bg-card: #fff; --border: #e2e5ec;
-  --text: #1b1e27; --muted: #667085; --accent: #5865f2;
-}
+/* Le thème clair déclaré ici n'était jamais activé (aucun sélecteur de thème
+   dans app.js) et cassait l'élévation (--bg-card = #fff). Il est retiré :
+   l'interface assume le mode sombre, conformément à la charte. */
+
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-ui);
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
   min-height: 100vh; display: flex; flex-direction: column;
 }
 .hidden { display: none !important; }
@@ -34,7 +148,7 @@ body {
 .user-area { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 .user-area img { width: 32px; height: 32px; border-radius: 50%; }
 
-.app { flex: 1; width: 100%; max-width: 1100px; margin: 0 auto; padding: 20px; }
+.app { flex: 1; width: 100%; max-width: 1280px; margin: 0 auto; padding: var(--sp-5); }
 
 .login-view { display: flex; justify-content: center; padding-top: 8vh; }
 .login-card {
@@ -42,7 +156,7 @@ body {
   padding: 40px; text-align: center; max-width: 420px; width: 100%;
 }
 .login-logo { font-size: 52px; }
-.login-error { color: var(--danger); min-height: 20px; }
+.login-error { color: var(--error-text); min-height: 20px; }
 
 .btn {
   display: inline-block; padding: 10px 18px; border-radius: 8px; border: 1px solid var(--border);
@@ -78,7 +192,7 @@ body {
 .status-row .pill { display: flex; flex-direction: column; }
 .status-row .pill b { font-size: 18px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
-.dot.on { background: var(--accent-2); } .dot.off { background: var(--danger); }
+.dot.on { background: var(--success); } .dot.off { background: var(--error); }
 
 .split { display: grid; grid-template-columns: 260px 1fr; gap: 16px; }
 .guild-list { display: flex; flex-direction: column; gap: 6px; }
@@ -119,10 +233,9 @@ th { color: var(--muted); font-weight: 600; }
 }
 
 /* --- Interface modulaire : navigation, sous-onglets, badges --------------- */
-.app { max-width: 1280px; }
 .tab { position: relative; display: inline-flex; align-items: center; gap: 6px; }
 .badge {
-  background: var(--danger); color: #fff; font-size: 11px; font-weight: 700;
+  background: var(--primary); color: #fff; font-size: var(--fs-xs); font-weight: 700;
   border-radius: 20px; padding: 1px 6px; min-width: 18px; text-align: center;
 }
 .subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -138,11 +251,12 @@ th { color: var(--muted); font-weight: 600; }
 .stat .hint { color: var(--muted); font-size: 11px; }
 .pager { display: flex; align-items: center; gap: 12px; justify-content: center; margin-top: 12px; }
 .row-actions { display: inline-flex; gap: 6px; }
-.ok { color: var(--accent-2); }
-.ko { color: var(--danger); }
-.tag-slash { border-color: var(--accent); color: var(--accent); }
+/* Rouge et vert en TEXTE : variantes lisibles (le plein echoue en AA). */
+.ok { color: var(--success); }
+.ko { color: var(--error-text); }
+.tag-slash { border-color: var(--accent-3); color: var(--accent-3-text); }
 .tag-prefix { border-color: var(--muted); }
-.tag-error { border-color: var(--danger); color: var(--danger); }
+.tag-error { border-color: var(--error); color: var(--error-text); }
 .stack {
   background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
   padding: 10px; font-size: 12px; overflow-x: auto; white-space: pre-wrap;
@@ -195,7 +309,7 @@ code { background: var(--bg-elev); padding: 1px 5px; border-radius: 4px; font-si
 .conv-item:hover, .conv-item.active { border-color: var(--accent); }
 .conv-head { display: flex; justify-content: space-between; gap: 8px; }
 .conv-preview { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
-.pill-alert { align-self: flex-start; font-size: 11px; color: var(--accent-2); }
+.pill-alert { align-self: flex-start; font-size: var(--fs-xs); color: var(--warning); }
 .conv-pane { min-width: 0; }
 .thread { display: flex; flex-direction: column; gap: 12px; max-height: 52vh; overflow-y: auto; padding-right: 4px; }
 .bubble { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; max-width: 85%; }
@@ -204,8 +318,8 @@ code { background: var(--bg-elev); padding: 1px 5px; border-radius: 4px; font-si
 .bubble-head { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; margin-bottom: 4px; }
 .bubble-title { font-weight: 700; margin-bottom: 4px; }
 .bubble-body { white-space: pre-wrap; word-break: break-word; font-size: 14px; }
-.tag-owner { border-color: var(--accent-2); color: var(--accent-2); }
-.tag-botOwner { border-color: var(--accent); color: var(--accent); }
+.tag-owner { border-color: var(--secondary); color: var(--secondary); }
+.tag-botOwner { border-color: var(--primary); color: var(--primary-bright); }
 .composer { display: flex; flex-direction: column; gap: 10px; }
 .textarea { min-height: 120px; resize: vertical; font-family: inherit; width: 100%; }
 
@@ -216,11 +330,112 @@ code { background: var(--bg-elev); padding: 1px 5px; border-radius: 4px; font-si
   border-radius: 8px; padding: 10px 14px; font-size: 13px; max-width: 340px;
   box-shadow: 0 6px 20px rgb(0 0 0 / 35%); animation: fade 0.2s ease;
 }
-.toast-success { border-left-color: var(--accent-2); }
-.toast-error { border-left-color: var(--danger); }
+.toast-success { border-left-color: var(--success); }
+.toast-error { border-left-color: var(--error); }
 .toast-info { border-left-color: var(--accent); }
 
 @media (max-width: 900px) {
   .health-row { gap: 14px; }
   .bubble { max-width: 100%; }
+}
+
+/* =========================================================================
+   Identité graphique — socle d'accessibilité et d'états
+   Ces règles corrigent les manques relevés par l'audit de la charte (§08) :
+   aucun style de focus, survol et sélection indistincts, état désactivé non
+   représenté, information portée par la seule couleur.
+   ========================================================================= */
+
+/* Focus visible, partout, sans exception. C'était le défaut le plus grave :
+   la navigation au clavier était impraticable (boutons transparents, contour
+   par défaut du navigateur quasi invisible sur fond sombre). */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--r-sm);
+}
+
+/* Le survol change la SURFACE, pas seulement la bordure : un trait d'un pixel
+   sur fond sombre ne se perçoit pas. */
+.btn:hover, .guild-item:hover, .conv-item:hover { background: var(--card-hover); }
+
+/* Sélection ≠ survol : l'un est teinté en primaire, l'autre change d'élévation.
+   Auparavant les deux partageaient la même règle. */
+.guild-item.active, .conv-item.active {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+/* État désactivé réellement représenté (le paginateur posait `disabled` sans
+   qu'aucun style ne le traduise : un bouton inopérant semblait actif). */
+:where(button, .btn)[disabled] {
+  background: var(--n-800);
+  color: var(--text-disabled);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+:where(button, .btn)[disabled]:hover { background: var(--n-800); }
+
+/* Légende de graphique : 40 % d'opacité tombait très en dessous de 4,5:1.
+   60 % + barré + aria-pressed (posé par charts.js). */
+.legend-item.off { opacity: .6; text-decoration: line-through; }
+
+/* Onglets : l'état actif ne repose plus sur la seule couleur du texte. */
+.tab.active { box-shadow: inset 0 -2px 0 var(--primary); }
+
+/* Typographie : l'échelle de la charte remplace les onze tailles improvisées. */
+h1, .h1 { font-family: var(--font-display); font-size: var(--fs-h1); line-height: var(--lh-h1); font-weight: 700; }
+h2, .card h2 { font-family: var(--font-display); font-size: var(--fs-h2); line-height: var(--lh-h2); font-weight: 700; }
+h3, .chart-head h3 { font-family: var(--font-display); font-size: var(--fs-h3); line-height: var(--lh-h3); font-weight: 600; }
+.stat .val { font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 800; }
+.small, .muted.small { font-size: var(--fs-sm); line-height: var(--lh-sm); }
+code, pre, .stack, .tag, td .mono { font-family: var(--font-mono); font-size: var(--fs-mono); }
+
+/* Marque : le logo remplace l'émoji dans la topbar et l'écran de connexion. */
+.brand-logo, .login-logo {
+  display: inline-block;
+  object-fit: contain;
+  /* Marge de protection : ne jamais recadrer le robot. */
+  flex: none;
+}
+.brand-logo { width: 32px; height: 32px; border-radius: var(--r-md); }
+.login-logo { width: 72px; height: 72px; border-radius: 18px; margin-bottom: var(--sp-2); }
+.brand { font-family: var(--font-display); font-size: var(--fs-h3); font-weight: 700; }
+
+/* Un mot d'état accompagne toujours la jauge : le niveau n'est plus encodé
+   par la seule couleur de l'arc. */
+.gauge .state { font-size: var(--fs-xs); font-weight: 600; }
+.gauge .state.normal { color: var(--success); }
+.gauge .state.high { color: var(--warning); }
+.gauge .state.critical { color: var(--error-text); }
+
+/* Toasts : un glyphe double la couleur de bordure. */
+.toast { display: flex; gap: var(--sp-2); align-items: flex-start; }
+.toast .glyph { flex: none; font-weight: 700; }
+.toast-success .glyph { color: var(--success); }
+.toast-error .glyph { color: var(--error-text); }
+.toast-info .glyph { color: var(--info-text); }
+
+/* Tables : l'en-tête est un vrai <thead> avec scope (voir lib/ui.js). */
+thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+
+/* Liens : jamais la couleur seule — soulignement au survol. */
+a { color: var(--link); }
+a:hover { color: var(--link-hover); text-decoration: underline; }
+
+/* Respect de la préférence système de mouvement réduit. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* Icônes de navigation et de tuiles : décoratives (aria-hidden), donc
+   dimensionnées mais jamais porteuses d'information. */
+.tab-ico { margin-right: var(--sp-1); }
+.tab[aria-current='page'] { color: var(--text); }
+
+/* Contenu réservé aux lecteurs d'écran (légendes de tableaux). */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
