@@ -1339,6 +1339,37 @@ Avant chaque commande, le middleware central (`middlewares/permissions`) vérifi
 Chaque refus produit un message d'erreur explicite. Chaque sanction inscrit
 le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 
+## Permissions : principe de moindre privilège
+
+Le bot ne réclame que les permissions dont une commande a **réellement** besoin
+pour s'exécuter — exigence de la vérification Discord, et bonne pratique pour
+un bot public que l'on invite sur son serveur.
+
+Deux niveaux, déclarés dans `config/permissions.js` :
+
+| | Vérifié par le pipeline | Bloque la commande | Exemple |
+| --- | --- | --- | --- |
+| **`bot`** | ✅ | ✅ | `ban` a besoin de « Bannir des membres » pour bannir |
+| **`FEATURE_PERMISSIONS`** | ❌ | ❌ | `warn` **peut** avoir à appliquer une sanction, plus tard |
+
+Concrètement, un **avertissement** (`warn`) est un enregistrement, un message
+privé et un log : le bot n'a besoin d'**aucune** permission Discord pour cela.
+La sanction du palier atteint est conditionnelle — et réclame selon l'échelle
+configurée « Modérer les membres », « Gérer les rôles », « Expulser » ou
+« Bannir ». Elle est donc vérifiée **au moment de l'appliquer** : si elle est
+impossible, l'avertissement reste enregistré et la réponse l'indique.
+
+Même principe pour toutes les commandes de **configuration** (`captcha`,
+`levelconfig`, `setwelcome`, `reactionrole`, `antispam`/`antilink`/`antipub`/
+`antisensitive`, `logs`, `backup`) : elles écrivent une configuration, l'effet
+est produit plus tard par un écouteur d'événement. Elles n'exigent donc rien.
+Les permissions nécessaires au fonctionnement restent **affichées par `help`**,
+pour qu'un administrateur sache ce qu'il devra accorder.
+
+Les sous-commandes qui agissent vraiment vérifient au bon moment :
+`logs setup`/`enable` (création des salons) et `backup load` (restauration)
+appellent `checkBotPermissions` juste avant d'agir.
+
 ## Identité graphique
 
 Design System **v1.0 — Dark**, décliné sur l'**interface web** et les **embeds

@@ -50,6 +50,26 @@ function checkCommandPermissions(ctx, command) {
 }
 
 /**
+ * Vérifie que le bot possède des permissions **au moment précis d'une action**.
+ *
+ * Complément indispensable de la règle de moindre privilège : une commande ne
+ * déclare dans `bot` que ce qu'elle exécute systématiquement ; tout ce qui est
+ * conditionnel (une sous-commande qui crée des salons, une restauration de
+ * sauvegarde…) se vérifie ici, juste avant d'agir.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @param {bigint[]} permissions
+ * @returns {{ ok: true } | { ok: false, error: string }}
+ */
+function checkBotPermissions(guild, permissions) {
+  const me = guild?.members?.me;
+  if (!me) return { ok: true };
+  const missing = me.permissions.missing(permissions);
+  if (missing.length === 0) return { ok: true };
+  return { ok: false, error: t('errors.missingBotPerms', { perms: labelize(missing) }) };
+}
+
+/**
  * Vérifie la hiérarchie des rôles entre l'auteur, le bot et le membre ciblé.
  * @param {import('../../utils/helpers/commandContext').CommandContext} ctx
  * @param {import('discord.js').GuildMember} target
@@ -72,4 +92,4 @@ function checkTargetHierarchy(ctx, target) {
   return { ok: true };
 }
 
-module.exports = { checkCommandPermissions, checkTargetHierarchy };
+module.exports = { checkCommandPermissions, checkBotPermissions, checkTargetHierarchy };

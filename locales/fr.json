@@ -158,6 +158,9 @@
       "bitrate": "Débit",
       "userLimit": "Limite d'utilisateurs",
       "permissions": "Permissions",
+      "botPermissions": "Permissions du bot",
+      "featurePermissions": "Permissions nécessaires au fonctionnement",
+      "featurePermissionsValue": "{perms}\n_Non exigées pour lancer la commande : le bot en a besoin au moment d'agir (sanction, rôle, suppression…). Sans elles, la configuration est enregistrée mais l'action échouera._",
       "permissionsChanged": "Permissions modifiées",
       "color": "Couleur",
       "position": "Position",
@@ -496,13 +499,27 @@
       "prev": "◀ Précédent",
       "next": "Suivant ▶"
     },
-    "whitelist": { "listTitle": "🔞 Salons ignorés (anti-contenus sensibles)" },
-    "category": { "listTitle": "🔞 Catégories de salons ignorées" },
-    "role": { "listTitle": "🔞 Rôles ignorés" },
-    "user": { "listTitle": "🔞 Membres ignorés" },
-    "blacklist": { "listTitle": "🔞 Domaines interdits personnalisés" },
-    "allow": { "listTitle": "🔞 Domaines autorisés (whitelist)" },
-    "keyword": { "listTitle": "🔞 Mots-clés personnalisés" },
+    "whitelist": {
+      "listTitle": "🔞 Salons ignorés (anti-contenus sensibles)"
+    },
+    "category": {
+      "listTitle": "🔞 Catégories de salons ignorées"
+    },
+    "role": {
+      "listTitle": "🔞 Rôles ignorés"
+    },
+    "user": {
+      "listTitle": "🔞 Membres ignorés"
+    },
+    "blacklist": {
+      "listTitle": "🔞 Domaines interdits personnalisés"
+    },
+    "allow": {
+      "listTitle": "🔞 Domaines autorisés (whitelist)"
+    },
+    "keyword": {
+      "listTitle": "🔞 Mots-clés personnalisés"
+    },
     "list": {
       "empty": "Liste vide.",
       "needTarget": "Précisez une cible (mention, identifiant, domaine ou mot).",
@@ -1152,7 +1169,9 @@
       "empty": "Aucun formulaire. Créez-en un avec `form create <nom>`.",
       "entry": "`{id}` • **{name}**\n<#{channel}> · {questions} question(s)"
     },
-    "delete": { "done": "Formulaire **{name}** supprimé." },
+    "delete": {
+      "done": "Formulaire **{name}** supprimé."
+    },
     "wizard": {
       "createTitle": "📝 Création d'un formulaire",
       "editTitle": "📝 Modification d'un formulaire",
@@ -1214,7 +1233,9 @@
       "comment": "Commenter",
       "commentLabel": "Votre commentaire"
     },
-    "field": { "form": "Formulaire" },
+    "field": {
+      "form": "Formulaire"
+    },
     "logs": {
       "created": "Formulaire créé",
       "deleted": "Formulaire supprimé",
@@ -2014,7 +2035,10 @@
     "permissions": "Permissions requises",
     "cooldown": "Cooldown",
     "none": "Aucune",
-    "ownerOnly": "Owner du bot"
+    "ownerOnly": "Owner du bot",
+    "botPermissions": "Permissions du bot",
+    "featurePermissions": "Permissions nécessaires au fonctionnement",
+    "featurePermissionsValue": "{perms}\n_Non exigées pour lancer la commande : le bot en a besoin au moment d'agir (sanction, rôle, suppression…). Sans elles, la configuration est enregistrée mais l'action échouera._"
   },
   "ping": {
     "response": "🏓 Pong ! Latence WebSocket : **{ping} ms**."
