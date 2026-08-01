@@ -7,9 +7,20 @@
 /** Sélecteur court. */
 export const $ = (selector, root = document) => root.querySelector(selector);
 
-/** Crée un élément : `el('div', { className: 'x' }, ['texte', autreNoeud])`. */
+/**
+ * Crée un élément : `el('div', { className: 'x' }, ['texte', autreNoeud])`.
+ *
+ * Les clés contenant un tiret (`aria-*`, `data-*`) passent par `setAttribute` :
+ * une affectation de propriété ne les refléterait pas dans le DOM, et les
+ * attributs d'accessibilité seraient silencieusement perdus.
+ */
 export function el(tag, props = {}, children = []) {
-  const node = Object.assign(document.createElement(tag), props);
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (value === undefined || value === null) continue;
+    if (key.includes('-')) node.setAttribute(key, String(value));
+    else node[key] = value;
+  }
   for (const child of [].concat(children)) {
     if (child === null || child === undefined || child === false) continue;
     node.append(child?.nodeType ? child : document.createTextNode(String(child)));
@@ -82,19 +93,29 @@ export function kv(items) {
 /** Tuile de statistique (grand chiffre). */
 export function statTile({ icon, label, value, hint }) {
   return el('div', { className: 'stat' }, [
-    el('span', { className: 'ico' }, icon),
+    // L'émoji est décoratif : le libellé porte déjà l'information, un lecteur
+    // d'écran n'a pas à énoncer « graphique en barres » avant chaque valeur.
+    el('span', { className: 'ico', 'aria-hidden': 'true' }, icon),
     el('span', { className: 'val' }, typeof value === 'number' ? fmtNumber(value) : value),
     el('span', { className: 'lbl' }, label),
     hint ? el('span', { className: 'hint' }, hint) : null,
   ]);
 }
 
-/** Tableau simple : en-têtes + lignes (chaque ligne = tableau de cellules). */
-export function table(headers, rows, { empty = 'Aucune donnée.' } = {}) {
+/**
+ * Tableau simple : en-têtes + lignes (chaque ligne = tableau de cellules).
+ * Les en-têtes vivent dans un vrai `<thead>` avec `scope="col"` : sans cela,
+ * les lecteurs d'écran perdent l'association en-tête/cellule — pénalisant sur
+ * les tables de plusieurs centaines de lignes de journal.
+ */
+export function table(headers, rows, { empty = 'Aucune donnée.', caption } = {}) {
   if (!rows.length) return el('p', { className: 'muted' }, empty);
   const node = el('table', { className: 'table' });
-  node.append(el('tr', {}, headers.map((h) => el('th', {}, h))));
-  for (const row of rows) node.append(el('tr', {}, row.map((cell) => (cell?.nodeType ? el('td', {}, [cell]) : el('td', {}, cell)))));
+  if (caption) node.append(el('caption', { className: 'sr-only' }, caption));
+  const head = el('thead', {}, [el('tr', {}, headers.map((h) => el('th', { scope: 'col' }, h)))]);
+  const body = el('tbody');
+  for (const row of rows) body.append(el('tr', {}, row.map((cell) => (cell?.nodeType ? el('td', {}, [cell]) : el('td', {}, cell)))));
+  node.append(head, body);
   return node;
 }
 
@@ -165,14 +186,25 @@ export function download(filename, content, type = 'text/plain;charset=utf-8') {
   URL.revokeObjectURL(url);
 }
 
-/** Notification éphémère (coin de l'écran). */
+/** Glyphe doublant la couleur de bordure d'un toast (vision dichromatique). */
+const TOAST_GLYPH = { success: '✓', error: '✕', info: 'i' };
+
+/**
+ * Notification éphémère (coin de l'écran).
+ * Le conteneur est une région `aria-live` : sans cela, un utilisateur de
+ * lecteur d'écran ne saurait jamais que l'action a réussi ou échoué.
+ */
 export function toast(message, kind = 'info') {
   let host = $('#toasts');
   if (!host) {
-    host = el('div', { id: 'toasts', className: 'toasts' });
+    host = el('div', { id: 'toasts', className: 'toasts', role: 'status' });
+    host.setAttribute('aria-live', 'polite');
     document.body.append(host);
   }
-  const node = el('div', { className: `toast toast-${kind}` }, message);
+  const node = el('div', { className: `toast toast-${kind}` }, [
+    el('span', { className: 'glyph', 'aria-hidden': 'true' }, TOAST_GLYPH[kind] ?? 'i'),
+    el('span', {}, message),
+  ]);
   host.append(node);
   setTimeout(() => node.remove(), 5000);
 }

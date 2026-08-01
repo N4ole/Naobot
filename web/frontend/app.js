@@ -95,10 +95,21 @@ function renderNav() {
     nav,
     ...state.pages.map((page) => {
       const badge = state.badges.get(page.id) ?? 0;
-      const tab = el('button', { className: `tab${state.current === page.id ? ' active' : ''}`, type: 'button' }, [
-        `${page.icon ?? '•'} ${page.label}`,
-        badge > 0 ? el('span', { className: 'badge' }, String(badge)) : null,
-      ]);
+      const tab = el(
+        'button',
+        {
+          className: `tab${state.current === page.id ? ' active' : ''}`,
+          type: 'button',
+          // L'onglet courant est annoncé, et non deviné à la couleur.
+          'aria-current': state.current === page.id ? 'page' : undefined,
+        },
+        [
+          el('span', { className: 'tab-ico', 'aria-hidden': 'true' }, page.icon ?? '•'),
+          el('span', {}, page.label),
+          badge > 0 ? el('span', { className: 'badge' }, String(badge)) : null,
+        ],
+      );
+      if (badge > 0) tab.setAttribute('aria-label', `${page.label}, ${badge} nouveauté(s)`);
       tab.addEventListener('click', () => navigate(page.id));
       return tab;
     }),

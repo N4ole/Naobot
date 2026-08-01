@@ -39,7 +39,7 @@ services/      # logique métier (moderation/, logs/ [logService (record/log) + 
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, dm/, levels/, memberFiles/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/ [app.js + lib/ + modules/ : une page = un fichier], backend/, api/ [router.js + modules/ : une section = un fichier], websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
-config/        # config.js (env), permissions.js (permissions par commande), emojis.js (émojis personnalisés des messages + secours Unicode), categoryEmojis.js (logos de catégories, Unicode), resources.js (ressources du processus : tas V8 + pool de threads)
+config/        # config.js (env), permissions.js (permissions par commande), designTokens.js (identité graphique : SOURCE UNIQUE des couleurs), emojis.js (émojis personnalisés des messages + secours Unicode), categoryEmojis.js (logos de catégories, Unicode), resources.js (ressources du processus : tas V8 + pool de threads)
 database/      # jsonStore.js + repositories ; données dans database/data/*.json (gitignoré)
 locales/       # textes utilisateur (fr.json) — tout texte visible passe par t()/tList()
 scripts/       # utilitaires hors ligne (checkCommandParity.js → npm run audit) + start.js (lanceur : applique config/resources.js)
@@ -264,6 +264,48 @@ signale tout émoji personnalisé réintroduit comme logo de catégorie.
   `tests/emojiAudit.test.js`. Échoue sur un **identifiant d'émoji en dur** ou un
   **émoji personnalisé réutilisé comme logo de catégorie**. La couverture des
   embeds n'a pas à atteindre 100 % (ne pas surcharger).
+
+# Identité graphique
+
+L'identité visuelle (Design System v1.0 — Dark) vit dans **`config/designTokens.js`**,
+**source unique** des couleurs. Avant lui, trois chartes coexistaient
+(`utils/constants/colors.js`, le `:root` de `style.css`, la `PALETTE` de
+`charts.js`) : une couleur changée à un endroit ne bougeait pas aux deux autres.
+
+- **Côté bot** : `utils/constants/colors.js` **dérive** ses entiers Discord des
+  tokens (`toInt`). Ne jamais y réécrire une valeur hexadécimale.
+- **Côté web** : `style.css` déclare les mêmes valeurs en variables CSS (le
+  navigateur ne peut pas lire un module Node) et `charts.js` **lit** ces
+  variables (`--chart-1..8`) au lieu de redéclarer une palette.
+- **Non-dérive garantie** : `tests/designTokens.test.js` échoue si le `:root`
+  de la feuille s'écarte des tokens. Il vérifie aussi les **contrastes WCAG**
+  par calcul de luminance.
+
+Règles de couleur :
+
+- un **seul rouge** (`#F0453C`) : couleur de marque **et** de danger ;
+- les couleurs pleines qui échouent en AA ont une **variante « …-text »**
+  (`--error-text`, `--primary-bright`, `--accent-3-text`) — jamais de couleur
+  pleine en texte courant ;
+- le **blurple Discord** (`--accent-3`) ne signifie plus que « ceci relève de
+  Discord » (tag slash, bouton OAuth) : il n'est plus la primaire ;
+- un token = **un sens** : `--success` n'est pas « owner », `--error` n'est pas
+  « notification ».
+
+Règles d'interface (relevées comme manquantes par l'audit de la charte) :
+
+- **focus visible partout** (`:focus-visible`, anneau de 3 px) — la navigation
+  au clavier doit rester praticable ;
+- le **survol change la surface**, jamais la seule bordure ; **sélection ≠
+  survol** ; l'état **désactivé** est représenté ;
+- aucune information portée par la **seule couleur** : jauges (mot d'état),
+  pastilles, toasts (glyphe + `role="status"`), légendes (`aria-pressed`) ;
+- tables avec `<thead>` et `scope="col"` ; émojis décoratifs en `aria-hidden`.
+
+Typographie : **Outfit** (display), **IBM Plex Sans** (UI), **JetBrains Mono**
+(technique — identifiants Discord, hex, piles d'erreurs), avec repli système.
+Le **logo** (`web/frontend/assets/`) remplace l'émoji générique dans la topbar,
+l'écran de connexion et le favicon ; ne jamais le recadrer.
 
 # Permissions
 

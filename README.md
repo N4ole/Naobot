@@ -1339,6 +1339,73 @@ Avant chaque commande, le middleware central (`middlewares/permissions`) vérifi
 Chaque refus produit un message d'erreur explicite. Chaque sanction inscrit
 le modérateur et la raison dans les **logs d'audit natifs de Discord**.
 
+## Identité graphique
+
+Design System **v1.0 — Dark**, décliné sur l'**interface web** et les **embeds
+Discord**. Les couleurs sont échantillonnées sur le logo (bleu du casque et du
+« N », cyan des yeux, rouge de l'écharpe) puis ajustées en luminance pour
+satisfaire **WCAG 2.1 AA**.
+
+### Une seule source de vérité
+
+`config/designTokens.js` déclare les couleurs **une fois**. Auparavant trois
+chartes coexistaient et divergeaient silencieusement :
+
+```
+config/designTokens.js  (source)
+        ├──► utils/constants/colors.js   (embeds Discord — dérivés par toInt)
+        └──► web/frontend/style.css      (variables CSS)
+                     └──► lib/charts.js  (lit --chart-1..8, ne redéclare rien)
+```
+
+`tests/designTokens.test.js` **échoue si le `:root` de la feuille s'écarte des
+tokens**, et vérifie les contrastes WCAG par calcul de luminance.
+
+### Palette
+
+| Rôle | Couleur | Usage |
+| --- | --- | --- |
+| Primaire | `#2569E8` | Actions principales, onglet actif, focus |
+| Primaire en texte | `#4A8BFF` | La primaire pleine échoue en AA en typographie |
+| Secondaire (cyan) | `#3FD3EE` | Temps réel, indicateurs « actif », `MODLOG` |
+| Rouge Nao | `#F0453C` | **Un seul rouge** : marque *et* danger |
+| Rouge en texte | `#FF6B60` | Variante lisible (5,64:1) |
+| Blurple Discord | `#5865F2` | Uniquement « ceci relève de Discord » — plus la primaire |
+| Succès / Avertissement | `#46D97F` / `#F5C542` | États |
+| Neutres 50→900 | `#F5F7FB` → `#0E1524` | Teintés vers le navy de la visière |
+
+Graphiques : huit séries ordonnées par **écart de luminance croissant**, donc
+distinguables en niveaux de gris (vision dichromatique).
+
+### Typographie
+
+**Outfit** (titres, valeurs), **IBM Plex Sans** (corps, tables, formulaires),
+**JetBrains Mono** (identifiants Discord, hex, piles d'erreurs, horodatages).
+Chargées depuis Google Fonts avec **repli système** : hors ligne, l'interface
+reste lisible.
+
+### Accessibilité — WCAG 2.1 AA, focus renforcé
+
+L'intégration de la charte a corrigé des manques réels :
+
+- **aucun style de focus** n'existait dans toute la feuille — la navigation au
+  clavier était impraticable. Une règle `:focus-visible` globale (anneau de
+  3 px) s'applique désormais partout ;
+- trois couleurs de texte échouaient en AA (blurple 4,10:1, rouge d'erreur
+  4,24:1) → variantes `--…-text` ;
+- le **survol** ne changeait qu'une bordure d'un pixel et était **identique à la
+  sélection** → le survol change la surface, la sélection est teintée en
+  primaire ;
+- l'état **désactivé** n'était pas représenté (un bouton inopérant semblait
+  actif) ;
+- de l'information reposait sur la **seule couleur** → mot d'état sur les
+  jauges, glyphe sur les toasts (+ `role="status"`), `aria-pressed` sur les
+  légendes, `<thead scope="col">` sur les tables, émojis décoratifs en
+  `aria-hidden`.
+
+Le logo remplace l'émoji générique dans la topbar, l'écran de connexion et le
+favicon.
+
 ## Interface web (tableau de bord)
 
 Tableau de bord officiel de NaoBot, **entièrement séparé de la logique
@@ -1619,6 +1686,7 @@ gros volumes (journaux, conversations), journal interne **borné en mémoire**
 ├── web/                 # Interface web (séparée de la logique Discord)
 │   ├── frontend/        #   application modulaire (modules ES, sans bundler)
 │   │   ├── app.js       #     cœur : découverte des pages, navigation, SSE
+│   │   ├── assets/      #     logo NaoBot (favicon, topbar, écran de connexion)
 │   │   ├── lib/         #     ui.js (composants) + charts.js (graphiques SVG)
 │   │   └── modules/     #     une page par fichier (dashboard, guilds, archives,
 │   │                    #     logs, analytics, messaging, settings)
@@ -1653,7 +1721,8 @@ gros volumes (journaux, conversations), journal interne **borné en mémoire**
 │   ├── constants/       # Couleurs, limites, catégories (commandes et logs)…
 │   ├── helpers/         # Contexte unifié, parseur d'arguments, loaders, i18n…
 │   └── embeds/          # Constructeurs d'embeds homogènes (charte graphique)
-├── config/              # Configuration (env), permissions, émojis officiels (messages), logos de catégories (Unicode),
+├── config/              # Configuration (env), permissions, designTokens.js (identité graphique : source unique),
+│                        # émojis officiels (messages), logos de catégories (Unicode),
 │                        # resources.js (ressources du processus : tas V8 + pool de threads)
 ├── database/            # Persistance (JSON) : warns (+ échelle), logs, owners, stats, bumps, dossiers membres…
 ├── data/                # Données versionnées (base locale) : protections/sensitiveBlacklist.json
