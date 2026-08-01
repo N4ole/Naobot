@@ -4,7 +4,8 @@
  * Les actions sensibles (load, delete) demandent une confirmation par
  * boutons. La logique métier vit dans services/backup/backupService.
  */
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, PermissionFlagsBits } = require('discord.js');
+const { checkBotPermissions } = require('../../middlewares/permissions/checkPermissions');
 const backupService = require('../../services/backup/backupService');
 const { isBackupAdmin } = require('../../middlewares/backup/backupAccess');
 const { successEmbed, errorEmbed, infoEmbed } = require('../../utils/embeds/embeds');
@@ -126,6 +127,12 @@ module.exports = {
     }
 
     if (action === 'load') {
+      // La restauration recrée salons et rôles : c'est le seul moment où ces
+      // permissions sont nécessaires (`create`/`list` ne font que lire).
+      const allowed = checkBotPermissions(interaction.guild, [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles]);
+      if (!allowed.ok) {
+        return interaction.update({ embeds: [errorEmbed(allowed.error)], components: [] });
+      }
       await interaction.update({ embeds: [infoEmbed(t('backup.load.title'), t('backup.load.inProgress'))], components: [] });
       const result = await backupService.restoreBackup(interaction.guild, backup, interaction.user);
       return interaction.editReply({

@@ -323,6 +323,34 @@ Les permissions par commande se déclarent dans `config/permissions.js`
 (`user` + `bot`) : le pipeline et les slash (`default_member_permissions`)
 les appliquent automatiquement.
 
+## Moindre privilège (exigence de la vérification Discord)
+
+Discord refuse qu'une commande **exige** une permission dont elle n'a pas
+besoin pour fonctionner. Ne mettre dans `bot` que ce que la commande exécute
+**réellement et systématiquement**. Ne jamais y déclarer une permission
+utile à :
+
+- une action **conditionnelle** — l'escalade d'un `warn` en sanction n'a lieu
+  qu'à certains paliers, et réclame selon le cas `ModerateMembers`,
+  `ManageRoles`, `KickMembers` ou `BanMembers` ;
+- une action **différée**, exécutée plus tard par un écouteur d'événement —
+  rôle de récompense au level-up, expulsion au captcha, suppression d'un
+  message par une protection, déplacement vers un salon vocal temporaire.
+
+Ces besoins se déclarent dans **`FEATURE_PERMISSIONS`** (même fichier,
+propriété non énumérable pour ne pas être prise pour une commande) : elles
+sont **documentées et affichées par `help`**, mais ne bloquent rien.
+
+Une permission conditionnelle se vérifie **au moment de l'action** :
+
+- `checkBotPermissions(guild, [...])` (`middlewares/permissions/`) pour une
+  sous-commande qui agit (`logs setup`/`enable`, `backup load`) ;
+- ou un échec propre du service, qui renvoie un code exploitable sans annuler
+  le reste (`sanctionService.executeSanction` : l'avertissement reste
+  enregistré même si la sanction est impossible).
+
+Règle pratique : une commande de **configuration** n'exige jamais rien du bot.
+
 # Owners
 
 Respecter le système d'owners (global, **indépendant des permissions

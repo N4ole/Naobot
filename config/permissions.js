@@ -4,7 +4,23 @@
  * - `user` : permissions Discord que l'auteur de la commande doit posséder.
  *            Elles sont aussi appliquées nativement aux commandes slash via
  *            `default_member_permissions` (intégration Discord native).
- * - `bot`  : permissions que le bot doit posséder pour exécuter l'action.
+ * - `bot`  : permissions **indispensables à l'exécution de la commande
+ *            elle-même**. Le pipeline bloque la commande si elles manquent.
+ *
+ * ⚠️ **Règle de moindre privilège** (exigée par la vérification Discord) : ne
+ * déclarer dans `bot` que ce que la commande exécute **réellement et
+ * systématiquement**. Ne jamais y mettre une permission utile :
+ *   - à une action **conditionnelle** (ex. l'escalade d'un `warn` en timeout —
+ *     elle n'a lieu qu'à certains paliers, et réclame selon le cas
+ *     `ModerateMembers`, `ManageRoles`, `KickMembers` ou `BanMembers`) ;
+ *   - à une action **différée**, exécutée plus tard par un écouteur
+ *     d'événement (attribution d'un rôle de niveau, expulsion au captcha,
+ *     suppression d'un message par une protection…).
+ *
+ * Ces besoins-là se déclarent dans `FEATURE_PERMISSIONS` (voir plus bas) :
+ * ils sont **documentés et affichés**, mais ne bloquent aucune commande. La
+ * vérification a lieu au moment de l'action, qui échoue proprement si la
+ * permission manque.
  *
  * Pour ajouter une restriction à une nouvelle commande, il suffit d'ajouter
  * une entrée ici : le middleware de permissions la prendra en compte
@@ -12,7 +28,7 @@
  */
 const { PermissionFlagsBits } = require('discord.js');
 
-module.exports = {
+const COMMAND_PERMISSIONS = {
   ban: {
     user: [PermissionFlagsBits.BanMembers],
     bot: [PermissionFlagsBits.BanMembers],
@@ -42,9 +58,13 @@ module.exports = {
     bot: [PermissionFlagsBits.ModerateMembers],
   },
   warn: {
-    // Le bot peut avoir à appliquer timeout/mute/kick/ban selon l'échelle.
+    // Un avertissement est un enregistrement + un MP + un log : le bot n'a
+    // besoin d'AUCUNE permission Discord pour cela. La sanction du palier
+    // (timeout/mute/kick/ban) est conditionnelle et vérifiée à l'exécution
+    // par sanctionService, qui échoue proprement si elle est impossible —
+    // l'avertissement, lui, reste enregistré.
     user: [PermissionFlagsBits.ModerateMembers],
-    bot: [PermissionFlagsBits.ModerateMembers],
+    bot: [],
   },
   unwarn: {
     user: [PermissionFlagsBits.ModerateMembers],
@@ -66,17 +86,21 @@ module.exports = {
     user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
+  // Le panneau se crée sans permission ; l'attribution des rôles a lieu plus
+  // tard, à la réaction d'un membre.
   reactionrole: {
     user: [PermissionFlagsBits.ManageRoles],
-    bot: [PermissionFlagsBits.ManageRoles],
+    bot: [],
   },
   purge: {
     user: [PermissionFlagsBits.ManageMessages],
     bot: [PermissionFlagsBits.ManageMessages],
   },
+  // `logs status`/`stats` ne font que lire : seules `setup` et `enable`
+  // créent des salons, et vérifient la permission au moment de le faire.
   logs: {
     user: [PermissionFlagsBits.ManageGuild],
-    bot: [PermissionFlagsBits.ManageChannels],
+    bot: [],
   },
   bumpenable: {
     user: [PermissionFlagsBits.ManageGuild],
@@ -136,11 +160,11 @@ module.exports = {
   // Protections automatiques : configuration réservée à « Gérer le serveur ».
   antispam: {
     user: [PermissionFlagsBits.ManageGuild],
-    bot: [PermissionFlagsBits.ManageMessages],
+    bot: [],
   },
   antilink: {
     user: [PermissionFlagsBits.ManageGuild],
-    bot: [PermissionFlagsBits.ManageMessages],
+    bot: [],
   },
   antibot: {
     user: [PermissionFlagsBits.ManageGuild],
@@ -154,13 +178,13 @@ module.exports = {
   // administrateurs. Le bot supprime les messages contenant des invitations.
   antipub: {
     user: [PermissionFlagsBits.Administrator],
-    bot: [PermissionFlagsBits.ManageMessages],
+    bot: [],
   },
   // Anti-contenus sensibles (sites adultes/violents) : configuration réservée
   // aux administrateurs. Le bot supprime les messages contenant des liens.
   antisensitive: {
     user: [PermissionFlagsBits.Administrator],
-    bot: [PermissionFlagsBits.ManageMessages],
+    bot: [],
   },
   // Accès (admin OU propriétaire OU owner) contrôlé dans la commande ;
   // seule la permission du bot est vérifiée par le pipeline.
@@ -170,7 +194,7 @@ module.exports = {
   },
   setwelcome: {
     user: [PermissionFlagsBits.ManageGuild],
-    bot: [PermissionFlagsBits.ManageRoles],
+    bot: [],
   },
   welcomestatus: {
     user: [PermissionFlagsBits.ManageGuild],
@@ -180,9 +204,11 @@ module.exports = {
     user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
+  // `backup create`/`list` ne font que lire la structure du serveur ; seule
+  // la restauration (`load`) recrée salons et rôles, et vérifie alors.
   backup: {
     user: [PermissionFlagsBits.Administrator],
-    bot: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles],
+    bot: [],
   },
   form: {
     user: [PermissionFlagsBits.ManageGuild],
@@ -199,7 +225,9 @@ module.exports = {
   // les salons et déplace les membres.
   voicecreate: {
     user: [PermissionFlagsBits.Administrator],
-    bot: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.MoveMembers],
+    // La commande crée le salon générateur ; « Déplacer les membres » n'est
+    // utilisée que plus tard, par l'écouteur vocal.
+    bot: [PermissionFlagsBits.ManageChannels],
   },
   voiceedit: {
     user: [PermissionFlagsBits.Administrator],
@@ -223,13 +251,13 @@ module.exports = {
   // rôles de récompense (ManageRoles). rank/level/leaderboard restent ouverts.
   levelconfig: {
     user: [PermissionFlagsBits.Administrator],
-    bot: [PermissionFlagsBits.ManageRoles],
+    bot: [],
   },
   // Captcha à l'arrivée : configuration réservée aux administrateurs. Le bot
   // attribue les rôles, restreint l'accès au salon et expulse les échecs.
   captcha: {
     user: [PermissionFlagsBits.Administrator],
-    bot: [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers, PermissionFlagsBits.ManageChannels],
+    bot: [],
   },
   // addperm (owner) : crée/attribue un rôle administrateur. Le bot doit donc
   // lui-même posséder Administrateur (impossible d'accorder une permission
@@ -239,3 +267,59 @@ module.exports = {
     bot: [PermissionFlagsBits.Administrator],
   },
 };
+
+/**
+ * Permissions dont une **fonctionnalité** a besoin *plus tard* — jamais la
+ * commande elle-même.
+ *
+ * Elles ne sont **pas** vérifiées par le pipeline et ne bloquent aucune
+ * commande : les configurer reste possible même sans elles. Elles servent à
+ * **informer** (commande `help`, panneaux de statut) pour qu'un administrateur
+ * sache ce qu'il devra accorder au bot pour que la fonctionnalité opère.
+ *
+ * C'est la contrepartie de la règle de moindre privilège : ce qui n'est pas
+ * exigé à l'exécution de la commande doit au moins rester documenté.
+ */
+const FEATURE_PERMISSIONS = {
+  // La sanction du palier atteint : le type dépend de l'échelle configurée.
+  warn: [
+    PermissionFlagsBits.ModerateMembers,
+    PermissionFlagsBits.ManageRoles,
+    PermissionFlagsBits.KickMembers,
+    PermissionFlagsBits.BanMembers,
+  ],
+  // Création automatique des salons de logs.
+  logs: [PermissionFlagsBits.ManageChannels],
+  // Restauration d'une sauvegarde (`backup load`).
+  backup: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles],
+  // Rôle temporaire/vérifié et expulsion en cas d'échec, à l'arrivée.
+  captcha: [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers, PermissionFlagsBits.ManageChannels],
+  // Rôles de récompense attribués au passage de niveau.
+  levelconfig: [PermissionFlagsBits.ManageRoles],
+  // Rôle automatique attribué à l'arrivée d'un membre.
+  setwelcome: [PermissionFlagsBits.ManageRoles],
+  // Attribution/retrait des rôles à la réaction.
+  reactionrole: [PermissionFlagsBits.ManageRoles],
+  // Déplacement d'un membre vers son salon vocal temporaire.
+  voicecreate: [PermissionFlagsBits.MoveMembers],
+  // Suppression des messages détectés par les protections automatiques.
+  antispam: [PermissionFlagsBits.ManageMessages],
+  antilink: [PermissionFlagsBits.ManageMessages],
+  antipub: [PermissionFlagsBits.ManageMessages],
+  // L'anti-contenus sensibles supprime le message et applique un timeout natif.
+  antisensitive: [PermissionFlagsBits.ManageMessages, PermissionFlagsBits.ModerateMembers],
+};
+
+/**
+ * L'export par défaut reste la table **par commande** : tout le code existant
+ * (`permissionsConfig[command.name]`) fonctionne sans changement, et les
+ * parcours de clés (audit de parité) n'y voient que des noms de commandes.
+ *
+ * `FEATURE_PERMISSIONS` est attaché en propriété **non énumérable** pour ne
+ * pas être confondu avec une commande.
+ */
+module.exports = COMMAND_PERMISSIONS;
+Object.defineProperty(module.exports, 'FEATURE_PERMISSIONS', {
+  value: FEATURE_PERMISSIONS,
+  enumerable: false,
+});

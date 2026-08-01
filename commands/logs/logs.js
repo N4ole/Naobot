@@ -12,8 +12,9 @@
  * La logique métier (persistance, création/réutilisation des salons, migration)
  * vit dans services/logs. Accès : Gérer le serveur.
  */
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, StringSelectMenuBuilder } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, PermissionFlagsBits, StringSelectMenuBuilder } = require('discord.js');
 const config = require('../../config/config');
+const { checkBotPermissions } = require('../../middlewares/permissions/checkPermissions');
 const logService = require('../../services/logs/logService');
 const logCategories = require('../../utils/constants/logCategories');
 const { canManageLogs } = require('../../middlewares/logs/logAccess');
@@ -111,6 +112,10 @@ const logs = {
     if (action === 'stats') return ctx.reply({ embeds: [buildStatsEmbed(ctx.guild)] });
 
     if (action === 'setup') {
+      // Seule cette action crée des salons : la permission est vérifiée ici,
+      // et non exigée pour `status`/`stats` qui ne font que lire.
+      const allowed = checkBotPermissions(ctx.guild, [PermissionFlagsBits.ManageChannels]);
+      if (!allowed.ok) return ctx.reply({ embeds: [errorEmbed(allowed.error)], ephemeral: true });
       await ctx.defer();
       await logService.enableCategories(ctx.guild, Object.keys(logCategories), ctx.user.id);
       return ctx.reply({ embeds: [successEmbed(t('logs.command.setupSuccess')), buildStatusEmbed(ctx.guild)] });
@@ -122,6 +127,12 @@ const logs = {
     }
     if (parsed.error) {
       return ctx.reply({ embeds: [errorEmbed(t('logs.command.unknownCategory', { category: parsed.token, categories: validCategoryList() }))], ephemeral: true });
+    }
+
+    if (action === 'enable') {
+      // `enable` crée le salon manquant de chaque catégorie activée.
+      const allowed = checkBotPermissions(ctx.guild, [PermissionFlagsBits.ManageChannels]);
+      if (!allowed.ok) return ctx.reply({ embeds: [errorEmbed(allowed.error)], ephemeral: true });
     }
 
     await ctx.defer();

@@ -61,6 +61,22 @@ function commandPermissionNames(command) {
 }
 
 /**
+ * Permissions dont le **bot** a besoin : celles exigées pour exécuter la
+ * commande, et celles dont la **fonctionnalité** aura besoin plus tard
+ * (attribution d'un rôle au level-up, expulsion au captcha, suppression d'un
+ * message par une protection…).
+ *
+ * Ces dernières ne bloquent aucune commande — mais un administrateur doit
+ * savoir ce qu'il devra accorder pour que la fonctionnalité opère réellement.
+ */
+function botPermissionNames(command) {
+  const required = permissionsConfig[command.name]?.bot ?? [];
+  const feature = permissionsConfig.FEATURE_PERMISSIONS?.[command.name] ?? [];
+  const label = (bits) => new PermissionsBitField(bits).toArray().map((name) => permissionLabels[name] ?? name);
+  return { required: label(required), feature: label(feature.filter((bit) => !required.includes(bit))) };
+}
+
+/**
  * Catégories visibles pour un utilisateur (owners filtrés), dans l'ordre du
  * fichier de constantes puis les dossiers non listés.
  * @returns {{ key: string, commands: object[] }[]}
@@ -224,6 +240,15 @@ function commandDetailEmbed(command, prefix) {
       inline: true,
     },
   );
+
+  // Permissions du bot : exigées, puis nécessaires au fonctionnement.
+  const botPerms = botPermissionNames(command);
+  if (botPerms.required.length) {
+    embed.addFields({ name: t('help.botPermissions'), value: botPerms.required.join(', '), inline: true });
+  }
+  if (botPerms.feature.length) {
+    embed.addFields({ name: t('help.featurePermissions'), value: t('help.featurePermissionsValue', { perms: botPerms.feature.join(', ') }) });
+  }
   if (command.examples?.length) {
     embed.addFields({
       name: t('help.examples'),
