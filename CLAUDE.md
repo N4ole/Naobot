@@ -356,6 +356,32 @@ Une permission conditionnelle se vérifie **au moment de l'action** :
 
 Règle pratique : une commande de **configuration** n'exige jamais rien du bot.
 
+Deux pièges vérifiés à l'audit :
+
+- **désigner n'est pas créer** : `ticketcategory`/`ticketpanel` et
+  `voicecreate`/`voiceedit`/`voicedelete` n'écrivent qu'une configuration — le
+  salon naît plus tard (ouverture d'un ticket, entrée dans le générateur) ;
+- **modifier une permission de salon** (`permissionOverwrites`) relève de
+  `ManageRoles` côté API Discord, pas de `ManageChannels` (`urgence`). En
+  revanche, créer un salon *avec* ses overwrites ne demande que
+  `ManageChannels` (`watch`, `logs setup`).
+
+## Moindre privilège côté utilisateur
+
+`user` suit la même règle : exiger la permission qui gouverne la ressource
+touchée, jamais `Administrator` par confort.
+
+- action de modération → la permission de modération correspondante ;
+- configuration d'une fonctionnalité → `ManageGuild` ;
+- configuration portant sur des salons → `ManageChannels` ;
+- `Administrator` **uniquement** si la commande réécrit la structure du serveur
+  (`backup` — seule commande autorisée à l'exiger, verrouillé par un test).
+
+Les **familles** doivent rester cohérentes entre elles : les six protections
+(`antispam`/`antilink`/`antibot`/`antipub`/`antisensitive`/`protections`)
+exigent la même chose, et les commandes de tickets s'alignent sur
+`ticketstats`.
+
 # Owners
 
 Respecter le système d'owners (global, **indépendant des permissions

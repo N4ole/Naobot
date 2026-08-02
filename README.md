@@ -247,20 +247,20 @@ préfixes par serveur** dans une future mise à jour.
 | `antilink <on\|off>` | Active/désactive l'anti-link | Gérer le serveur | `!antilink on` |
 | `antibot <on\|off>` | Active/désactive l'anti-bot | Gérer le serveur | `!antibot on` |
 | `protections` (alias `protection`) | Tableau de bord de l'état des protections (indicateurs, dernière modification, bouton d'actualisation) | Gérer le serveur | `!protections` |
-| `antipub <on\|off>` | Active/désactive l'anti-publicité (invitations Discord) | Administrateur | `!antipub on` |
-| `antipub status` | État, salons exemptés (paginés), statistiques, boutons | Administrateur | `!antipub status` |
-| `antipub whitelist add <salon>` | Exempte un salon (invitations autorisées) | Administrateur | `!antipub whitelist add #partenariats` |
-| `antipub whitelist remove <salon>` | Retire un salon des exemptions | Administrateur | `!antipub whitelist remove #partenariats` |
-| `antipub whitelist list` | Liste les salons exemptés | Administrateur | `!antipub whitelist list` |
-| `antisensitive <on\|off>` | Active/désactive l'anti-contenus sensibles (adultes/gore/violence/danger) | Administrateur | `!antisensitive on` |
-| `antisensitive status` | État, catégories, réaction, exceptions, listes personnalisées, événements récents (paginés), boutons | Administrateur | `!antisensitive status` |
-| `antisensitive whitelist\|category\|role\|user add\|remove\|list <cible>` | Exceptions : salons, catégories de salons, rôles, membres ignorés | Administrateur | `!antisensitive role add @Mods` |
-| `antisensitive blacklist\|allow\|keyword add\|remove\|list <valeur>` | Domaines interdits, domaines autorisés, mots-clés personnalisés | Administrateur | `!antisensitive blacklist add badsite.net` |
-| `antisensitive filter <catégorie> <on\|off>` | Active/désactive une catégorie (porn/gore/violence/danger) | Administrateur | `!antisensitive filter gore off` |
-| `antisensitive reaction <delete\|notify\|log>` | Réaction du bot en cas de détection | Administrateur | `!antisensitive reaction notify` |
-| `antisensitive timeout <on\|off>` | Active/désactive le **timeout automatique** à la détection | Administrateur | `!antisensitive timeout on` |
-| `antisensitive timeoutduration <durée>` | Durée du timeout automatique (défaut 5 min, min 1 min, max 28 j) | Administrateur | `!antisensitive timeoutduration 10m` |
-| `antisensitive warn <message\|reset>` / `antisensitive test <texte>` | Message d'avertissement personnalisé ; test de détection | Administrateur | `!antisensitive test regarde xvideos.com` |
+| `antipub <on\|off>` | Active/désactive l'anti-publicité (invitations Discord) | Gérer le serveur | `!antipub on` |
+| `antipub status` | État, salons exemptés (paginés), statistiques, boutons | Gérer le serveur | `!antipub status` |
+| `antipub whitelist add <salon>` | Exempte un salon (invitations autorisées) | Gérer le serveur | `!antipub whitelist add #partenariats` |
+| `antipub whitelist remove <salon>` | Retire un salon des exemptions | Gérer le serveur | `!antipub whitelist remove #partenariats` |
+| `antipub whitelist list` | Liste les salons exemptés | Gérer le serveur | `!antipub whitelist list` |
+| `antisensitive <on\|off>` | Active/désactive l'anti-contenus sensibles (adultes/gore/violence/danger) | Gérer le serveur | `!antisensitive on` |
+| `antisensitive status` | État, catégories, réaction, exceptions, listes personnalisées, événements récents (paginés), boutons | Gérer le serveur | `!antisensitive status` |
+| `antisensitive whitelist\|category\|role\|user add\|remove\|list <cible>` | Exceptions : salons, catégories de salons, rôles, membres ignorés | Gérer le serveur | `!antisensitive role add @Mods` |
+| `antisensitive blacklist\|allow\|keyword add\|remove\|list <valeur>` | Domaines interdits, domaines autorisés, mots-clés personnalisés | Gérer le serveur | `!antisensitive blacklist add badsite.net` |
+| `antisensitive filter <catégorie> <on\|off>` | Active/désactive une catégorie (porn/gore/violence/danger) | Gérer le serveur | `!antisensitive filter gore off` |
+| `antisensitive reaction <delete\|notify\|log>` | Réaction du bot en cas de détection | Gérer le serveur | `!antisensitive reaction notify` |
+| `antisensitive timeout <on\|off>` | Active/désactive le **timeout automatique** à la détection | Gérer le serveur | `!antisensitive timeout on` |
+| `antisensitive timeoutduration <durée>` | Durée du timeout automatique (défaut 5 min, min 1 min, max 28 j) | Gérer le serveur | `!antisensitive timeoutduration 10m` |
+| `antisensitive warn <message\|reset>` / `antisensitive test <texte>` | Message d'avertissement personnalisé ; test de détection | Gérer le serveur | `!antisensitive test regarde xvideos.com` |
 
 Protections indépendantes, **désactivées par défaut**, configurées par
 serveur et persistantes (`database/data/protections.json`).
@@ -550,8 +550,8 @@ automatiquement après une reconnexion**, et réappliqué au démarrage par
 
 | Commande | Description | Permission | Exemple |
 |---|---|---|---|
-| `ticketcategory <create\|edit\|delete\|list> [id]` (alias `tcategory`, `ticketcat`) | Gère les catégories de tickets (assistant : identité, salon, message, comportement, notifications) | Administrateur | `!ticketcategory create` |
-| `ticketpanel <create\|edit\|delete\|list> [id]` (alias `tpanel`) | Gère les panneaux (salon, catégories affichées, boutons ou menu déroulant, contenu) | Administrateur | `!ticketpanel create` |
+| `ticketcategory <create\|edit\|delete\|list> [id]` (alias `tcategory`, `ticketcat`) | Gère les catégories de tickets (assistant : identité, salon, message, comportement, notifications) | Gérer le serveur | `!ticketcategory create` |
+| `ticketpanel <create\|edit\|delete\|list> [id]` (alias `tpanel`) | Gère les panneaux (salon, catégories affichées, boutons ou menu déroulant, contenu) | Gérer le serveur | `!ticketpanel create` |
 | `ticketstats` (alias `ticketstatistics`) | Statistiques par catégorie et globales (total, temps moyen, modérateurs/catégories les plus actifs) | Gérer le serveur | `!ticketstats` |
 
 **Gestion d'un ticket** (créateur, modérateur assigné ou équipe — utilisables aussi via les boutons du ticket) :
@@ -895,11 +895,11 @@ configuré par serveur, persistant (`database/data/captcha.json`).
 
 | Commande | Description | Permission | Exemple |
 |---|---|---|---|
-| `captcha status` | État et statistiques du captcha | Administrateur | `!captcha status` |
-| `captcha setup` | Assistant : salon, rôle temporaire, rôle après validation, type, délai, message, tentatives | Administrateur | `!captcha setup` |
-| `captcha enable` | Active la vérification (configuration requise) | Administrateur | `!captcha enable` |
-| `captcha disable` | Désactive la vérification | Administrateur | `!captcha disable` |
-| `captcha delete <secondes\|off>` | Durée avant suppression auto du message de confirmation (défaut 10 s ; `off` conserve le message) | Administrateur | `!captcha delete 15` |
+| `captcha status` | État et statistiques du captcha | Gérer le serveur | `!captcha status` |
+| `captcha setup` | Assistant : salon, rôle temporaire, rôle après validation, type, délai, message, tentatives | Gérer le serveur | `!captcha setup` |
+| `captcha enable` | Active la vérification (configuration requise) | Gérer le serveur | `!captcha enable` |
+| `captcha disable` | Désactive la vérification | Gérer le serveur | `!captcha disable` |
+| `captcha delete <secondes\|off>` | Durée avant suppression auto du message de confirmation (défaut 10 s ; `off` conserve le message) | Gérer le serveur | `!captcha delete 15` |
 
 - **Arrivée d'un membre** (si activé) : attribution d'un **rôle temporaire**,
   restriction d'accès (le membre ne voit que le salon de captcha), envoi du
@@ -930,10 +930,10 @@ actifs, propriétaires et statistiques survivent aux redémarrages.
 
 | Commande | Description | Permission | Exemple |
 |---|---|---|---|
-| `voicecreate` (alias `voiceadd`) | Assistant : salon générateur, catégorie de création, format du nom, limite d'utilisateurs, rôles supplémentaires | Administrateur | `!voicecreate` |
-| `voiceedit <salon>` | Modifie un générateur (même assistant) | Administrateur | `!voiceedit #Créer un salon` |
-| `voicelist` | Liste les générateurs, salons actifs et statistiques | Administrateur | `!voicelist` |
-| `voicedelete <salon>` (alias `voiceremove`) | Supprime un générateur (confirmation) | Administrateur | `!voicedelete #Créer un salon` |
+| `voicecreate` (alias `voiceadd`) | Assistant : salon générateur, catégorie de création, format du nom, limite d'utilisateurs, rôles supplémentaires | Gérer les salons | `!voicecreate` |
+| `voiceedit <salon>` | Modifie un générateur (même assistant) | Gérer les salons | `!voiceedit #Créer un salon` |
+| `voicelist` | Liste les générateurs, salons actifs et statistiques | Gérer les salons | `!voicelist` |
+| `voicedelete <salon>` (alias `voiceremove`) | Supprime un générateur (confirmation) | Gérer les salons | `!voicedelete #Créer un salon` |
 | `renamevoice <nom>` (alias `vcrename`) | Renomme **votre** salon temporaire (propriétaire uniquement) | — | `!renamevoice 🎮 Détente` |
 
 - **Fonctionnement** : un administrateur configure un **salon générateur**
@@ -1065,7 +1065,7 @@ défaut** (activation via `levelconfig on`).
 |---|---|---|---|
 | `rank` / `level` [membre] (alias `niveau`) | Profil de progression (niveau, XP, progression, classement, messages, temps vocal) | Tous | `!rank @Membre` |
 | `leaderboard` (alias `classement`, `top`) | Classement paginé des membres (niveau, XP, messages, vocal) | Tous | `!leaderboard` |
-| `levelconfig [on\|off\|set\|reward\|announce\|exclude] …` | Configuration (administrateurs) | Administrateur | `!levelconfig set xpmessage 20` |
+| `levelconfig [on\|off\|set\|reward\|announce\|exclude] …` | Configuration du système de niveaux | Gérer le serveur | `!levelconfig set xpmessage 20` |
 
 - **Sources d'XP** :
   - **Messages** : XP par message avec **cooldown anti-spam**, **longueur
@@ -1406,14 +1406,53 @@ impossible, l'avertissement reste enregistré et la réponse l'indique.
 
 Même principe pour toutes les commandes de **configuration** (`captcha`,
 `levelconfig`, `setwelcome`, `reactionrole`, `antispam`/`antilink`/`antipub`/
-`antisensitive`, `logs`, `backup`) : elles écrivent une configuration, l'effet
-est produit plus tard par un écouteur d'événement. Elles n'exigent donc rien.
-Les permissions nécessaires au fonctionnement restent **affichées par `help`**,
-pour qu'un administrateur sache ce qu'il devra accorder.
+`antisensitive`, `logs`, `backup`, `ticketcategory`/`ticketpanel`,
+`voicecreate`/`voiceedit`/`voicedelete`) : elles écrivent une configuration,
+l'effet est produit plus tard par un écouteur d'événement ou par l'action d'un
+membre. Elles n'exigent donc rien. Les permissions nécessaires au
+fonctionnement restent **affichées par `help`**, pour qu'un administrateur
+sache ce qu'il devra accorder.
 
 Les sous-commandes qui agissent vraiment vérifient au bon moment :
 `logs setup`/`enable` (création des salons) et `backup load` (restauration)
 appellent `checkBotPermissions` juste avant d'agir.
+
+### Deux pièges corrigés lors de l'audit
+
+- **Un salon de ticket n'est pas créé par `ticketcategory`** mais quand un
+  membre ouvre un ticket ; de même, `voicecreate` ne *crée* aucun salon — il
+  **désigne** un générateur existant, le salon temporaire naissant à l'entrée
+  d'un membre. Ces commandes exigeaient « Gérer les salons » sans jamais s'en
+  servir.
+- **Verrouiller un salon relève de « Gérer les rôles »**, pas de « Gérer les
+  salons » : l'API Discord classe la modification d'une permission de salon
+  (`permissionOverwrites`) sous *Gérer les rôles*. La commande `urgence`
+  demandait donc une permission inutile — et pas celle dont elle avait besoin.
+  À l'inverse, `purge` a bien besoin de « Voir les anciens messages » :
+  `bulkDelete` lit l'historique avant de supprimer.
+
+### Côté utilisateur aussi
+
+La même règle s'applique aux permissions exigées de l'**auteur** : demander
+celle qui gouverne la ressource touchée, jamais « Administrateur » par confort.
+
+| Nature de la commande | Permission exigée |
+| --- | --- |
+| Action de modération | la permission correspondante (`Bannir`, `Expulser`, `Modérer les membres`, `Gérer les messages`…) |
+| Configuration d'une fonctionnalité | **Gérer le serveur** |
+| Configuration portant sur des salons | **Gérer les salons** |
+| Réécriture de la structure du serveur | **Administrateur** — `backup` uniquement |
+
+Les familles restent cohérentes : les six commandes de protections exigent
+toutes « Gérer le serveur » (avant l'audit, `antipub` et `antisensitive`
+réclamaient Administrateur alors que `antispam`, `antilink` et `antibot` se
+contentaient de « Gérer le serveur »), et les trois commandes de tickets
+s'alignent sur `ticketstats`.
+
+`tests/permissionsLeastPrivilege.test.js` verrouille l'ensemble : `backup` est
+la **seule** commande autorisée à exiger Administrateur, et toute permission
+`bot` ajoutée à une commande hors de la liste blanche des commandes qui mutent
+réellement Discord fait échouer la suite.
 
 ## Identité graphique
 
