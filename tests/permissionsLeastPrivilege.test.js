@@ -143,6 +143,68 @@ test('les familles de commandes restent cohérentes entre elles', () => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Lien d'invitation : ni plus, ni moins
+// ---------------------------------------------------------------------------
+
+/** Permissions du socle : lire, répondre, joindre — jamais liées à une commande. */
+const BASELINE = [
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.SendMessages,
+  PermissionFlagsBits.EmbedLinks,
+  PermissionFlagsBits.AttachFiles,
+  PermissionFlagsBits.ReadMessageHistory,
+];
+
+/** Union de tout ce que les commandes exigent ou documentent. */
+function declaredPermissions() {
+  const all = new Set();
+  for (const rules of Object.values(permissions)) for (const bit of rules.bot ?? []) all.add(bit);
+  for (const bits of Object.values(permissions.FEATURE_PERMISSIONS)) for (const bit of bits) all.add(bit);
+  return all;
+}
+
+test('le lien d’invitation ne demande rien d’inutile', () => {
+  // Toute permission cochée doit être soit du socle, soit réclamée par une
+  // commande ou une fonctionnalité. Sinon, on fait cocher une case pour rien.
+  const declared = declaredPermissions();
+  for (const bit of permissions.INVITE_PERMISSIONS) {
+    if (BASELINE.includes(bit)) continue;
+    // ViewAuditLog : utilisée par auditLogService/antibotService, jamais par
+    // une commande — elle n'a donc pas d'entrée, mais reste indispensable.
+    if (bit === PermissionFlagsBits.ViewAuditLog) continue;
+    assert.ok(declared.has(bit), `le lien d'invitation demande une permission que rien n'utilise : ${bit}`);
+  }
+});
+
+test('le lien d’invitation ne manque de rien', () => {
+  // Une permission exigée ou documentée mais absente du lien rend la
+  // fonctionnalité inopérante sans que personne comprenne pourquoi.
+  for (const bit of declaredPermissions()) {
+    // Administrateur (addperm) n'est jamais demandé à l'invitation : il se
+    // donne manuellement, en connaissance de cause.
+    if (bit === PermissionFlagsBits.Administrator) continue;
+    assert.ok(permissions.INVITE_PERMISSIONS.includes(bit), `permission utilisée mais absente du lien d'invitation : ${bit}`);
+  }
+});
+
+test('le lien d’invitation couvre aussi les besoins des services partagés', () => {
+  // Ces deux-là n'appartiennent à aucune commande — donc aucune entrée ne les
+  // déclare — mais leur absence casse silencieusement une fonctionnalité :
+  //  - ViewAuditLog : résolution du modérateur responsable dans les logs
+  //    (auditLogService), détection des ajouts de bots (antibotService),
+  //    capture des bans pour la réputation globale ;
+  //  - AttachFiles : transcripts de tickets et pièces jointes de `say`.
+  for (const bit of [PermissionFlagsBits.ViewAuditLog, PermissionFlagsBits.AttachFiles]) {
+    assert.ok(permissions.INVITE_PERMISSIONS.includes(bit), 'permission de service absente du lien');
+  }
+});
+
+test('la commande invite lit la source unique', () => {
+  const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'commands', 'utility', 'invite.js'), 'utf8');
+  assert.ok(source.includes('permissionsConfig.INVITE_PERMISSIONS'), 'aucune liste de permissions en dur dans la commande');
+});
+
 test('FEATURE_PERMISSIONS n’est pas confondue avec une commande', () => {
   assert.ok(!Object.keys(permissions).includes('FEATURE_PERMISSIONS'), 'doit être non énumérable');
   assert.ok(permissions.FEATURE_PERMISSIONS, 'mais rester accessible');

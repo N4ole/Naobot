@@ -1454,6 +1454,50 @@ la **seule** commande autorisée à exiger Administrateur, et toute permission
 `bot` ajoutée à une commande hors de la liste blanche des commandes qui mutent
 réellement Discord fait échouer la suite.
 
+### Le lien d'invitation : ni plus, ni moins
+
+C'est la seule liste qu'un administrateur voit au moment d'ajouter NaoBot. Elle
+vit dans `config/permissions.js` (`INVITE_PERMISSIONS`, source unique lue par la
+commande `invite`) et doit être **exactement l'union** de ce que le bot utilise :
+
+- une case cochée pour rien fait douter du bot au moment de l'inviter ;
+- une permission manquante rend une fonctionnalité inopérante **sans message
+  d'erreur** — le service échoue silencieusement, et personne ne comprend
+  pourquoi.
+
+L'audit a trouvé les deux à la fois : `AddReactions` était demandée alors
+qu'aucune ligne du projet n'ajoute de réaction (les rôles-réactions et les
+sondages fonctionnent aux boutons et menus déroulants), tandis que
+**« Déplacer les membres »** (salons vocaux temporaires), **« Voir les logs
+d'audit »** (modérateur responsable dans les logs, détection d'ajout de bots,
+capture des bans) et **« Joindre des fichiers »** (transcripts de tickets,
+pièces jointes de `say`) manquaient.
+
+Deux tests tiennent la liste synchronisée dans les deux sens : toute permission
+demandée doit être utilisée, et toute permission déclarée par une commande ou
+une fonctionnalité doit figurer dans le lien.
+
+### Commandes vérifiées sans changement
+
+Les **118** commandes ont été passées en revue, y compris celles qui ne
+déclarent rien :
+
+- **Tickets** (`ticketopen`, `ticketclose`, `ticketrename`, `ticketadd`…) : ces
+  commandes modifient bien des salons, mais chaque appel est déjà en échec
+  propre (`.catch`) et l'action utile aboutit malgré tout — verrouiller un
+  ticket qu'on ne peut pas rendre lecture seule reste préférable à refuser la
+  fermeture. Leurs besoins sont documentés sur `ticketcategory`/`ticketpanel`,
+  là où un administrateur les lit. Leur accès (créateur / assigné / équipe) est
+  vérifié dans la commande.
+- **Consultation** (`rank`, `leaderboard`, `warnings`, `snipe*`, `file*`,
+  `reputation`, `bumpcount`…) : aucune mutation Discord.
+- **Commandes owner** : `addperm` est la seule à agir sur le serveur ;
+  `addowner`/`rmowner` attribuent le rôle décoratif sur **tous** les serveurs
+  partagés, en meilleur effort — une exigence par serveur n'aurait pas de sens.
+- **Sans entrée déclarative** (`say`, `snipe*`, `file*`, gestion de tickets,
+  `watch`, `urgence`, `setprefix`) : l'accès est contrôlé dans la commande,
+  volontairement, pour que les owners du bot passent sans permission Discord.
+
 ## Identité graphique
 
 Design System **v1.0 — Dark**, décliné sur l'**interface web** et les **embeds

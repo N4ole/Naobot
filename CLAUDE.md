@@ -382,6 +382,22 @@ Les **familles** doivent rester cohérentes entre elles : les six protections
 exigent la même chose, et les commandes de tickets s'alignent sur
 `ticketstats`.
 
+## Lien d'invitation
+
+`INVITE_PERMISSIONS` (même fichier, propriété non énumérable) est la **source
+unique** des permissions demandées à l'invitation ; la commande `invite` la lit,
+sans jamais redéclarer de liste. Elle doit rester **exactement l'union** de ce
+que le bot utilise : une case inutile fait douter au moment d'inviter, une
+permission manquante casse une fonctionnalité en silence (les services
+échouent proprement, donc sans erreur visible). Deux tests la synchronisent
+dans les deux sens ; y ajouter une permission sans usage réel, ou déclarer un
+besoin absent du lien, fait échouer la suite.
+
+Attention aux permissions qui n'appartiennent à **aucune commande** et
+n'apparaissent donc dans aucune entrée : `ViewAuditLog` (résolution du
+modérateur responsable, détection d'ajout de bots, capture des bans) et
+`AttachFiles` (transcripts de tickets, pièces jointes de `say`).
+
 # Owners
 
 Respecter le système d'owners (global, **indépendant des permissions

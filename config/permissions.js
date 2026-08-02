@@ -352,6 +352,40 @@ const FEATURE_PERMISSIONS = {
 };
 
 /**
+ * Permissions demandées dans le **lien d'invitation** du bot (`invite`).
+ *
+ * C'est la seule liste qu'un administrateur voit au moment d'ajouter NaoBot :
+ * elle doit être exactement l'union de ce que le bot utilise vraiment — ni
+ * plus (on ne fait pas cocher une case inutile), ni moins (une permission
+ * absente rend la fonctionnalité inopérante sans que personne comprenne
+ * pourquoi). `tests/permissionsLeastPrivilege.test.js` vérifie les deux sens.
+ */
+const INVITE_PERMISSIONS = [
+  // Socle : lire un salon, y répondre en embed et joindre un fichier
+  // (transcripts de tickets, pièces jointes de `say`).
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.SendMessages,
+  PermissionFlagsBits.EmbedLinks,
+  PermissionFlagsBits.AttachFiles,
+  PermissionFlagsBits.ReadMessageHistory,
+  // Modération.
+  PermissionFlagsBits.BanMembers,
+  PermissionFlagsBits.KickMembers,
+  PermissionFlagsBits.ModerateMembers,
+  PermissionFlagsBits.ManageMessages,
+  // Structure du serveur : rôles (mute, récompenses, permissions de salon),
+  // salons (tickets, logs, surveillance, vocaux temporaires) et déplacement
+  // vers un salon vocal temporaire.
+  PermissionFlagsBits.ManageRoles,
+  PermissionFlagsBits.ManageChannels,
+  PermissionFlagsBits.MoveMembers,
+  // Invitations du bump, et résolution du modérateur responsable dans les
+  // logs (`auditLogService`, `antibotService`, capture des bans).
+  PermissionFlagsBits.CreateInstantInvite,
+  PermissionFlagsBits.ViewAuditLog,
+];
+
+/**
  * L'export par défaut reste la table **par commande** : tout le code existant
  * (`permissionsConfig[command.name]`) fonctionne sans changement, et les
  * parcours de clés (audit de parité) n'y voient que des noms de commandes.
@@ -362,5 +396,9 @@ const FEATURE_PERMISSIONS = {
 module.exports = COMMAND_PERMISSIONS;
 Object.defineProperty(module.exports, 'FEATURE_PERMISSIONS', {
   value: FEATURE_PERMISSIONS,
+  enumerable: false,
+});
+Object.defineProperty(module.exports, 'INVITE_PERMISSIONS', {
+  value: INVITE_PERMISSIONS,
   enumerable: false,
 });
