@@ -2125,5 +2125,8 @@
       },
       "result": "Vous : {player}\nMoi : {bot}\n\n**{outcome}**"
     }
+  },
+  "presence": {
+    "status": "{command} pour contacter les owners du bot"
   }
 }

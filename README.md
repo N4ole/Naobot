@@ -490,6 +490,21 @@ aucun compte Discord d'owner n'est jamais exposé.
 - **Extensible** (pièces jointes, catégories, priorités, notes privées,
   assignation…) : le schéma d'une conversation accepte de nouveaux champs.
 
+#### Statut du bot
+
+Le **statut Discord** du bot met en avant ce point de contact : il affiche en
+permanence `/contactowner pour contacter les owners du bot` (statut
+personnalisé, sans préfixe « Joue à »/« Écoute »). La commande y apparaît sous
+sa **forme slash** : la présence est globale alors que le préfixe est
+personnalisable par serveur — `!contactowner` serait faux sur tout serveur
+ayant changé de préfixe.
+
+Le texte est une **source unique** (`services/presence/presenceService.js`,
+texte dans `locales/fr.json` → `presence.status`). Il est envoyé dès
+l'IDENTIFY (options du client dans `index.js`), donc **restauré
+automatiquement après une reconnexion**, et réappliqué au démarrage par
+`events/client/presence.js`. Aucun autre module n'appelle `setPresence`.
+
 ### 📣 Bump
 
 | Commande | Description | Permission requise (auteur) | Exemple |
@@ -1641,7 +1656,7 @@ gros volumes (journaux, conversations), journal interne **borné en mémoire**
 │   ├── dm/              #   servers (sélection de serveur en messages privés)
 │   └── utility/         #   help, ping, botinfo+uptime, serverinfo, userinfo…
 ├── events/              # Écouteurs d'événements Discord
-│   ├── client/          #   ready (enregistrement des commandes slash)
+│   ├── client/          #   ready (enregistrement des commandes slash), presence (statut du bot)
 │   ├── logs/            #   ready (migration auto vers les 7 catégories)
 │   ├── errors/          #   ready (init des logs d'erreurs internes du bot)
 │   ├── guild/           #   logs du serveur (nom/icône/bannière/vérification/communauté)
@@ -1692,6 +1707,7 @@ gros volumes (journaux, conversations), journal interne **borné en mémoire**
 │   ├── warnings/        #   warnService + sanctionService (sanctions progressives)
 │   ├── errors/          #   errorLogService (logs d'erreurs internes → #bot-errors)
 │   ├── prefix/          #   prefixService (préfixe personnalisable par serveur)
+│   ├── presence/        #   presenceService (statut du bot : met en avant /contactowner)
 │   ├── snipe/           #   snipeService (capture, requêtes filtrées, purge auto)
 │   ├── directMessages/  #   dmService (compatibilité DM + sélection de serveur)
 │   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
