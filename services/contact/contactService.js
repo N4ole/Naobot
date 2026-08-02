@@ -13,6 +13,7 @@
  */
 const repository = require('../../database/contactRepository');
 const ownerService = require('../owners/ownerService');
+const contactPositionService = require('./contactPositionService');
 const reputationService = require('../reputation/reputationService');
 const contactStatuses = require('../../utils/constants/contactStatuses');
 const logService = require('../logs/logService');
@@ -86,7 +87,10 @@ function buildOwnerNotificationEmbed(guild, conversation, content, isNew) {
     .setColor(isNew ? COLORS.LOG_CREATE : COLORS.INFO)
     .addFields(
       { name: t('contact.field.server'), value: `${conversation.guildName} (\`${conversation.guildId}\`)`, inline: true },
-      { name: t('contact.field.owner'), value: `${conversation.ownerName} (\`${conversation.ownerId}\`)`, inline: true },
+      { name: t('contact.field.author'), value: `${conversation.ownerName} (\`${conversation.ownerId}\`)`, inline: true },
+      // Poste occupé : les owners savent à quel titre le membre écrit
+      // (propriétaire, administrateur ou modérateur).
+      { name: t('contact.field.position'), value: contactPositionService.format(conversation.authorPosition), inline: true },
       { name: t('tracking.reputation'), value: reputation, inline: true },
       { name: t('contact.field.members'), value: guild ? String(guild.memberCount) : '—', inline: true },
       { name: t('contact.field.status'), value: statusLabel(conversation.status), inline: true },
@@ -136,29 +140,41 @@ function buildOwnerReplyText(ownerName, content) {
 /**
  * Ouvre une conversation (ou ajoute un message à défaut ? Non : chaque
  * contactowner crée une nouvelle demande). Notifie tous les owners du bot.
+ *
+ * `ownerId`/`ownerName` désignent l'**auteur de la demande** : historiquement
+ * le propriétaire du serveur, désormais tout membre de l'équipe (le poste
+ * occupé est conservé dans `authorPosition`). La réponse d'un owner lui est
+ * adressée directement — c'est bien lui qui attend une réponse.
+ *
+ * @param {object} ctx contexte de commande
+ * @param {string} content message du membre
+ * @param {{ key: string }|null} [position] poste occupé, résolu par le middleware
  * @returns {Promise<{ ok: true, conversation, delivered: number } | { ok: false, code: string }>}
  */
-async function openConversation(ctx, content) {
+async function openConversation(ctx, content, position = null) {
   if (ownerService.getAllOwnerIds().length === 0) return { ok: false, code: 'noOwners' };
 
   const now = new Date().toISOString();
+  const positionKey = position?.key ?? null;
   const conversation = {
     id: repository.nextId(),
     guildId: ctx.guild.id,
     guildName: ctx.guild.name,
     ownerId: ctx.user.id,
     ownerName: ctx.user.tag,
+    authorPosition: positionKey,
     status: 'open',
     createdAt: now,
     lastActivityAt: now,
     respondedBy: [],
-    messages: [{ from: 'owner', authorId: ctx.user.id, authorName: ctx.user.tag, content, at: now }],
+    messages: [{ from: 'owner', authorId: ctx.user.id, authorName: ctx.user.tag, authorPosition: positionKey, content, at: now }],
   };
   repository.saveConversation(conversation);
 
   const delivered = await sendToOwners(ctx.client, buildOwnerNotificationEmbed(ctx.guild, conversation, content, true));
   await logContactEvent(ctx.guild, 'opened', conversation, [
     { name: t('contact.field.server'), value: `${conversation.guildName}`, inline: true },
+    { name: t('contact.field.position'), value: contactPositionService.format(positionKey), inline: true },
   ]);
   // L'interface web (section « Messagerie ») voit apparaître la conversation
   // en direct, sans rafraîchissement.
@@ -167,6 +183,8 @@ async function openConversation(ctx, content) {
     guild: { id: conversation.guildId, name: conversation.guildName },
     from: 'owner',
     author: conversation.ownerName,
+    authorPosition: positionKey,
+    positionLabel: contactPositionService.format(positionKey),
     preview: content.slice(0, 200),
   });
   return { ok: true, conversation, delivered };
@@ -202,6 +220,8 @@ async function messageGuildOwner(client, { guildId, title, content, author, atta
       guildName: guild.name,
       ownerId: guildOwner.id,
       ownerName: guildOwner.user.tag,
+      // Message sortant : l'interlocuteur est le propriétaire du serveur.
+      authorPosition: 'serverOwner',
       status: 'handled',
       createdAt: now,
       lastActivityAt: now,

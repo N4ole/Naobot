@@ -465,17 +465,47 @@ Logs `formulaires`.
 
 | Commande | Description | Accès | Exemple |
 |---|---|---|---|
-| `contactowner <message>` | Contacte les owners du bot depuis le serveur (message transmis par le bot, sans exposer les comptes des owners) | **Propriétaire du serveur** | `!contactowner Une question sur le bot…` |
+| `contactowner <message>` | Contacte les owners du bot depuis le serveur (message transmis par le bot, sans exposer les comptes des owners ; le **poste occupé** par l'auteur est indiqué aux owners) | **Propriétaire, administrateurs et modérateurs** du serveur | `!contactowner Une question sur le bot…` |
 
 Système de **communication sécurisée** entre les propriétaires de serveurs
 et les owners du bot : toutes les communications transitent par le bot,
 aucun compte Discord d'owner n'est jamais exposé.
 
-- **`contactowner`** (propriétaire du serveur uniquement, serveur non
-  blacklisté) : envoie un MP à **tous les owners** sous forme d'embed (nom
-  et ID du serveur, nom et ID du propriétaire, réputation, membres, date et
-  heure, message). Chaque demande reçoit un **identifiant unique**
-  `CONTACT-000001`.
+- **`contactowner`** (équipe du serveur, serveur non blacklisté) : envoie un
+  MP à **tous les owners** sous forme d'embed (nom et ID du serveur, nom et
+  ID de l'auteur, **poste occupé**, réputation, membres, date et heure,
+  message). Chaque demande reçoit un **identifiant unique** `CONTACT-000001`.
+  La réponse d'un owner est adressée à **l'auteur de la demande**, pas
+  systématiquement au propriétaire.
+
+##### Qui peut écrire, et à quel titre
+
+La commande est ouverte à toute l'**équipe du serveur** — un modérateur
+rencontrant un problème n'a plus à déranger le propriétaire pour le signaler.
+Le bot indique aux owners le **poste occupé** par l'auteur, pour qu'ils sachent
+immédiatement à qui ils parlent :
+
+| Poste | Comment il est reconnu |
+|---|---|
+| 👑 Propriétaire du serveur | `guild.ownerId` (aucune permission requise) |
+| 🛡️ Administrateur | permission **Administrateur** |
+| 🔨 Modérateur | **au moins une** de : Gérer le serveur, Modérer les membres, Bannir, Expulser, Gérer les messages, Gérer les rôles, Gérer les salons |
+
+Le **poste le plus élevé l'emporte** (un administrateur est annoncé comme
+administrateur, jamais comme modérateur), et un simple membre reste refusé. La
+reconnaissance des modérateurs se fait par **OU logique** : chaque serveur
+répartit la modération à sa façon, et certains modérateurs ne peuvent que
+supprimer des messages.
+
+Les postes sont déclarés dans `utils/constants/contactPositions.js` et résolus
+par `services/contact/contactPositionService.js` (source unique, consommée à
+la fois par le contrôle d'accès et par l'affichage). En ajouter un = une entrée
+dans les constantes + son libellé dans `locales/fr.json`.
+
+Le poste est **enregistré dans la conversation** (`authorPosition`), donc
+visible partout : embed reçu par les owners, `contactinfo`, logs de contact et
+section « Messagerie » de l'interface web. Les conversations ouvertes avant
+cette évolution s'affichent avec « Poste non précisé ».
 - **`respond`** (owners) : la réponse est **signée automatiquement** et
   transmise au propriétaire via le bot ; **tous les autres owners sont
   synchronisés** (embed indiquant l'identifiant, l'owner ayant répondu, la
@@ -1711,7 +1741,8 @@ gros volumes (journaux, conversations), journal interne **borné en mémoire**
 │   ├── snipe/           #   snipeService (capture, requêtes filtrées, purge auto)
 │   ├── directMessages/  #   dmService (compatibilité DM + sélection de serveur)
 │   ├── reactionRoles/   #   reactionRoleService + reactionRoleWizard (assistant)
-│   ├── contact/         #   contactService (communication owners ↔ propriétaires)
+│   ├── contact/         #   contactService (communication owners ↔ équipes de serveurs)
+│   │                    #   + contactPositionService (poste occupé : propriétaire/admin/modérateur)
 │   ├── protections/     #   protectionService (état, stats, logs partagés)
 │   ├── antispam/        #   antispamService (moteur de détection)
 │   ├── antilink/        #   antilinkService (moteur de détection)
