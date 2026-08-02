@@ -96,6 +96,17 @@ test('urgence : verrouiller un salon relève de « Gérer les rôles », pas des
   assert.deepEqual(permissions.urgence.bot, [PermissionFlagsBits.ManageRoles]);
 });
 
+test('captcha : restreindre un salon n’est pas le gérer', () => {
+  const feature = permissions.FEATURE_PERMISSIONS.captcha;
+  // L'accès au salon de vérification est restreint par `permissionOverwrites`
+  // (→ « Gérer les rôles », déjà documenté) ; aucun salon n'est créé ni modifié.
+  assert.ok(!feature.includes(PermissionFlagsBits.ManageChannels), 'le captcha ne touche à aucun salon');
+  // La suppression automatique du message de confirmation porte sur un message
+  // du bot : « Gérer les messages » n'est pas nécessaire.
+  assert.ok(!feature.includes(PermissionFlagsBits.ManageMessages), 'le bot supprime son propre message');
+  assert.deepEqual(feature, [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers]);
+});
+
 test('vocaux temporaires : création, permissions et déplacement sont différés', () => {
   const feature = permissions.FEATURE_PERMISSIONS.voicecreate;
   for (const bit of [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles, PermissionFlagsBits.MoveMembers]) {
