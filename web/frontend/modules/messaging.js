@@ -31,10 +31,11 @@ function conversationItem(conversation) {
       el('strong', {}, conversation.guildName ?? conversation.guildId),
       el('span', { className: 'muted small' }, conversation.statusLabel ?? conversation.status),
     ]),
-    el('div', { className: 'muted small' }, `${conversation.ownerName} · ${fmtDate(conversation.lastActivityAt)}`),
+    // Poste occupé par l'auteur : un owner sait à quel titre le membre écrit.
+    el('div', { className: 'muted small' }, `${conversation.ownerName} · ${conversation.positionLabel} · ${fmtDate(conversation.lastActivityAt)}`),
     conversation.lastMessage
       ? el('div', { className: 'conv-preview' }, [
-          el('span', { className: `tag tag-${conversation.lastMessage.from}` }, conversation.lastMessage.from === 'owner' ? 'propriétaire' : 'équipe'),
+          el('span', { className: `tag tag-${conversation.lastMessage.from}` }, conversation.lastMessage.from === 'owner' ? conversation.positionLabel : 'équipe'),
           conversation.lastMessage.preview,
         ])
       : null,
@@ -141,7 +142,7 @@ async function renderThread(pane) {
       pane,
       card(
         `${conversation.guildName} — ${conversation.id}`,
-        toolbar(el('span', { className: 'muted' }, `Propriétaire : ${conversation.ownerName}`), statusSelect),
+        toolbar(el('span', { className: 'muted' }, `Auteur : ${conversation.ownerName} · ${conversation.positionLabel}`), statusSelect),
         el('div', { className: 'thread' }, conversation.messages.map(messageBubble)),
       ),
       card('Répondre', composer({ guildId: conversation.guildId, conversationId: conversation.id })),

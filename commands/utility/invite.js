@@ -15,26 +15,19 @@ const {
   PermissionsBitField,
 } = require('discord.js');
 const config = require('../../config/config');
+const permissionsConfig = require('../../config/permissions');
 const { checkOwner } = require('../../middlewares/permissions/ownerCheck');
 const { infoEmbed, errorEmbed } = require('../../utils/embeds/embeds');
 const { findInvitableChannel } = require('../../utils/helpers/discordUtils');
 const { t } = require('../../utils/helpers/i18n');
 
-/** Permissions demandées dans le lien d'invitation du bot. */
-const BOT_INVITE_PERMISSIONS = new PermissionsBitField([
-  PermissionFlagsBits.ViewChannel,
-  PermissionFlagsBits.SendMessages,
-  PermissionFlagsBits.EmbedLinks,
-  PermissionFlagsBits.ReadMessageHistory,
-  PermissionFlagsBits.AddReactions,
-  PermissionFlagsBits.BanMembers,
-  PermissionFlagsBits.KickMembers,
-  PermissionFlagsBits.ModerateMembers,
-  PermissionFlagsBits.ManageRoles,
-  PermissionFlagsBits.ManageMessages,
-  PermissionFlagsBits.ManageChannels,
-  PermissionFlagsBits.CreateInstantInvite,
-]);
+/**
+ * Permissions demandées dans le lien d'invitation du bot.
+ * Source unique : `config/permissions.js` — la liste doit rester l'union
+ * exacte de ce que les commandes et les fonctionnalités utilisent vraiment
+ * (vérifié par `tests/permissionsLeastPrivilege.test.js`).
+ */
+const BOT_INVITE_PERMISSIONS = new PermissionsBitField(permissionsConfig.INVITE_PERMISSIONS);
 
 function botInviteReply(ctx) {
   const url = ctx.client.generateInvite({

@@ -26,13 +26,14 @@ test('buildOwnerReplyText : signature encadrée, sans compte Discord de l’owne
   assert.equal(text.split(contactService.SIGNATURE_LINE).length - 1, 2);
 });
 
-test('buildOwnerNotificationEmbed : contient serveur, propriétaire, message', () => {
+test('buildOwnerNotificationEmbed : contient serveur, auteur, poste, message', () => {
   const conversation = {
     id: 'CONTACT-000001',
     guildId: '123',
     guildName: 'Mon Serveur',
     ownerId: '456',
     ownerName: 'Proprio#0001',
+    authorPosition: 'moderator',
     status: 'open',
   };
   const json = contactService.buildOwnerNotificationEmbed(null, conversation, 'Coucou', true).toJSON();
@@ -41,4 +42,13 @@ test('buildOwnerNotificationEmbed : contient serveur, propriétaire, message', (
   assert.ok(text.includes('Mon Serveur'));
   assert.ok(text.includes('Proprio#0001'));
   assert.ok(text.includes('Coucou'));
+  // Le poste occupé est annoncé aux owners.
+  assert.ok(text.includes('Poste'));
+  assert.ok(text.includes('Modérateur'));
+});
+
+test('buildOwnerNotificationEmbed : conversation ancienne (sans poste) reste affichable', () => {
+  const conversation = { id: 'CONTACT-000002', guildId: '1', guildName: 'S', ownerId: '2', ownerName: 'A#1', status: 'open' };
+  const text = JSON.stringify(contactService.buildOwnerNotificationEmbed(null, conversation, 'Salut', true).toJSON());
+  assert.ok(text.includes('Poste non précisé'));
 });

@@ -11,6 +11,7 @@
  * filtres et normalisation des conversations pour l'affichage.
  */
 const contactService = require('../contact/contactService');
+const contactPositionService = require('../contact/contactPositionService');
 const contactStatuses = require('../../utils/constants/contactStatuses');
 
 /** Taille maximale d'une pièce jointe transférée (limite Discord de base). */
@@ -26,6 +27,10 @@ function toSummary(conversation) {
     guildName: conversation.guildName,
     ownerId: conversation.ownerId,
     ownerName: conversation.ownerName,
+    // Poste occupé par l'auteur de la demande (propriétaire, administrateur,
+    // modérateur) : mis en forme par le service métier, jamais recalculé ici.
+    authorPosition: conversation.authorPosition ?? null,
+    positionLabel: contactPositionService.format(conversation.authorPosition),
     status: conversation.status,
     statusLabel: contactService.statusLabel(conversation.status),
     initiatedBy: conversation.initiatedBy ?? 'owner',

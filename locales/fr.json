@@ -1528,7 +1528,8 @@
     "field": {
       "id": "Identifiant",
       "server": "Serveur",
-      "owner": "Propriétaire",
+      "author": "Auteur",
+      "position": "Poste",
       "members": "Membres",
       "status": "Statut",
       "date": "Date",
@@ -1549,12 +1550,18 @@
     },
     "errors": {
       "banned": "Ce serveur ne peut pas contacter les owners du bot.",
-      "notServerOwner": "Seul le **propriétaire du serveur** peut utiliser cette commande.",
       "noOwners": "Aucun owner n'est configuré pour recevoir votre message.",
       "notFound": "Aucune conversation avec l'identifiant `{id}`.",
       "ownerUnreachable": "Le propriétaire du serveur est introuvable.",
       "dmClosed": "Impossible d'envoyer le message : le propriétaire a fermé ses messages privés.",
-      "invalidStatus": "Statut invalide."
+      "invalidStatus": "Statut invalide.",
+      "notStaff": "Seuls le **propriétaire du serveur**, les **administrateurs** et les **modérateurs** peuvent contacter les owners du bot."
+    },
+    "position": {
+      "serverOwner": "Propriétaire du serveur",
+      "administrator": "Administrateur",
+      "moderator": "Modérateur",
+      "unknown": "Poste non précisé"
     }
   },
   "reactionRoles": {

@@ -35,7 +35,7 @@ Respecter l'organisation :
 ```
 commands/      # définitions de commandes, par catégorie (moderation/, utility/, fun/, logs/, bump/, tickets/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, snipe/, dm/, emergency/, welcome/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, levels/ [rank+level+leaderboard+levelconfig], reputation/, memberFiles/ [dossiers globaux : file+fileinfo+filelist+filedelete], watch/, owner/, administration/)
 events/        # écouteurs Discord, par famille (client/ [ready + presence : statut du bot], guild/ [serveur], channels/, roles/, emojis/, stickers/, invites/, voice/ [logs d'activité vocale], member/, message/, messageActivity/ [XP messages], voiceActivity/ [XP vocal], dm/ [commandes préfixées en DM], interaction/, logs/, errors/, audit/ [parité slash/préfixe au démarrage], emoji/ [disponibilité des émojis officiels + secours Unicode], snipe/, memberFiles/, watch/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, welcome/, backup/, forms/, reminders/, polls/, tickets/, web/, temporaryVoice/, captcha/, reputation/)
-services/      # logique métier (moderation/, logs/ [logService (record/log) + auditLogService (exécuteur, cache) + logThrottle (anti-doublon) + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], audit/ [commandParityService : audit de parité slash/préfixe], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], presence/ [presenceService : statut du bot, source unique, met en avant /contactowner], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/, protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [antisensitiveService (orchestration) + sensitiveMatcher (moteur pur : domaines/mots-clés/expressions, anti-obfuscation) + sanctionService (sanctions automatiques : timeout natif 5 min, module dédié indépendant de la détection, extensible warn/kick/ban) ; base locale data/protections/sensitiveBlacklist.json ; indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/ [webStats (agrégats du tableau de bord + cache) + webAnalytics (séries/répartitions) + botLogService (journal interne borné : commandes/erreurs/système) + webMessaging (façade messagerie, délègue à contactService) + webNotifier (bus de notifications temps réel) + webArchives (serveurs quittés : données conservées et consultables) + webService + webAuth + webLog], temporaryVoice/, captcha/)
+services/      # logique métier (moderation/, logs/ [logService (record/log) + auditLogService (exécuteur, cache) + logThrottle (anti-doublon) + modLogService + migration, 7 catégories], errors/ [logs d'erreurs internes → #bot-errors], audit/ [commandParityService : audit de parité slash/préfixe], snipe/ [événements récents supprimés/modifiés, purge auto], prefix/ [préfixe personnalisable par serveur], presence/ [presenceService : statut du bot, source unique, met en avant /contactowner], directMessages/ [compatibilité DM + sélection de serveur], levels/ [niveaux par activité : XP messages + vocal, courbe configurable, récompenses], memberFiles/ [dossiers membres globaux inter-serveurs, intégrés à la réputation], owners/, reputation/ [serveurs + globale], tracking/, bump/, serverManagement/, tickets/, ticketCategories/, ticketPanels/, watch/, warnings/ [warnService + sanctionService, sans rôles], reactionRoles/, contact/ [contactService (owners ↔ équipes de serveurs) + contactPositionService (poste occupé : propriétaire/administrateur/modérateur, source unique de l'accès et de l'affichage)], protections/, antispam/, antilink/, antibot/, antipub/ [invitations Discord, indépendant], antisensitive/ [antisensitiveService (orchestration) + sensitiveMatcher (moteur pur : domaines/mots-clés/expressions, anti-obfuscation) + sanctionService (sanctions automatiques : timeout natif 5 min, module dédié indépendant de la détection, extensible warn/kick/ban) ; base locale data/protections/sensitiveBlacklist.json ; indépendant], emergency/, welcome/, backup/, forms/, reminders/, polls/, web/ [webStats (agrégats du tableau de bord + cache) + webAnalytics (séries/répartitions) + botLogService (journal interne borné : commandes/erreurs/système) + webMessaging (façade messagerie, délègue à contactService) + webNotifier (bus de notifications temps réel) + webArchives (serveurs quittés : données conservées et consultables) + webService + webAuth + webLog], temporaryVoice/, captcha/)
 middlewares/   # permissions/ (Discord + hiérarchie + owners), cooldowns/, moderation/, logs/, tickets/, watch/, snipe/, dm/, levels/, memberFiles/, reactionRoles/, contact/, protections/, antipub/, antisensitive/, emergency/, backup/, forms/, reminders/, polls/, temporaryVoice/, captcha/, reputation/
 web/           # interface web séparée de Discord (frontend/ [app.js + lib/ + modules/ : une page = un fichier], backend/, api/ [router.js + modules/ : une section = un fichier], websocket/)
 utils/         # constants/, helpers/ (loaders, parseur d'arguments, i18n…), embeds/
@@ -355,6 +355,48 @@ Une permission conditionnelle se vérifie **au moment de l'action** :
   enregistré même si la sanction est impossible).
 
 Règle pratique : une commande de **configuration** n'exige jamais rien du bot.
+
+Deux pièges vérifiés à l'audit :
+
+- **désigner n'est pas créer** : `ticketcategory`/`ticketpanel` et
+  `voicecreate`/`voiceedit`/`voicedelete` n'écrivent qu'une configuration — le
+  salon naît plus tard (ouverture d'un ticket, entrée dans le générateur) ;
+- **modifier une permission de salon** (`permissionOverwrites`) relève de
+  `ManageRoles` côté API Discord, pas de `ManageChannels` (`urgence`). En
+  revanche, créer un salon *avec* ses overwrites ne demande que
+  `ManageChannels` (`watch`, `logs setup`).
+
+## Moindre privilège côté utilisateur
+
+`user` suit la même règle : exiger la permission qui gouverne la ressource
+touchée, jamais `Administrator` par confort.
+
+- action de modération → la permission de modération correspondante ;
+- configuration d'une fonctionnalité → `ManageGuild` ;
+- configuration portant sur des salons → `ManageChannels` ;
+- `Administrator` **uniquement** si la commande réécrit la structure du serveur
+  (`backup` — seule commande autorisée à l'exiger, verrouillé par un test).
+
+Les **familles** doivent rester cohérentes entre elles : les six protections
+(`antispam`/`antilink`/`antibot`/`antipub`/`antisensitive`/`protections`)
+exigent la même chose, et les commandes de tickets s'alignent sur
+`ticketstats`.
+
+## Lien d'invitation
+
+`INVITE_PERMISSIONS` (même fichier, propriété non énumérable) est la **source
+unique** des permissions demandées à l'invitation ; la commande `invite` la lit,
+sans jamais redéclarer de liste. Elle doit rester **exactement l'union** de ce
+que le bot utilise : une case inutile fait douter au moment d'inviter, une
+permission manquante casse une fonctionnalité en silence (les services
+échouent proprement, donc sans erreur visible). Deux tests la synchronisent
+dans les deux sens ; y ajouter une permission sans usage réel, ou déclarer un
+besoin absent du lien, fait échouer la suite.
+
+Attention aux permissions qui n'appartiennent à **aucune commande** et
+n'apparaissent donc dans aucune entrée : `ViewAuditLog` (résolution du
+modérateur responsable, détection d'ajout de bots, capture des bans) et
+`AttachFiles` (transcripts de tickets, pièces jointes de `say`).
 
 # Owners
 

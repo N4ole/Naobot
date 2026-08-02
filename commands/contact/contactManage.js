@@ -6,6 +6,7 @@
  */
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, StringSelectMenuBuilder } = require('discord.js');
 const contactService = require('../../services/contact/contactService');
+const contactPositionService = require('../../services/contact/contactPositionService');
 const { checkOwner } = require('../../middlewares/permissions/ownerCheck');
 const contactStatuses = require('../../utils/constants/contactStatuses');
 const { infoEmbed, errorEmbed, successEmbed } = require('../../utils/embeds/embeds');
@@ -83,7 +84,8 @@ function buildInfoPayload(conversation) {
     : t('help.none');
   const embed = infoEmbed(t('contact.info.title', { id: conversation.id }), null).addFields(
     { name: t('contact.field.server'), value: `${conversation.guildName} (\`${conversation.guildId}\`)`, inline: true },
-    { name: t('contact.field.owner'), value: `${conversation.ownerName} (\`${conversation.ownerId}\`)`, inline: true },
+    { name: t('contact.field.author'), value: `${conversation.ownerName} (\`${conversation.ownerId}\`)`, inline: true },
+    { name: t('contact.field.position'), value: contactPositionService.format(conversation.authorPosition), inline: true },
     { name: t('contact.field.status'), value: contactService.statusLabel(conversation.status), inline: true },
     { name: t('contact.field.messages'), value: String(conversation.messages.length), inline: true },
     { name: t('contact.field.respondedBy'), value: responders, inline: true },

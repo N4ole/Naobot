@@ -40,10 +40,25 @@ test('warn : les permissions de la sanction restent documentées, sans bloquer',
 });
 
 test('les commandes de configuration n’exigent rien du bot', () => {
-  // Leur effet (rôle, expulsion, suppression) est produit plus tard par un
-  // écouteur d'événement : l'exiger à la configuration serait sur-demander.
-  for (const name of ['captcha', 'levelconfig', 'setwelcome', 'reactionrole', 'antispam', 'antilink', 'antipub', 'antisensitive', 'logs', 'backup']) {
+  // Leur effet (rôle, expulsion, suppression, création de salon) est produit
+  // plus tard par un écouteur d'événement ou par l'action d'un membre :
+  // l'exiger à la configuration serait sur-demander.
+  const configCommands = [
+    'captcha', 'levelconfig', 'setwelcome', 'reactionrole',
+    'antispam', 'antilink', 'antipub', 'antisensitive', 'logs', 'backup',
+    // Tickets : le salon est créé quand un membre ouvre un ticket, pas quand
+    // un administrateur déclare une catégorie ou publie un panneau.
+    'ticketcategory', 'ticketpanel',
+    // Vocaux temporaires : ces commandes ne font que **désigner** un salon
+    // générateur existant ; rien n'est créé, renommé ni supprimé.
+    'voicecreate', 'voiceedit', 'voicedelete',
+  ];
+  for (const name of configCommands) {
     assert.deepEqual(permissions[name].bot, [], `${name} ne doit exiger aucune permission du bot`);
+  }
+  // Celles dont le fonctionnement réclame vraiment une permission plus tard la
+  // documentent (voiceedit/voicedelete n'agissent jamais sur Discord).
+  for (const name of configCommands.filter((n) => !['voiceedit', 'voicedelete'].includes(n))) {
     assert.ok(permissions.FEATURE_PERMISSIONS[name]?.length, `${name} doit documenter ses permissions de fonctionnement`);
   }
 });
@@ -55,7 +70,9 @@ test('les commandes qui agissent vraiment gardent leurs permissions', () => {
     timeout: PermissionFlagsBits.ModerateMembers,
     mute: PermissionFlagsBits.ManageRoles,
     purge: PermissionFlagsBits.ManageMessages,
-    voicecreate: PermissionFlagsBits.ManageChannels,
+    watch: PermissionFlagsBits.ManageChannels,
+    renamevoice: PermissionFlagsBits.ManageChannels,
+    bump: PermissionFlagsBits.CreateInstantInvite,
     addperm: PermissionFlagsBits.Administrator,
   };
   for (const [name, bit] of Object.entries(expected)) {
@@ -66,9 +83,25 @@ test('les commandes qui agissent vraiment gardent leurs permissions', () => {
   assert.equal(result.ok, false, 'ban doit rester bloqué sans BanMembers');
 });
 
-test('voicecreate : « Déplacer les membres » n’est plus exigée (usage différé)', () => {
-  assert.ok(!permissions.voicecreate.bot.includes(PermissionFlagsBits.MoveMembers));
-  assert.ok(permissions.FEATURE_PERMISSIONS.voicecreate.includes(PermissionFlagsBits.MoveMembers));
+test('purge : lire l’historique est indissociable de la suppression en masse', () => {
+  // `bulkDelete(n)` récupère les n derniers messages avant de les supprimer.
+  assert.ok(permissions.purge.bot.includes(PermissionFlagsBits.ReadMessageHistory));
+  assert.ok(permissions.purge.bot.includes(PermissionFlagsBits.ManageMessages));
+});
+
+test('urgence : verrouiller un salon relève de « Gérer les rôles », pas des salons', () => {
+  // Le mode urgence modifie les permissions des salons existants
+  // (`permissionOverwrites.edit`) : l'API Discord exige ManageRoles. Aucun
+  // salon n'est créé, modifié ni supprimé.
+  assert.deepEqual(permissions.urgence.bot, [PermissionFlagsBits.ManageRoles]);
+});
+
+test('vocaux temporaires : création, permissions et déplacement sont différés', () => {
+  const feature = permissions.FEATURE_PERMISSIONS.voicecreate;
+  for (const bit of [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles, PermissionFlagsBits.MoveMembers]) {
+    assert.ok(feature.includes(bit), 'la permission différée doit rester documentée');
+    assert.ok(!permissions.voicecreate.bot.includes(bit), 'mais ne jamais bloquer la configuration');
+  }
 });
 
 test('checkBotPermissions : vérification au moment de l’action', () => {
@@ -79,6 +112,97 @@ test('checkBotPermissions : vérification au moment de l’action', () => {
   assert.match(denied.error, /rôles/i, 'le message doit nommer la permission manquante');
   // Sans serveur (message privé), la vérification ne bloque jamais.
   assert.equal(checkBotPermissions(null, [PermissionFlagsBits.ManageRoles]).ok, true);
+});
+
+// ---------------------------------------------------------------------------
+// Moindre privilège côté utilisateur
+// ---------------------------------------------------------------------------
+
+test('Administrateur n’est exigé de l’utilisateur que par backup', () => {
+  // Une restauration réécrit la structure entière du serveur : c'est la seule
+  // commande assez destructrice pour justifier Administrateur. Partout
+  // ailleurs, exiger la permission qui gouverne la ressource touchée.
+  const admins = Object.entries(permissions)
+    .filter(([, rules]) => (rules.user ?? []).includes(PermissionFlagsBits.Administrator))
+    .map(([name]) => name);
+  assert.deepEqual(admins, ['backup']);
+});
+
+test('les familles de commandes restent cohérentes entre elles', () => {
+  // Même panneau, même nature de configuration → même exigence.
+  const protections = ['antispam', 'antilink', 'antibot', 'protections', 'antipub', 'antisensitive'];
+  for (const name of protections) {
+    assert.deepEqual(permissions[name].user, [PermissionFlagsBits.ManageGuild], `${name} doit exiger « Gérer le serveur »`);
+  }
+  for (const name of ['ticketcategory', 'ticketpanel', 'ticketstats']) {
+    assert.deepEqual(permissions[name].user, [PermissionFlagsBits.ManageGuild], `${name} doit exiger « Gérer le serveur »`);
+  }
+  // Configuration portant sur des salons → « Gérer les salons ».
+  for (const name of ['voicecreate', 'voiceedit', 'voicelist', 'voicedelete']) {
+    assert.deepEqual(permissions[name].user, [PermissionFlagsBits.ManageChannels], `${name} doit exiger « Gérer les salons »`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Lien d'invitation : ni plus, ni moins
+// ---------------------------------------------------------------------------
+
+/** Permissions du socle : lire, répondre, joindre — jamais liées à une commande. */
+const BASELINE = [
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.SendMessages,
+  PermissionFlagsBits.EmbedLinks,
+  PermissionFlagsBits.AttachFiles,
+  PermissionFlagsBits.ReadMessageHistory,
+];
+
+/** Union de tout ce que les commandes exigent ou documentent. */
+function declaredPermissions() {
+  const all = new Set();
+  for (const rules of Object.values(permissions)) for (const bit of rules.bot ?? []) all.add(bit);
+  for (const bits of Object.values(permissions.FEATURE_PERMISSIONS)) for (const bit of bits) all.add(bit);
+  return all;
+}
+
+test('le lien d’invitation ne demande rien d’inutile', () => {
+  // Toute permission cochée doit être soit du socle, soit réclamée par une
+  // commande ou une fonctionnalité. Sinon, on fait cocher une case pour rien.
+  const declared = declaredPermissions();
+  for (const bit of permissions.INVITE_PERMISSIONS) {
+    if (BASELINE.includes(bit)) continue;
+    // ViewAuditLog : utilisée par auditLogService/antibotService, jamais par
+    // une commande — elle n'a donc pas d'entrée, mais reste indispensable.
+    if (bit === PermissionFlagsBits.ViewAuditLog) continue;
+    assert.ok(declared.has(bit), `le lien d'invitation demande une permission que rien n'utilise : ${bit}`);
+  }
+});
+
+test('le lien d’invitation ne manque de rien', () => {
+  // Une permission exigée ou documentée mais absente du lien rend la
+  // fonctionnalité inopérante sans que personne comprenne pourquoi.
+  for (const bit of declaredPermissions()) {
+    // Administrateur (addperm) n'est jamais demandé à l'invitation : il se
+    // donne manuellement, en connaissance de cause.
+    if (bit === PermissionFlagsBits.Administrator) continue;
+    assert.ok(permissions.INVITE_PERMISSIONS.includes(bit), `permission utilisée mais absente du lien d'invitation : ${bit}`);
+  }
+});
+
+test('le lien d’invitation couvre aussi les besoins des services partagés', () => {
+  // Ces deux-là n'appartiennent à aucune commande — donc aucune entrée ne les
+  // déclare — mais leur absence casse silencieusement une fonctionnalité :
+  //  - ViewAuditLog : résolution du modérateur responsable dans les logs
+  //    (auditLogService), détection des ajouts de bots (antibotService),
+  //    capture des bans pour la réputation globale ;
+  //  - AttachFiles : transcripts de tickets et pièces jointes de `say`.
+  for (const bit of [PermissionFlagsBits.ViewAuditLog, PermissionFlagsBits.AttachFiles]) {
+    assert.ok(permissions.INVITE_PERMISSIONS.includes(bit), 'permission de service absente du lien');
+  }
+});
+
+test('la commande invite lit la source unique', () => {
+  const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'commands', 'utility', 'invite.js'), 'utf8');
+  assert.ok(source.includes('permissionsConfig.INVITE_PERMISSIONS'), 'aucune liste de permissions en dur dans la commande');
 });
 
 test('FEATURE_PERMISSIONS n’est pas confondue avec une commande', () => {
@@ -92,10 +216,11 @@ test('FEATURE_PERMISSIONS n’est pas confondue avec une commande', () => {
 
 test('aucune commande n’exige une permission absente de son exécution (garde-fou)', () => {
   // Liste blanche : commandes dont l'exécution mute réellement Discord.
+  // Chaque entrée a été vérifiée en lisant le service appelé — une commande
+  // qui n'écrit que dans les repositories n'a rien à faire ici.
   const legitimate = new Set([
     'ban', 'unban', 'kick', 'mute', 'unmute', 'timeout', 'untimeout', 'purge',
-    'bump', 'watch', 'urgence', 'ticketcategory', 'ticketpanel', 'voicecreate',
-    'voiceedit', 'voicedelete', 'renamevoice', 'addperm',
+    'bump', 'watch', 'urgence', 'renamevoice', 'addperm',
   ]);
   for (const [name, rules] of Object.entries(permissions)) {
     if (rules.bot?.length && !legitimate.has(name)) {

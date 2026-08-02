@@ -22,6 +22,19 @@
  * vérification a lieu au moment de l'action, qui échoue proprement si la
  * permission manque.
  *
+ * Le **moindre privilège vaut aussi pour `user`** : exiger la permission qui
+ * gouverne réellement la ressource touchée, jamais `Administrator` par
+ * confort. La convention du projet :
+ *   - action de modération → la permission de modération correspondante
+ *     (`BanMembers`, `KickMembers`, `ModerateMembers`, `ManageMessages`…) ;
+ *   - configuration d'une fonctionnalité du bot → `ManageGuild` ;
+ *   - configuration portant sur des salons → `ManageChannels` ;
+ *   - `Administrator` **uniquement** quand la commande réécrit la structure du
+ *     serveur (`backup load`).
+ * Deux familles doivent rester cohérentes entre elles : toutes les protections
+ * (antispam/antilink/antibot/antipub/antisensitive/protections) et toutes les
+ * commandes de tickets exigent la même chose.
+ *
  * Pour ajouter une restriction à une nouvelle commande, il suffit d'ajouter
  * une entrée ici : le middleware de permissions la prendra en compte
  * automatiquement, sans modifier le code des commandes existantes.
@@ -94,7 +107,10 @@ const COMMAND_PERMISSIONS = {
   },
   purge: {
     user: [PermissionFlagsBits.ManageMessages],
-    bot: [PermissionFlagsBits.ManageMessages],
+    // `bulkDelete(n)` récupère d'abord les n derniers messages (lecture de
+    // l'historique) puis les supprime en masse : les deux permissions sont
+    // utilisées à chaque exécution.
+    bot: [PermissionFlagsBits.ManageMessages, PermissionFlagsBits.ReadMessageHistory],
   },
   // `logs status`/`stats` ne font que lire : seules `setup` et `enable`
   // créent des salons, et vérifient la permission au moment de le faire.
@@ -127,15 +143,19 @@ const COMMAND_PERMISSIONS = {
     user: [],
     bot: [],
   },
-  // Configuration des tickets (catégories + panneaux) : administrateurs.
-  // Le bot crée des salons/catégories et gère les permissions.
+  // Configuration des tickets (catégories + panneaux) : « Gérer le serveur »,
+  // comme ticketstats — c'est de la configuration de serveur, pas une action
+  // privilégiée. Ces commandes n'enregistrent qu'une configuration et publient un panneau
+  // (un simple message) : le bot n'a besoin d'aucune permission. Les salons de
+  // tickets sont créés **plus tard**, à l'ouverture d'un ticket par un membre
+  // (voir FEATURE_PERMISSIONS).
   ticketcategory: {
-    user: [PermissionFlagsBits.Administrator],
-    bot: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles],
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
   },
   ticketpanel: {
-    user: [PermissionFlagsBits.Administrator],
-    bot: [PermissionFlagsBits.ManageChannels],
+    user: [PermissionFlagsBits.ManageGuild],
+    bot: [],
   },
   ticketstats: {
     user: [PermissionFlagsBits.ManageGuild],
@@ -174,23 +194,27 @@ const COMMAND_PERMISSIONS = {
     user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
-  // Anti-publicité (invitations Discord) : configuration réservée aux
-  // administrateurs. Le bot supprime les messages contenant des invitations.
+  // Anti-publicité (invitations Discord) : même famille que antispam/antilink,
+  // donc même exigence — « Gérer le serveur », et non Administrateur.
   antipub: {
-    user: [PermissionFlagsBits.Administrator],
+    user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
-  // Anti-contenus sensibles (sites adultes/violents) : configuration réservée
-  // aux administrateurs. Le bot supprime les messages contenant des liens.
+  // Anti-contenus sensibles (sites adultes/violents) : même famille que les
+  // autres protections, donc « Gérer le serveur ».
   antisensitive: {
-    user: [PermissionFlagsBits.Administrator],
+    user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
   // Accès (admin OU propriétaire OU owner) contrôlé dans la commande ;
   // seule la permission du bot est vérifiée par le pipeline.
+  // Le verrouillage modifie les **permissions des salons** (refus d'envoyer
+  // des messages à @everyone) : l'API Discord exige « Gérer les rôles » pour
+  // modifier une permission de salon, et non « Gérer les salons » (aucun
+  // salon n'est créé, modifié ni supprimé).
   urgence: {
     user: [],
-    bot: [PermissionFlagsBits.ManageChannels],
+    bot: [PermissionFlagsBits.ManageRoles],
   },
   setwelcome: {
     user: [PermissionFlagsBits.ManageGuild],
@@ -206,6 +230,8 @@ const COMMAND_PERMISSIONS = {
   },
   // `backup create`/`list` ne font que lire la structure du serveur ; seule
   // la restauration (`load`) recrée salons et rôles, et vérifie alors.
+  // Seule commande à exiger Administrateur de l'utilisateur : une restauration
+  // réécrit la structure entière du serveur.
   backup: {
     user: [PermissionFlagsBits.Administrator],
     bot: [],
@@ -221,25 +247,29 @@ const COMMAND_PERMISSIONS = {
     user: [PermissionFlagsBits.ManageMessages],
     bot: [],
   },
-  // Configuration des salons vocaux temporaires : administrateurs. Le bot crée
-  // les salons et déplace les membres.
+  // Configuration des salons vocaux temporaires : « Gérer les salons » — la
+  // permission qui gouverne la ressource configurée. Ces quatre commandes ne font qu'enregistrer une configuration : elles
+  // **désignent** un salon générateur existant (sélecteur natif), elles n'en
+  // créent, ne renomment ni ne suppriment aucun. La création du salon
+  // temporaire, la synchronisation de ses permissions, le déplacement du
+  // membre et la suppression à la déconnexion sont **différés** à l'écouteur
+  // vocal (voir FEATURE_PERMISSIONS).
   voicecreate: {
-    user: [PermissionFlagsBits.Administrator],
-    // La commande crée le salon générateur ; « Déplacer les membres » n'est
-    // utilisée que plus tard, par l'écouteur vocal.
-    bot: [PermissionFlagsBits.ManageChannels],
-  },
-  voiceedit: {
-    user: [PermissionFlagsBits.Administrator],
-    bot: [PermissionFlagsBits.ManageChannels],
-  },
-  voicelist: {
-    user: [PermissionFlagsBits.Administrator],
+    user: [PermissionFlagsBits.ManageChannels],
     bot: [],
   },
+  voiceedit: {
+    user: [PermissionFlagsBits.ManageChannels],
+    bot: [],
+  },
+  voicelist: {
+    user: [PermissionFlagsBits.ManageChannels],
+    bot: [],
+  },
+  // Supprime l'enregistrement du générateur, pas le salon Discord.
   voicedelete: {
-    user: [PermissionFlagsBits.Administrator],
-    bot: [PermissionFlagsBits.ManageChannels],
+    user: [PermissionFlagsBits.ManageChannels],
+    bot: [],
   },
   // renamevoice : accès (propriétaire du salon temporaire) vérifié dans la
   // commande ; seule la permission du bot (renommage) est requise.
@@ -247,16 +277,18 @@ const COMMAND_PERMISSIONS = {
     user: [],
     bot: [PermissionFlagsBits.ManageChannels],
   },
-  // Niveaux : configuration réservée aux administrateurs. Le bot attribue les
-  // rôles de récompense (ManageRoles). rank/level/leaderboard restent ouverts.
+  // Niveaux : configuration de serveur (« Gérer le serveur »). Les rôles de
+  // récompense sont attribués plus tard, au passage de niveau (différé).
+  // rank/level/leaderboard restent ouverts à tous.
   levelconfig: {
-    user: [PermissionFlagsBits.Administrator],
+    user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
-  // Captcha à l'arrivée : configuration réservée aux administrateurs. Le bot
-  // attribue les rôles, restreint l'accès au salon et expulse les échecs.
+  // Captcha à l'arrivée : configuration de serveur (« Gérer le serveur »).
+  // L'attribution des rôles, la restriction du salon et l'expulsion des échecs
+  // ont lieu à l'arrivée d'un membre (différé).
   captcha: {
-    user: [PermissionFlagsBits.Administrator],
+    user: [PermissionFlagsBits.ManageGuild],
     bot: [],
   },
   // addperm (owner) : crée/attribue un rôle administrateur. Le bot doit donc
@@ -300,8 +332,17 @@ const FEATURE_PERMISSIONS = {
   setwelcome: [PermissionFlagsBits.ManageRoles],
   // Attribution/retrait des rôles à la réaction.
   reactionrole: [PermissionFlagsBits.ManageRoles],
-  // Déplacement d'un membre vers son salon vocal temporaire.
-  voicecreate: [PermissionFlagsBits.MoveMembers],
+  // Ouverture d'un ticket par un membre : création du salon (Gérer les salons)
+  // puis ajout/retrait de participants, qui modifie ses permissions (Gérer les
+  // rôles). Rien de tout cela n'a lieu au moment de la configuration.
+  ticketcategory: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles],
+  ticketpanel: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles],
+  // Salon vocal temporaire : création à l'entrée dans le générateur,
+  // synchronisation de ses permissions sur la catégorie (Gérer les rôles),
+  // déplacement du membre, puis suppression une fois vide.
+  voicecreate: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles, PermissionFlagsBits.MoveMembers],
+  // Suppression du message d'appel en mode préfixe (jamais en slash).
+  say: [PermissionFlagsBits.ManageMessages],
   // Suppression des messages détectés par les protections automatiques.
   antispam: [PermissionFlagsBits.ManageMessages],
   antilink: [PermissionFlagsBits.ManageMessages],
@@ -309,6 +350,40 @@ const FEATURE_PERMISSIONS = {
   // L'anti-contenus sensibles supprime le message et applique un timeout natif.
   antisensitive: [PermissionFlagsBits.ManageMessages, PermissionFlagsBits.ModerateMembers],
 };
+
+/**
+ * Permissions demandées dans le **lien d'invitation** du bot (`invite`).
+ *
+ * C'est la seule liste qu'un administrateur voit au moment d'ajouter NaoBot :
+ * elle doit être exactement l'union de ce que le bot utilise vraiment — ni
+ * plus (on ne fait pas cocher une case inutile), ni moins (une permission
+ * absente rend la fonctionnalité inopérante sans que personne comprenne
+ * pourquoi). `tests/permissionsLeastPrivilege.test.js` vérifie les deux sens.
+ */
+const INVITE_PERMISSIONS = [
+  // Socle : lire un salon, y répondre en embed et joindre un fichier
+  // (transcripts de tickets, pièces jointes de `say`).
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.SendMessages,
+  PermissionFlagsBits.EmbedLinks,
+  PermissionFlagsBits.AttachFiles,
+  PermissionFlagsBits.ReadMessageHistory,
+  // Modération.
+  PermissionFlagsBits.BanMembers,
+  PermissionFlagsBits.KickMembers,
+  PermissionFlagsBits.ModerateMembers,
+  PermissionFlagsBits.ManageMessages,
+  // Structure du serveur : rôles (mute, récompenses, permissions de salon),
+  // salons (tickets, logs, surveillance, vocaux temporaires) et déplacement
+  // vers un salon vocal temporaire.
+  PermissionFlagsBits.ManageRoles,
+  PermissionFlagsBits.ManageChannels,
+  PermissionFlagsBits.MoveMembers,
+  // Invitations du bump, et résolution du modérateur responsable dans les
+  // logs (`auditLogService`, `antibotService`, capture des bans).
+  PermissionFlagsBits.CreateInstantInvite,
+  PermissionFlagsBits.ViewAuditLog,
+];
 
 /**
  * L'export par défaut reste la table **par commande** : tout le code existant
@@ -321,5 +396,9 @@ const FEATURE_PERMISSIONS = {
 module.exports = COMMAND_PERMISSIONS;
 Object.defineProperty(module.exports, 'FEATURE_PERMISSIONS', {
   value: FEATURE_PERMISSIONS,
+  enumerable: false,
+});
+Object.defineProperty(module.exports, 'INVITE_PERMISSIONS', {
+  value: INVITE_PERMISSIONS,
   enumerable: false,
 });
