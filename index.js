@@ -12,6 +12,7 @@ require('./config/resources').applyRuntimeLimits();
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const config = require('./config/config');
 const resources = require('./config/resources');
+const presenceService = require('./services/presence/presenceService');
 const { loadCommands } = require('./utils/helpers/commandLoader');
 const { loadEvents } = require('./utils/helpers/eventLoader');
 
@@ -43,6 +44,9 @@ const client = new Client({
   // Partials.Message : messages non mis en cache (logs). Partials.Channel :
   // indispensable pour recevoir les messages privés (salon DM non caché).
   partials: [Partials.Message, Partials.Channel],
+  // Statut du bot, envoyé dès l'IDENTIFY (donc aussi après une reconnexion).
+  // Le texte vit dans services/presence — jamais de logique ici.
+  presence: presenceService.initialPresence(),
 });
 
 console.log(resources.summaryLine());
