@@ -1477,6 +1477,25 @@ Deux tests tiennent la liste synchronisée dans les deux sens : toute permission
 demandée doit être utilisée, et toute permission déclarée par une commande ou
 une fonctionnalité doit figurer dans le lien.
 
+### Les fonctionnalités aussi
+
+Une fonctionnalité déclenchée par un événement (captcha à l'arrivée, montée de
+niveau, salon vocal temporaire, protections, tickets, logs, surveillance…) ne
+déclare rien : elle agit quand elle agit. Chaque famille d'écouteurs a donc été
+passée en revue pour vérifier que **toute permission qu'elle utilise figure
+dans le lien d'invitation** — c'est le cas des dix-huit familles concernées —
+et que `FEATURE_PERMISSIONS` ne documente rien d'inutile.
+
+Une seule correction : le **captcha** documentait « Gérer les salons », qu'il
+n'utilise jamais. Il restreint l'accès au salon de vérification par des
+**permissions de salon** (`permissionOverwrites`), ce qui relève de « Gérer les
+rôles » — déjà documenté. La suppression automatique du message de confirmation
+ne réclame pas non plus « Gérer les messages » : ce message appartient au bot.
+
+Les dix-neuf autres familles (`antipub`, `snipe`, `logs`, `polls`, `reminders`,
+`memberFiles`, `forms`, `dm`…) ne mutent rien de plus que ce qui est déjà
+couvert.
+
 ### Commandes vérifiées sans changement
 
 Les **118** commandes ont été passées en revue, y compris celles qui ne

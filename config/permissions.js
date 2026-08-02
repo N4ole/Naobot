@@ -325,7 +325,12 @@ const FEATURE_PERMISSIONS = {
   // Restauration d'une sauvegarde (`backup load`).
   backup: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles],
   // Rôle temporaire/vérifié et expulsion en cas d'échec, à l'arrivée.
-  captcha: [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers, PermissionFlagsBits.ManageChannels],
+  // Pas de « Gérer les salons » : l'accès au salon de vérification est
+  // restreint par des permissions de salon (`permissionOverwrites`), ce qui
+  // relève de « Gérer les rôles » — aucun salon n'est jamais créé ni modifié.
+  // Pas de « Gérer les messages » non plus : la suppression automatique du
+  // message de confirmation porte sur un message **du bot**.
+  captcha: [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.KickMembers],
   // Rôles de récompense attribués au passage de niveau.
   levelconfig: [PermissionFlagsBits.ManageRoles],
   // Rôle automatique attribué à l'arrivée d'un membre.
